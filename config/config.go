@@ -11,6 +11,10 @@ const (
 	NetworkKey = "NETWORK"
 	// ConfigPathKey defines the config path
 	ConfigPathKey = "CONFIG_PATH"
+	// LambdaContextKey defines if running on AWS Lambda + API Gateway or standalone
+	LambdaContextKey = "LAMBDA_CONTEXT"
+	// ListeningPortKey defines the port to run in a standalone context
+	ListeningPortKey = "LISTENING_PORT"
 )
 
 var vip *viper.Viper
@@ -22,13 +26,14 @@ func init() {
 
 	vip.SetDefault(NetworkKey, "regtest")
 	vip.SetDefault(ConfigPathKey, "taxi.config")
+	vip.SetDefault(LambdaContextKey, true)
+	vip.SetDefault(ListeningPortKey, 8080)
 
 	vip.SetConfigName(vip.GetString(ConfigPathKey))
-
 	vip.AddConfigPath(".")
 	err := vip.ReadInConfig()
 	if err != nil {
-		log.Println("No config found. Using default values")
+		log.Println("No config found")
 	}
 }
 

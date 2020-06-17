@@ -1,0 +1,26 @@
+service: liquid-taxi
+frameworkVersion: '>=1.28.0 <2.0.0'
+
+provider:
+  name: aws
+  runtime: go1.x
+  apiGateway:
+    description: Liquid Taxi Server
+    binaryMediaTypes: 
+      - 'application/protobuf'
+      - 'application/json'
+
+
+package:
+  exclude:
+    - ./**
+  include:
+    - ./bin/**
+
+functions:
+  taxi:
+    handler: bin/taxi
+    events: # The Events that trigger this Function
+      - http:
+          path: /{proxy+}
+          method: ANY
