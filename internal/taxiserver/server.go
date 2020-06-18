@@ -132,20 +132,20 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 		return nil, twirp.InternalError(err.Error())
 	}
 
-	selectedUtxos, change, err := wallet.CoinSelect(taxiUtxos, breakdown.Fee)
+	selectedUtxos, change, err := wallet.CoinSelect(taxiUtxos, breakdown.Fee, BITCOIN[config.GetString(config.NetworkKey))
 	if err != nil {
 		return nil, twirp.InternalError(err.Error())
 	}
 
 	psetWithFees := &partial.Partial{Data: decoded}
 	for _, utxo := range selectedUtxos {
-		psetWithFees.AddInput(utxo.Hash, utxo.Index, &partial.WitnessUtxo{Asset: assetHashToBytes(BITCOIN[config.GetString(config.NetworkKey)]), Value: utxo.Value, Script: taxiPayment.Script}, nil)
+		psetWithFees.AddInput(utxo.Hash, utxo.Index, &partial.WitnessUtxo{Asset: AssetHashToBytes(BITCOIN[config.GetString(config.NetworkKey)], false), Value: utxo.Value, Script: taxiPayment.Script}, nil)
 	}
 	// payout to taxi expressed in Asset
-	psetWithFees.AddOutput(assetHashToBytes(req.AssetHash), totalFeesInAsset, taxiPayment.Script)
+	psetWithFees.AddOutput(AssetHashToBytes(req.AssetHash, false), totalFeesInAsset, taxiPayment.Script)
 	// Taxi adds Fee LBTC output and his change
-	psetWithFees.AddOutput(assetHashToBytes(BITCOIN[config.GetString(config.NetworkKey)]), change, taxiPayment.Script)
-	psetWithFees.AddOutput(assetHashToBytes(BITCOIN[config.GetString(config.NetworkKey)]), breakdown.Fee, []byte{})
+	psetWithFees.AddOutput(AssetHashToBytes(BITCOIN[config.GetString(config.NetworkKey)], false), change, taxiPayment.Script)
+	psetWithFees.AddOutput(AssetHashToBytes(BITCOIN[config.GetString(config.NetworkKey)], false), breakdown.Fee, []byte{})
 
 	for i := givenInputsLen; i < len(psetWithFees.Data.Inputs); i++ {
 		err := psetWithFees.SignWithPrivateKey(i, taxiPayment, taxiPrivate)
@@ -183,10 +183,4 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 		AssetAmount: totalFeesInAsset,
 		AssetHash:   req.AssetHash,
 	}, nil
-}
-
-func assetHashToBytes(hash string) []byte {
-	assetBytes, _ := hex.DecodeString(hash)
-	assetBytes = append([]byte{0x01}, partial.ReverseBytes(assetBytes)...)
-	return assetBytes
 }

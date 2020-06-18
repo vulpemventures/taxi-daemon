@@ -19,7 +19,7 @@ const bobHex = "1804e76aa3016013bc9969103554668913cf697c03c23aecb28136d0e0ac16f0
 
 func TestEndToEnd(t *testing.T) {
 	//Explorer
-	e := &explorer.Explorer{"https://nigiri.network/liquid/api"}
+	e := &explorer.Explorer{BaseURL: "https://nigiri.network/liquid/api"}
 	// BTC
 	assetBytes, _ := hex.DecodeString(network.Regtest.AssetID)
 	assetBytes = append([]byte{0x01}, reverseBytes(assetBytes)...)
