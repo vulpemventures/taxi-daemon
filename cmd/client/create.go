@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/vulpemventures/go-elements/address"
 	"github.com/vulpemventures/go-elements/network"
@@ -10,9 +12,10 @@ import (
 	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/pkg/partial"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
+	"github.com/vulpemventures/liquid-taxi/rpc/taxi"
 )
 
-func createAction(from string, to string, asset string, amount int, explorerURL string, regtest bool) error {
+func createAction(from string, to string, asset string, amount int, regtest bool, explorerURL string, taxiURL string) error {
 	if from == "" || to == "" || asset == "" || amount <= 0 {
 		return fmt.Errorf("missing required flag")
 	}
@@ -58,6 +61,34 @@ func createAction(from string, to string, asset string, amount int, explorerURL 
 	if err != nil {
 		return fmt.Errorf("base64: %w", err)
 	}
+
+	client := taxi.NewTaxiProtobufClient(taxiURL, &http.Client{})
+	replyEstimate, err := client.GetAssetEstimate(context.Background(), &taxi.GetAssetEstimateRequest{
+		Unsigned: &taxi.Unsigned{
+			Pset:       b64,
+			SatPerByte: 0.1,
+		},
+		AssetHash: asset,
+	})
+	if err != nil {
+		return fmt.Errorf("taxi: %w", err)
+	}
+	if replyEstimate.AssetAmount <= 0 {
+		return fmt.Errorf("taxi: Invalid number")
+	}
+
+	// Delete last inserted element that in our case is the change
+	psetWithoutFees.Data.Outputs = psetWithoutFees.Data.Outputs[:1]
+	psetWithoutFees.Data.UnsignedTx.Outputs = psetWithoutFees.Data.UnsignedTx.Outputs[:1]
+
+	// Add recalculated change after estimate with taxi
+	psetWithoutFees.AddOutput(assetBytes, uint64(change)-replyEstimate.AssetAmount, fromScript)
+
+	b64, err = psetWithoutFees.Data.ToBase64()
+	if err != nil {
+		return fmt.Errorf("base64: %w", err)
+	}
+
 	fmt.Println()
 	fmt.Println(b64)
 
