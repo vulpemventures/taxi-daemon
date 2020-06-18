@@ -2,7 +2,6 @@ package taxiserver
 
 import (
 	"context"
-	"encoding/hex"
 	"time"
 
 	"github.com/twitchtv/twirp"
@@ -132,20 +131,20 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 		return nil, twirp.InternalError(err.Error())
 	}
 
-	selectedUtxos, change, err := wallet.CoinSelect(taxiUtxos, breakdown.Fee, BITCOIN[config.GetString(config.NetworkKey))
+	selectedUtxos, change, err := wallet.CoinSelect(taxiUtxos, breakdown.Fee, BITCOIN[config.GetString(config.NetworkKey)])
 	if err != nil {
 		return nil, twirp.InternalError(err.Error())
 	}
 
 	psetWithFees := &partial.Partial{Data: decoded}
 	for _, utxo := range selectedUtxos {
-		psetWithFees.AddInput(utxo.Hash, utxo.Index, &partial.WitnessUtxo{Asset: AssetHashToBytes(BITCOIN[config.GetString(config.NetworkKey)], false), Value: utxo.Value, Script: taxiPayment.Script}, nil)
+		psetWithFees.AddInput(utxo.Hash, utxo.Index, &partial.WitnessUtxo{Asset: wallet.AssetHashToBytes(BITCOIN[config.GetString(config.NetworkKey)], false), Value: utxo.Value, Script: taxiPayment.Script}, nil)
 	}
 	// payout to taxi expressed in Asset
-	psetWithFees.AddOutput(AssetHashToBytes(req.AssetHash, false), totalFeesInAsset, taxiPayment.Script)
+	psetWithFees.AddOutput(wallet.AssetHashToBytes(req.AssetHash, false), totalFeesInAsset, taxiPayment.Script)
 	// Taxi adds Fee LBTC output and his change
-	psetWithFees.AddOutput(AssetHashToBytes(BITCOIN[config.GetString(config.NetworkKey)], false), change, taxiPayment.Script)
-	psetWithFees.AddOutput(AssetHashToBytes(BITCOIN[config.GetString(config.NetworkKey)], false), breakdown.Fee, []byte{})
+	psetWithFees.AddOutput(wallet.AssetHashToBytes(BITCOIN[config.GetString(config.NetworkKey)], false), change, taxiPayment.Script)
+	psetWithFees.AddOutput(wallet.AssetHashToBytes(BITCOIN[config.GetString(config.NetworkKey)], false), breakdown.Fee, []byte{})
 
 	for i := givenInputsLen; i < len(psetWithFees.Data.Inputs); i++ {
 		err := psetWithFees.SignWithPrivateKey(i, taxiPayment, taxiPrivate)
