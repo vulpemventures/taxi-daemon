@@ -81,8 +81,6 @@ func (s *Server) GetAssetEstimate(ctx context.Context, req *pb.GetAssetEstimateR
 	totalFeesInAsset := price.BitcoinToUsdt(breakdown.Total, usdtPrice)
 
 	return &pb.GetAssetEstimateReply{
-		AssetAmount: totalFeesInAsset,
-		AssetHash:   req.AssetHash,
 		Breakdown: &pb.Breakdown{
 			Size:       breakdown.Size,
 			Fee:        breakdown.Fee,
@@ -91,6 +89,8 @@ func (s *Server) GetAssetEstimate(ctx context.Context, req *pb.GetAssetEstimateR
 			Rate:       breakdown.Rate,
 			Total:      breakdown.Total,
 		},
+		AssetAmount: totalFeesInAsset,
+		AssetHash:   req.AssetHash,
 	}, nil
 }
 
