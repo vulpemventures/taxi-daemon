@@ -6,7 +6,7 @@ build:
 
 build-client:
 	export GO111MODULE=on
-	env GOOS=linux go build -ldflags="-s -w" -o bin/taxi-client cmd/client/main.go
+	env GOOS=linux go build -ldflags="-s -w" -o bin/taxi-cli cmd/client/*.go
 
 clean: 
 	rm -rf ./bin

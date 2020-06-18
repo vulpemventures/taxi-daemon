@@ -22,7 +22,7 @@ var ASSETS = map[string]map[string]bool{
 		"ce091c998b83c78bb71a632313ba3760f1763d9cfcffae02258ffa9865a37bd2": true,
 	},
 	"regtest": {
-		"e431440561ef44e992263fe7a308025d5711f57520901e42c1ed29b6505812b4": true,
+		"fd1a64da7a909b648319bc070e6f4d70ad1b515d70aa3183fcb137500e9670be": true,
 	},
 }
 
