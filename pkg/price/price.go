@@ -11,19 +11,14 @@ import (
 const SATOSHIS = 100000000
 
 // BitcoinToUsdt converts bitcoin in satoshi to USDt (in satoshi)
-func BitcoinToUsdt(satoshis uint64) (uint64, error) {
-	prices, err := getPriceWithPair("XBTUSDT")
-	if err != nil {
-		return 0, err
-	}
-
-	usdtInSatoshis := prices[0] * SATOSHIS
+func BitcoinToUsdt(satoshis uint64, priceFractional uint64) uint64 {
+	usdtInSatoshis := priceFractional * SATOSHIS
 	OneSatoshiInUsdt := usdtInSatoshis / SATOSHIS
-	return satoshis * OneSatoshiInUsdt, nil
+	return satoshis * OneSatoshiInUsdt
 }
 
 // UsdtToBitcoin converts USDt in satoshi to Bitcoin (in satoshi)
-func UsdtToBitcoin(satoshis uint64) (uint64, error) {
+/* func UsdtToBitcoin(satoshis uint64) (uint64, error) {
 	prices, err := getPriceWithPair("XBTUSDT")
 	if err != nil {
 		return 0, err
@@ -31,9 +26,10 @@ func UsdtToBitcoin(satoshis uint64) (uint64, error) {
 	btcInSatoshis := prices[1] * SATOSHIS
 	OneSatoshiInBtc := btcInSatoshis / SATOSHIS
 	return satoshis * OneSatoshiInBtc, nil
-}
+} */
 
-func getPriceWithPair(pair string) ([]uint64, error) {
+// GetPriceOfPair returns an array of fromBasePrice and fromQuotePrice in the pair [base,quote]
+func GetPriceOfPair(pair string) ([]uint64, error) {
 	url := "https://api.kraken.com/0/public/Ticker?pair=" + pair
 	resp, err := http.Get(url)
 	if err != nil {

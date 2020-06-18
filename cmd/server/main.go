@@ -17,7 +17,7 @@ func main() {
 	handler := t.NewTaxiServer(server, nil)
 
 	if config.GetBool(config.LambdaContextKey) {
-		log.Fatal(gateway.ListenAndServe(":8080", handler))
+		log.Fatal(gateway.ListenAndServe("", handler))
 		return
 	}
 

@@ -3,20 +3,20 @@ package explorer
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
 
-func Faucet(address string) (string, error) {
-	baseUrl, ok := os.LookupEnv("API_URL")
-	if !ok {
-		return "", errors.New("API_URL environment variable is not set")
-	}
-	url := baseUrl + "/faucet"
+//Explorer ...
+type Explorer struct {
+	BaseURL string
+}
+
+// Faucet ...
+func (e *Explorer) Faucet(address string) (string, error) {
+	url := e.BaseURL + "/faucet"
 	payload := map[string]string{"address": address}
 	body, _ := json.Marshal(payload)
 	resp, err := http.Post(url, "appliation/json", bytes.NewBuffer(body))
@@ -36,13 +36,10 @@ func Faucet(address string) (string, error) {
 	return respBody["txId"], nil
 }
 
-func Unspents(address string) ([]map[string]interface{}, error) {
+//Unspents ...
+func (e *Explorer) Unspents(address string) ([]map[string]interface{}, error) {
 	getUtxos := func(address string) ([]interface{}, error) {
-		baseUrl, ok := os.LookupEnv("API_URL")
-		if !ok {
-			return nil, errors.New("API_URL environment variable is not set")
-		}
-		url := baseUrl + "/address/" + address + "/utxo"
+		url := e.BaseURL + "/address/" + address + "/utxo"
 		resp, err := http.Get(url)
 		if err != nil {
 			return nil, err
@@ -76,13 +73,9 @@ func Unspents(address string) ([]map[string]interface{}, error) {
 	return utxos, nil
 }
 
-func Broadcast(txHex string) (string, error) {
-	baseUrl, ok := os.LookupEnv("API_URL")
-	if !ok {
-		return "", errors.New("API_URL environment variable is not set")
-	}
-
-	url := baseUrl + "/tx"
+//Broadcast ...
+func (e *Explorer) Broadcast(txHex string) (string, error) {
+	url := e.BaseURL + "/tx"
 	resp, err := http.Post(url, "text/plain", strings.NewReader(txHex))
 	if err != nil {
 		return "", err

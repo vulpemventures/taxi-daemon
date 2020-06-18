@@ -9,12 +9,16 @@ import (
 const (
 	// NetworkKey defines the network
 	NetworkKey = "NETWORK"
+	//ExplorerEndpointKey defines the explorer to fetch data
+	ExplorerEndpointKey = "EXPLORER_ENDPOINT"
 	// ConfigPathKey defines the config path
 	ConfigPathKey = "CONFIG_PATH"
 	// LambdaContextKey defines if running on AWS Lambda + API Gateway or standalone
 	LambdaContextKey = "LAMBDA_CONTEXT"
 	// ListeningPortKey defines the port to run in a standalone context
 	ListeningPortKey = "LISTENING_PORT"
+	// PrivateKeyKey defines the private key used by the taxi
+	PrivateKeyKey = "PRIVATE_KEY"
 )
 
 var vip *viper.Viper
@@ -25,6 +29,7 @@ func init() {
 	vip.AutomaticEnv()
 
 	vip.SetDefault(NetworkKey, "regtest")
+	vip.SetDefault(ExplorerEndpointKey, "https://nigiri.network/liquid/api")
 	vip.SetDefault(ConfigPathKey, "taxi.config")
 	vip.SetDefault(LambdaContextKey, true)
 	vip.SetDefault(ListeningPortKey, 8080)
@@ -33,7 +38,11 @@ func init() {
 	vip.AddConfigPath(".")
 	err := vip.ReadInConfig()
 	if err != nil {
-		log.Println("No config found")
+		log.Println("[INFO] No config found. Skip")
+	}
+
+	if vip.GetString(PrivateKeyKey) == "" {
+		log.Panic("[ERROR] PRIVATE_KEY is required")
 	}
 }
 
