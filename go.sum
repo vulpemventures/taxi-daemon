@@ -245,6 +245,8 @@ github.com/vulpemventures/go-elements v0.0.3-0.20200615095133-39cfed134246 h1:2t
 github.com/vulpemventures/go-elements v0.0.3-0.20200615095133-39cfed134246/go.mod h1:fqCaLizJz7kopPsW8jetD2FgKQGm1bM2ON9/5rZskOc=
 github.com/vulpemventures/go-secp256k1-zkp v1.0.1 h1:myxKDZRR9CEj7Tz262lb6CIsmROFnYIZz7ySt79WtVw=
 github.com/vulpemventures/go-secp256k1-zkp v1.0.1/go.mod h1:zo7CpgkuPgoe7fAV+inyxsI9IhGmcoFgyD8nqZaPSOM=
+github.com/vulpemventures/taxi-protobuf v0.0.0-20200619184842-90bda68f6852 h1:3s2ZuJjcLwIf4WtOhLHJiKpy7fTkMDpLSwmSFRiHatg=
+github.com/vulpemventures/taxi-protobuf v0.0.0-20200619184842-90bda68f6852/go.mod h1:kFmVCMCp4Vj4Ota5aRCKddBWj6PRVaXKir02c2Xqsy8=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=

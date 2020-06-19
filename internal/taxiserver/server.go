@@ -16,7 +16,7 @@ import (
 	"github.com/vulpemventures/liquid-taxi/pkg/fees"
 	"github.com/vulpemventures/liquid-taxi/pkg/price"
 
-	pb "github.com/vulpemventures/liquid-taxi/rpc/taxi"
+	pb "github.com/vulpemventures/taxi-protobuf/rpc/taxi"
 )
 
 //ASSETS ...

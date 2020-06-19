@@ -17,6 +17,7 @@ require (
 	github.com/tj/assert v0.0.3 // indirect
 	github.com/twitchtv/twirp v5.12.0+incompatible
 	github.com/vulpemventures/go-elements v0.0.3-0.20200615095133-39cfed134246
+	github.com/vulpemventures/taxi-protobuf v0.0.0-20200619184842-90bda68f6852
 	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37 // indirect
 	google.golang.org/protobuf v1.24.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect

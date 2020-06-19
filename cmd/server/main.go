@@ -8,7 +8,7 @@ import (
 	"github.com/apex/gateway"
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/taxiserver"
-	t "github.com/vulpemventures/liquid-taxi/rpc/taxi"
+	t "github.com/vulpemventures/taxi-protobuf/rpc/taxi"
 )
 
 func main() {
