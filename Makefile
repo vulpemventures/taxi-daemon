@@ -6,7 +6,7 @@ build:
 
 build-client:
 	export GO111MODULE=on
-	env GOOS=linux go build -ldflags="-s -w" -o bin/taxi-client cmd/client/main.go
+	env GOOS=linux go build -ldflags="-s -w" -o bin/taxi-cli cmd/client/*.go
 
 clean: 
 	rm -rf ./bin
@@ -22,4 +22,3 @@ protobuf:
 
 run: clean build
 	TAXI_LAMBDA_CONTEXT=false TAXI_EXPLORER_ENDPOINT=http://localhost:3001 TAXI_PRIVATE_KEY=1cc080a4cd371eafcad489a29664af6a7276b362fe783443ce036552482b971d ./bin/taxi
-

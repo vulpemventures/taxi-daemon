@@ -7,7 +7,7 @@ provider:
   environment:
     # Regtest Key for ert1qlg343tpldc4wvjxn3jdq2qs35r8j5yd5kjfrrt address
     # Uncomment to deploy to staging
-    #TAXI_PRIVATE_KEY: 1cc080a4cd371eafcad489a29664af6a7276b362fe783443ce036552482b971d
+    TAXI_PRIVATE_KEY: 1cc080a4cd371eafcad489a29664af6a7276b362fe783443ce036552482b971d
   apiGateway:
     description: Liquid Taxi Server
     binaryMediaTypes: 
