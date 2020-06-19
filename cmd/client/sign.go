@@ -4,14 +4,21 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/tiero/ocean/pkg/keypair"
+	"github.com/tiero/ocean/pkg/partial"
+	"github.com/vulpemventures/go-elements/network"
+	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/pset"
-	"github.com/vulpemventures/liquid-taxi/pkg/partial"
-	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
-func signAction(psetBase64 string, privateKey string) error {
+func signAction(psetBase64 string, privateKey string, regtest bool) error {
 	if psetBase64 == "" || privateKey == "" {
 		return fmt.Errorf("missing required flag")
+	}
+	// Network
+	currentNetwork := network.Liquid
+	if regtest {
+		currentNetwork = network.Regtest
 	}
 
 	decoded, err := pset.NewPsetFromBase64(psetBase64)
@@ -19,14 +26,17 @@ func signAction(psetBase64 string, privateKey string) error {
 		return fmt.Errorf("decode: %w", err)
 	}
 
-	pay, _, privKey := wallet.FromPrivateKey(privateKey)
+	keyPair, err := keypair.FromPrivateKey(privateKey)
+	if err != nil {
+		return fmt.Errorf("private key: %w", err)
+	}
+	pay := payment.FromPublicKey(keyPair.PublicKey, &currentNetwork, nil)
 
 	psetWithFees := &partial.Partial{Data: decoded}
 	for i := 0; i < len(psetWithFees.Data.Inputs); i++ {
 		currInput := psetWithFees.Data.Inputs[i]
 		if bytes.Equal(currInput.WitnessUtxo.Script, pay.Script) {
-			println(i)
-			err := psetWithFees.SignWithPrivateKey(i, pay, privKey)
+			err := psetWithFees.SignWithPrivateKey(i, keyPair)
 			if err != nil {
 				return fmt.Errorf("sign: %w", err)
 			}
@@ -46,6 +56,13 @@ func signAction(psetBase64 string, privateKey string) error {
 	if err != nil {
 		return fmt.Errorf("sanity check: %w", err)
 	}
+
+	b64, err := pFinalized.ToBase64()
+	if err != nil {
+		return fmt.Errorf("base64: %w", err)
+	}
+
+	fmt.Println(b64)
 
 	// Extract the final signed transaction from the Pset wrapper.
 	finalTx, err := pset.Extract(pFinalized)

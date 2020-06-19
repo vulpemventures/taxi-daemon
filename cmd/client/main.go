@@ -51,9 +51,11 @@ func main() {
 	// Required flags
 	signCommand.StringFlag("pset", "(REQUIRED) Partial Signed Elements Transaction base64 encoded", &psetBase64Sign)
 	signCommand.StringFlag("key", "(REQUIRED) EC Private Key (hex encoded)", &privateKey)
+	// Optional Flags
+	signCommand.BoolFlag("regtest", "Work with local regtest", &regtest)
 	// Action
 	signCommand.Action(func() error {
-		return signAction(psetBase64Sign, privateKey)
+		return signAction(psetBase64Sign, privateKey, regtest)
 	})
 
 	// Run the application

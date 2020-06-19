@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/tiero/ocean/pkg/coinselect"
+	"github.com/tiero/ocean/pkg/explorer/blockstream"
+	"github.com/tiero/ocean/pkg/partial"
 	"github.com/vulpemventures/go-elements/address"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
-	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
-	"github.com/vulpemventures/liquid-taxi/pkg/partial"
-	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 	"github.com/vulpemventures/liquid-taxi/rpc/taxi"
 )
 
@@ -21,7 +21,7 @@ func createAction(from string, to string, asset string, amount int, regtest bool
 	}
 
 	// Explorer
-	e := &explorer.Explorer{BaseURL: explorerURL}
+	e := blockstream.NewExplorer(explorerURL)
 	// Network
 	currentNetwork := network.Liquid
 	if regtest {
@@ -37,14 +37,12 @@ func createAction(from string, to string, asset string, amount int, regtest bool
 		return fmt.Errorf("to: %w", err)
 	}
 
-	assetBytes := wallet.AssetHashToBytes(asset, false)
-
-	utxos, err := e.Unspents(from)
+	utxos, err := e.GetUnspents(from)
 	if err != nil {
 		return fmt.Errorf("unspents: %w", err)
 	}
 
-	selectedUtxos, change, err := wallet.CoinSelect(utxos, uint64(amount), asset)
+	selectedUtxos, change, err := coinselect.CoinSelect(utxos, uint64(amount), asset)
 	if err != nil {
 		return fmt.Errorf("coin selection: %w", err)
 	}
@@ -52,10 +50,10 @@ func createAction(from string, to string, asset string, amount int, regtest bool
 	emptyPset, _ := pset.New([]*transaction.TxInput{}, []*transaction.TxOutput{}, 2, 0)
 	psetWithoutFees := &partial.Partial{Data: emptyPset}
 	for _, utxo := range selectedUtxos {
-		psetWithoutFees.AddInput(utxo.Hash, utxo.Index, &partial.WitnessUtxo{Asset: assetBytes, Value: utxo.Value, Script: fromScript}, nil)
+		psetWithoutFees.AddInput(utxo.Hash(), utxo.Index(), &partial.WitnessUtxo{Asset: asset, Value: utxo.Value(), Script: fromScript}, nil)
 	}
-	psetWithoutFees.AddOutput(assetBytes, uint64(amount), toScript)
-	psetWithoutFees.AddOutput(assetBytes, uint64(change), fromScript)
+	psetWithoutFees.AddOutput(asset, uint64(amount), toScript, false)
+	psetWithoutFees.AddOutput(asset, uint64(change), fromScript, false)
 
 	b64, err := psetWithoutFees.Data.ToBase64()
 	if err != nil {
@@ -82,7 +80,7 @@ func createAction(from string, to string, asset string, amount int, regtest bool
 	psetWithoutFees.Data.UnsignedTx.Outputs = psetWithoutFees.Data.UnsignedTx.Outputs[:1]
 
 	// Add recalculated change after estimate with taxi
-	psetWithoutFees.AddOutput(assetBytes, uint64(change)-replyEstimate.AssetAmount, fromScript)
+	psetWithoutFees.AddOutput(asset, uint64(change)-replyEstimate.AssetAmount, fromScript, false)
 
 	b64, err = psetWithoutFees.Data.ToBase64()
 	if err != nil {
