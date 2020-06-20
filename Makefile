@@ -1,4 +1,4 @@
-.PHONY: build clean deploy-dev deploy-prod protobuf run
+.PHONY: build clean deploy-dev deploy-prod run test
 
 build: 
 	export GO111MODULE=on
@@ -15,3 +15,6 @@ deploy-prod: clean build
 
 run: clean build
 	TAXI_LAMBDA_CONTEXT=false TAXI_EXPLORER_ENDPOINT=http://localhost:3001 TAXI_PRIVATE_KEY=1cc080a4cd371eafcad489a29664af6a7276b362fe783443ce036552482b971d ./bin/taxi
+
+test: clean build
+	go test -v -race ./...
