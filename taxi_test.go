@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 
@@ -20,9 +21,13 @@ import (
 const treasuryHex = "1cc080a4cd371eafcad489a29664af6a7276b362fe783443ce036552482b971d"
 const aliceHex = "bfb96a215dfb07d1a193464174b9ea8e91f2a15bba79800dea838add330f6d86"
 const bobHex = "1804e76aa3016013bc9969103554668913cf697c03c23aecb28136d0e0ac16f0"
-const explorerURL = "https://nigiri.network/liquid/api"
+const defaultExplorer = "http://localhost:3001"
 
 func TestEndToEnd(t *testing.T) {
+	explorerURL, ok := os.LookupEnv("API_URL")
+	if !ok {
+		explorerURL = defaultExplorer
+	}
 	//Explorer
 	e := blockstream.NewExplorer(explorerURL)
 
@@ -38,7 +43,7 @@ func TestEndToEnd(t *testing.T) {
 	bobKeyPair, _ := keypair.FromPrivateKey(bobHex)
 	bob := payment.FromPublicKey(bobKeyPair.PublicKey, &network.Regtest, nil)
 	bobAddress, _ := bob.WitnessPubKeyHash()
-	println(aliceAddress, bobAddress, treasuryAddress)
+	println("alice: "+aliceAddress, "bob: "+bobAddress, "taxi: "+treasuryAddress)
 
 	_, err := faucet(aliceAddress, explorerURL)
 	if err != nil {
@@ -63,10 +68,6 @@ func TestEndToEnd(t *testing.T) {
 	p.AddOutput(network.Regtest.AssetID, bobValue, bob.Script, false)
 	//Alice's change
 	p.AddOutput(network.Regtest.AssetID, aliceUtxoValue-bobValue, alice.Script, false)
-
-	b64, _ := p.Data.ToBase64()
-	println(b64)
-	println()
 
 	// Retrieve Taxi utxos
 	taxiUtxos, err := e.GetUnspents(treasuryAddress)

@@ -25,7 +25,7 @@ var ASSETS = map[string]map[string]bool{
 		"ce091c998b83c78bb71a632313ba3760f1763d9cfcffae02258ffa9865a37bd2": true,
 	},
 	"regtest": {
-		"fd1a64da7a909b648319bc070e6f4d70ad1b515d70aa3183fcb137500e9670be": true,
+		"": true,
 	},
 }
 
@@ -62,7 +62,7 @@ func (s *Server) GetAssetEstimate(ctx context.Context, req *pb.GetAssetEstimateR
 		return nil, twirp.InvalidArgumentError("asset_hash", "is missing")
 	}
 
-	if _, ok := ASSETS[config.GetString(config.NetworkKey)][req.AssetHash]; !ok {
+	if !acceptedAsset(req.GetAssetHash()) {
 		return nil, twirp.InvalidArgumentError("asset_hash", "not accepted as payment")
 	}
 
@@ -104,7 +104,7 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 	if req.AssetHash == "" {
 		return nil, twirp.InvalidArgumentError("asset_hash", "is missing")
 	}
-	if _, ok := ASSETS[config.GetString(config.NetworkKey)][req.AssetHash]; !ok {
+	if !acceptedAsset(req.GetAssetHash()) {
 		return nil, twirp.InvalidArgumentError("asset_hash", "not accepted as payment")
 	}
 
@@ -200,4 +200,18 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 		AssetAmount: totalFeesInAsset,
 		AssetHash:   req.AssetHash,
 	}, nil
+}
+
+func acceptedAsset(asset string) bool {
+	net := config.GetString(config.NetworkKey)
+
+	if net != "liquid" {
+		return true
+	}
+
+	if _, ok := ASSETS[net][asset]; !ok {
+		return false
+	}
+
+	return true
 }
