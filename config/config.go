@@ -31,7 +31,6 @@ func init() {
 	vip.AutomaticEnv()
 
 	vip.SetDefault(NetworkKey, "regtest")
-	vip.SetDefault(MongoEndpoint, "mongodb+srv://lambda:8Q7S1GK5ZOJbSeh5@taxi-qeu36.mongodb.net/taxi-staging?retryWrites=true&w=majority")
 	vip.SetDefault(ExplorerEndpointKey, "https://nigiri.network/liquid/api")
 	vip.SetDefault(ConfigPathKey, "taxi.config")
 	vip.SetDefault(LambdaContextKey, true)
@@ -46,6 +45,10 @@ func init() {
 
 	if vip.GetString(PrivateKeyKey) == "" {
 		log.Panic("[ERROR] PRIVATE_KEY is required")
+	}
+
+	if vip.GetString(MongoEndpoint) == "" {
+		log.Panic("[ERROR] MONGO_ENDPOINT is required")
 	}
 }
 
