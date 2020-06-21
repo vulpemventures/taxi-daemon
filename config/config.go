@@ -7,16 +7,18 @@ import (
 )
 
 const (
-	// NetworkKey defines the network
-	NetworkKey = "NETWORK"
-	//ExplorerEndpointKey defines the explorer to fetch data
-	ExplorerEndpointKey = "EXPLORER_ENDPOINT"
 	// ConfigPathKey defines the config path
 	ConfigPathKey = "CONFIG_PATH"
+	//ExplorerEndpointKey defines the explorer to fetch data
+	ExplorerEndpointKey = "EXPLORER_ENDPOINT"
 	// LambdaContextKey defines if running on AWS Lambda + API Gateway or standalone
 	LambdaContextKey = "LAMBDA_CONTEXT"
 	// ListeningPortKey defines the port to run in a standalone context
 	ListeningPortKey = "LISTENING_PORT"
+	// NetworkKey defines the network
+	NetworkKey = "NETWORK"
+	//MongoEndpoint defines the endpoint for the mongo instance
+	MongoEndpoint = "MONGO_ENDPOINT"
 	// PrivateKeyKey defines the private key used by the taxi
 	PrivateKeyKey = "PRIVATE_KEY"
 )
@@ -29,6 +31,7 @@ func init() {
 	vip.AutomaticEnv()
 
 	vip.SetDefault(NetworkKey, "regtest")
+	vip.SetDefault(MongoEndpoint, "mongodb+srv://lambda:8Q7S1GK5ZOJbSeh5@taxi-qeu36.mongodb.net/taxi-staging?retryWrites=true&w=majority")
 	vip.SetDefault(ExplorerEndpointKey, "https://nigiri.network/liquid/api")
 	vip.SetDefault(ConfigPathKey, "taxi.config")
 	vip.SetDefault(LambdaContextKey, true)
