@@ -8,8 +8,8 @@ on:
 
 jobs:
 
-  build:
-    name: Build
+  integration:
+    name: Integration Tests
     runs-on: ubuntu-latest
     steps:
 
@@ -24,9 +24,9 @@ jobs:
 
     - name: Install Nigiri
       run:  |
-        mkdir -p nigiri-tmp; cd nigiri-tmp
+        mkdir -p tmp; cd tmp
         curl https://travis.nigiri.network | bash; cd ..
-        docker-compose -f  nigiri-tmp/docker-compose.yml up -d
+        docker-compose -f  tmp/docker-compose.yml up -d
     
     - name: Run Mongo instance
       run: docker run -d --network host --name mongo-box mongo
