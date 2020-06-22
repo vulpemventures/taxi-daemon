@@ -1,4 +1,6 @@
 # liquid-taxi
+![Go](https://github.com/vulpemventures/liquid-taxi/workflows/Go/badge.svg)
+
 🚕 Liquid Taxi backend 
 
 ## Development
