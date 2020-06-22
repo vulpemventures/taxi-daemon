@@ -14,10 +14,10 @@ import (
 // GetAssetEstimate implements GetAssetEstimate rpc
 func (s *Server) GetAssetEstimate(ctx context.Context, req *pb.GetAssetEstimateRequest) (res *pb.GetAssetEstimateReply, err error) {
 	if req.Unsigned == nil || req.Unsigned.GetPset() == "" {
-		return nil, twirp.InvalidArgumentError("unsigned pset", "is missing")
+		return nil, twirp.RequiredArgumentError("unsigned.pset")
 	}
 	if req.AssetHash == "" {
-		return nil, twirp.InvalidArgumentError("asset_hash", "is missing")
+		return nil, twirp.RequiredArgumentError("asset_hash")
 	}
 
 	if !notAcceptedAsset(req.GetAssetHash()) {

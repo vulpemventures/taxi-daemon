@@ -12,17 +12,17 @@ $ git clone https://github.com/vulpemventures/liquid-taxi
 ## Run
 
 ```sh
-# You need to run Nigri on your machine
-# nigiri start --liquid
+$ make start # Run Nigiri and Mongo
 $ make run
+$ make stop # Stop and delete the containers
 ```
 
 ### Run test 
 
 ```sh
-# You need to run Nigri on your machine
-# nigiri start --liquid
+$ make start  # Run Nigiri and Mongo
 $ make test
+$ make stop # Stop and delete the containers
 ```
 
 ## Deployment 

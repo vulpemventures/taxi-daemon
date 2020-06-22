@@ -43,13 +43,14 @@ func init() {
 		log.Println("[INFO] No config found. Skip")
 	}
 
+	if vip.GetString(MongoEndpoint) == "" {
+		log.Panic("[ERROR] MONGO_ENDPOINT is required")
+	}
+
 	if vip.GetString(PrivateKeyKey) == "" {
 		log.Panic("[ERROR] PRIVATE_KEY is required")
 	}
 
-	if vip.GetString(MongoEndpoint) == "" {
-		log.Panic("[ERROR] MONGO_ENDPOINT is required")
-	}
 }
 
 // GetString ...

@@ -3,7 +3,6 @@ package taxiserver
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/tiero/ocean/pkg/coinselect"
 	"github.com/tiero/ocean/pkg/explorer/blockstream"
@@ -13,6 +12,7 @@ import (
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/liquid-taxi/config"
+	"github.com/vulpemventures/liquid-taxi/internal/storage"
 	"github.com/vulpemventures/liquid-taxi/pkg/fees"
 	"github.com/vulpemventures/liquid-taxi/pkg/price"
 
@@ -22,11 +22,12 @@ import (
 // TopupWithAsset implements TopupWithAsset rpc
 func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetRequest) (res *pb.TopupWithAssetReply, err error) {
 	if req.Unsigned == nil || req.Unsigned.GetPset() == "" {
-		return nil, twirp.InvalidArgumentError("unsigned pset", "is missing")
+		return nil, twirp.RequiredArgumentError("unsigned.pset")
 	}
 	if req.AssetHash == "" {
-		return nil, twirp.InvalidArgumentError("asset_hash", "is missing")
+		return nil, twirp.RequiredArgumentError("asset_hash")
 	}
+
 	if !notAcceptedAsset(req.GetAssetHash()) {
 		return nil, twirp.InvalidArgumentError("asset_hash", "not accepted as payment")
 	}
@@ -99,31 +100,32 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 		return nil, twirp.InternalError(err.Error())
 	}
 
+	// Persist order for history purpose
+	store, err := storage.NewStorage(config.GetString(config.MongoEndpoint))
+	if err != nil {
+		return nil, twirp.InternalError(fmt.Errorf("Storage: %w", err).Error())
+	}
+	orderID, err := store.InsertOrder(int(pb.Order_ASSET), req.Unsigned.GetPset(), base64, breakdown)
+	if err != nil {
+		return nil, twirp.InternalError(fmt.Errorf("Storage: %w", err).Error())
+	}
+
+	// Get back the whole order to show to the user
+	order, notFound, err := store.GetOrderByID(orderID)
+	if !notFound && err != nil {
+		return nil, twirp.InternalError(fmt.Errorf("Storage: %w", err).Error())
+	}
+	if notFound {
+		return nil, twirp.InternalError(fmt.Errorf("Storage: %w", err).Error())
+	}
+
+	store.Close()
+
 	res = &pb.TopupWithAssetReply{
-		Order: &pb.Order{
-			OrderId:     "random1234",
-			Status:      pb.Order_UNPAID,
-			IsCompleted: false,
-			Unsigned:    req.Unsigned,
-			Breakdown: &pb.Breakdown{
-				Size:       breakdown.Size,
-				Fee:        breakdown.Fee,
-				Spread:     breakdown.Spread,
-				SatPerByte: breakdown.SatPerByte,
-				Rate:       breakdown.Rate,
-				Total:      breakdown.Total,
-			},
-			Partial: &pb.PartialWithFees{
-				Pset: base64,
-			},
-			CreatedAt: time.Now().Unix(),
-			Method:    pb.Order_ASSET,
-		},
+		Order:       order.ToProtobuf(orderID),
 		AssetAmount: totalFeesInAsset,
 		AssetHash:   req.AssetHash,
 	}
-
-	println(pb.Order_ASSET.String())
 
 	return res, nil
 }

@@ -6,6 +6,7 @@ require (
 	github.com/apex/gateway v1.1.1
 	github.com/aws/aws-lambda-go v1.17.0 // indirect
 	github.com/btcsuite/btcd v0.20.1-beta // indirect
+	github.com/golang/mock v1.4.3 // indirect
 	github.com/golang/protobuf v1.4.2
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leaanthony/clir v1.0.4
@@ -17,7 +18,7 @@ require (
 	github.com/tj/assert v0.0.3 // indirect
 	github.com/twitchtv/twirp v5.12.0+incompatible
 	github.com/vulpemventures/go-elements v0.0.3-0.20200615095133-39cfed134246
-	github.com/vulpemventures/taxi-protobuf v0.0.0-20200619184842-90bda68f6852
+	github.com/vulpemventures/taxi-protobuf v0.0.0-20200622110017-09936ff5c201
 	go.mongodb.org/mongo-driver v1.3.4
 	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37 // indirect
 	google.golang.org/protobuf v1.24.0

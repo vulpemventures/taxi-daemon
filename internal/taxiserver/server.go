@@ -33,11 +33,6 @@ func (s *Server) Topup(ctx context.Context, req *pb.TopupRequest) (res *pb.Topup
 	return &pb.TopupReply{}, nil
 }
 
-// GetTopup implements GetTopup rpc
-func (s *Server) GetTopup(ctx context.Context, req *pb.GetTopupRequest) (res *pb.GetTopupReply, err error) {
-	return &pb.GetTopupReply{}, nil
-}
-
 // TopupWithKey implements TopupWithKey rpc
 func (s *Server) TopupWithKey(ctx context.Context, req *pb.TopupWithKeyRequest) (res *pb.TopupWithKeyReply, err error) {
 	return &pb.TopupWithKeyReply{}, nil
