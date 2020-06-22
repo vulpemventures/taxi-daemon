@@ -17,6 +17,9 @@ install:
 env:
   - API_URL=http://localhost:3001
 
+before_script:
+  - make faucet
+  
 script:
   - if [ -n "$(gofmt -l .)" ]; then echo "Go code is not formatted"; exit 1; fi
   - go test -count=1 -race ./... -v
