@@ -50,12 +50,12 @@ func TestEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 	_, err = faucet(treasuryAddress, explorerURL)
 	if err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 	// Retrieve Alice utxos
 	aliceUtxos, err := e.GetUnspents(aliceAddress)
 	if err != nil {
