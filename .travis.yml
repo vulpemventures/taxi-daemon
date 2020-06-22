@@ -11,6 +11,8 @@ install:
   - mkdir -p tmp; cd tmp
   - curl https://travis.nigiri.network | bash; cd ..
   - docker-compose -f tmp/docker-compose.yml up -d
+  # Run Mongo 
+  - docker run -d --network host --name mongo-box mongo
 
 env:
   - API_URL=http://localhost:3001
@@ -21,3 +23,5 @@ script:
 
 after_script:
   - docker-compose -f tmp/docker-compose.yml down && rm -rf tmp
+  - docker stop mongo-box
+  - docker rm mongo-box

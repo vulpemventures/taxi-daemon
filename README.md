@@ -3,6 +3,13 @@
 
 ## Development
 
+### Requirements
+
+* Go
+* Docker
+* Docker Compose
+
+
 ### Clone
 
 ```sh
@@ -12,33 +19,37 @@ $ git clone https://github.com/vulpemventures/liquid-taxi
 ## Run
 
 ```sh
-# You need to run Nigri on your machine
-# nigiri start --liquid
+$ make start # Run Nigiri and Mongo
 $ make run
+$ make stop # Stop and delete the containers
 ```
 
 ### Run test 
 
 ```sh
-# You need to run Nigri on your machine
-# nigiri start --liquid
+$ make start  # Run Nigiri and Mongo
 $ make test
+$ make stop # Stop and delete the containers
 ```
 
 ## Deployment 
 
-You need the `serverless` CLI installed locally and an linked AWS account
+### Requirements
+
+* Go
+* Serverless CLI
+* AWS CLI
 
 ### Staging
 
 ```sh
-$ make deploy-dev
+$ make KEY=<private> MONGO=<uri> STAGE=dev deploy
 ```
 
 ### Production
 
 ```sh
-$ make deploy-prod
+$ make KEY=<private> MONGO=<uri> STAGE=production deploy
 ```
 
 
