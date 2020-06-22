@@ -43,13 +43,13 @@ $ make stop # Stop and delete the containers
 ### Staging
 
 ```sh
-$ make deploy-dev
+$ make KEY=<private> MONGO=<uri> STAGE=dev deploy
 ```
 
 ### Production
 
 ```sh
-$ make deploy-prod
+$ make KEY=<private> MONGO=<uri> STAGE=production deploy
 ```
 
 

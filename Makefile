@@ -7,11 +7,9 @@ build:
 clean: 
 	rm -rf ./bin
 
-deploy-dev: clean build
-	sls deploy --verbose --stage dev --region eu-west-1
+deploy: clean build
+	sls deploy --verbose --stage ${STAGE} --region eu-west-1
 
-deploy-prod: clean build
-	sls deploy --verbose --stage production --region eu-west-1
 
 faucet:
 	curl -X POST -d '{"address": "ert1qlg343tpldc4wvjxn3jdq2qs35r8j5yd5kjfrrt"}' http://localhost:3001/faucet
