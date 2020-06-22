@@ -116,8 +116,18 @@ func (s *Storage) CheckLock(txid string, vout int) (isLocked bool, err error) {
 func (s *Storage) LockUnspent(txid string, vout int) error {
 	locks := s.Client.Database(s.DatabaseName).Collection("locks")
 
-	document := &Unspent{txid, vout}
-	_, err := locks.InsertOne(context.Background(), document)
+	// 5 minutes
+	seconds := int32(60 * 5)
+	_, err := locks.Indexes().CreateOne(context.Background(), mongo.IndexModel{Keys: bson.M{
+		"createdat": 1,
+	}, Options: &options.IndexOptions{ExpireAfterSeconds: &seconds}})
+	if err != nil {
+		return fmt.Errorf("insert index: %w", err)
+	}
+
+	now := primitive.NewDateTimeFromTime(time.Now())
+	document := &Unspent{txid, vout, &now}
+	_, err = locks.InsertOne(context.Background(), document)
 	if err != nil {
 		return fmt.Errorf("insert: %w", err)
 	}
@@ -129,7 +139,7 @@ func (s *Storage) LockUnspent(txid string, vout int) error {
 func (s *Storage) UnlockUnspent(txid string, vout int) error {
 	locks := s.Client.Database(s.DatabaseName).Collection("locks")
 
-	document := &Unspent{txid, vout}
+	document := &Unspent{txid, vout, nil}
 	_, err := locks.DeleteOne(context.Background(), document)
 	if err != nil {
 		return fmt.Errorf("insert: %w", err)
@@ -140,8 +150,9 @@ func (s *Storage) UnlockUnspent(txid string, vout int) error {
 
 //Unspent defines the locked unspent defined by the outpoint
 type Unspent struct {
-	TxID string
-	Vout int
+	TxID      string
+	Vout      int
+	CreatedAt *primitive.DateTime
 }
 
 //Order defines the stored order
