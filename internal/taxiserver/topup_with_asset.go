@@ -69,18 +69,18 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 	e := blockstream.NewExplorer(config.GetString(config.ExplorerEndpointKey))
 	taxiUtxos, err := e.GetUnspents(taxiAddress)
 	if err != nil {
-		return nil, twirp.InternalError(fmt.Errorf("Explorer: %w", err).Error())
+		return nil, twirp.InternalErrorWith(fmt.Errorf("Explorer: %w", err))
 	}
 
 	BitcoinAsset := NETWORK[config.GetString(config.NetworkKey)].AssetID
 	selectedUtxos, change, err := coinselect.CoinSelect(taxiUtxos, breakdown.Fee, BitcoinAsset)
 	if err != nil {
-		return nil, twirp.InternalError(err.Error())
+		return nil, twirp.InternalErrorWith(fmt.Errorf("Coin Select: %w", err))
 	}
 
 	store, err := storage.NewStorage(config.GetString(config.MongoEndpoint))
 	if err != nil {
-		return nil, twirp.InternalError(fmt.Errorf("Storage: %w", err).Error())
+		return nil, twirp.InternalErrorWith(fmt.Errorf("Storage: %w", err))
 	}
 
 	//var locked []*storage.Unspent
@@ -88,11 +88,15 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 	for _, utxo := range selectedUtxos {
 		txid := utxo.Hash()
 		vout := int(utxo.Index())
-		if isLocked, _ := store.CheckLock(txid, vout); !isLocked {
+		isLocked, err := store.CheckLock(txid, vout)
+		if err != nil {
+			return nil, twirp.InternalErrorWith(fmt.Errorf("Storage: %w", err))
+		}
+		if !isLocked {
 			psetWithFees.AddInput(utxo.Hash(), utxo.Index(), &partial.WitnessUtxo{Asset: BitcoinAsset, Value: utxo.Value(), Script: taxiPayment.Script}, nil)
 			// Lock the utxo
 			if err := store.LockUnspent(txid, vout); err != nil {
-				return nil, twirp.InternalErrorWith(err)
+				return nil, twirp.InternalErrorWith(fmt.Errorf("Storage: %w", err))
 			}
 			//locked = append(locked, &storage.Unspent{TxID: txid, Vout: vout})
 		}
