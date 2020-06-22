@@ -1,0 +1,45 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Install Nigiri
+      run:  |
+        mkdir -p tmp; cd tmp
+        curl https://travis.nigiri.network | bash; cd ..
+        docker-compose -f tmp/docker-compose.yml up -d
+    
+    - name: Create mongo Docker container
+      id: build_mongo_docker
+      uses: DigiPie/mongo-action@v1.0.0
+      with:
+        image-version: latest
+        port: 27017
+
+    - name: Set up Go 1.14.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.14
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Get dependencies
+      run: go get -v -t -d ./...
+
+    - name: Format
+      run: if [ -n "$(gofmt -l .)" ]; then echo "Go code is not formatted"; exit 1; fi
+
+    - name: Test
+      run: go test -count=1 -race ./... -v
