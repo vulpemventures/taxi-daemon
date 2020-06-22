@@ -29,6 +29,10 @@ func (s *Server) GetTopup(ctx context.Context, req *pb.GetTopupRequest) (*pb.Get
 		return nil, twirp.NotFoundError("order does not exists")
 	}
 
+	if err := store.Close(); err != nil {
+		return nil, twirp.InternalError(fmt.Errorf("Storage: %w", err).Error())
+	}
+
 	return &pb.GetTopupReply{
 		Order: order.ToProtobuf(req.GetOrderId()),
 	}, nil
