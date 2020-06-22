@@ -3,6 +3,13 @@
 
 ## Development
 
+### Requirements
+
+* Go
+* Docker
+* Docker Compose
+
+
 ### Clone
 
 ```sh
@@ -27,7 +34,11 @@ $ make stop # Stop and delete the containers
 
 ## Deployment 
 
-You need the `serverless` CLI installed locally and an linked AWS account
+### Requirements
+
+* Go
+* Serverless CLI
+* AWS CLI
 
 ### Staging
 
