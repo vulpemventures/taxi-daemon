@@ -78,9 +78,28 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 		return nil, twirp.InternalError(err.Error())
 	}
 
+	store, err := storage.NewStorage(config.GetString(config.MongoEndpoint))
+	if err != nil {
+		return nil, twirp.InternalError(fmt.Errorf("Storage: %w", err).Error())
+	}
+
+	//var locked []*storage.Unspent
 	psetWithFees := &partial.Partial{Data: decoded, Network: &currentNetwork}
 	for _, utxo := range selectedUtxos {
-		psetWithFees.AddInput(utxo.Hash(), utxo.Index(), &partial.WitnessUtxo{Asset: BitcoinAsset, Value: utxo.Value(), Script: taxiPayment.Script}, nil)
+		txid := utxo.Hash()
+		vout := int(utxo.Index())
+		if isLocked, _ := store.CheckLock(txid, vout); !isLocked {
+			psetWithFees.AddInput(utxo.Hash(), utxo.Index(), &partial.WitnessUtxo{Asset: BitcoinAsset, Value: utxo.Value(), Script: taxiPayment.Script}, nil)
+			// Lock the utxo
+			if err := store.LockUnspent(txid, vout); err != nil {
+				return nil, twirp.InternalErrorWith(err)
+			}
+			//locked = append(locked, &storage.Unspent{TxID: txid, Vout: vout})
+		}
+	}
+	// this means we don't have any unlocked utxo to spend.
+	if len(psetWithFees.Data.Inputs) == givenInputsLen {
+		return nil, twirp.InternalError("All utxos are locked. Try in again in 5 minutes")
 	}
 	// payout to taxi expressed in Asset
 	psetWithFees.AddOutput(req.AssetHash, totalFeesInAsset, taxiPayment.Script, false)
@@ -88,38 +107,37 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 	psetWithFees.AddOutput(BitcoinAsset, change, taxiPayment.Script, false)
 	psetWithFees.AddOutput(BitcoinAsset, breakdown.Fee, []byte{}, false)
 
+	// NOTICE: here we start the loop from givenInputsLenght so we sign ony the taxi inputs.
 	for i := givenInputsLen; i < len(psetWithFees.Data.Inputs); i++ {
 		err := psetWithFees.SignWithPrivateKey(i, keyPair)
 		if err != nil {
-			return nil, twirp.InternalError(err.Error())
+			return nil, twirp.InternalErrorWith(err)
 		}
 	}
 
 	base64, err := psetWithFees.Data.ToBase64()
 	if err != nil {
-		return nil, twirp.InternalError(err.Error())
+		return nil, twirp.InternalErrorWith(err)
 	}
 
-	// Persist order for history purpose
-	store, err := storage.NewStorage(config.GetString(config.MongoEndpoint))
-	if err != nil {
-		return nil, twirp.InternalError(fmt.Errorf("Storage: %w", err).Error())
-	}
+	// Persist order for history purpose and lock utxos
 	orderID, err := store.InsertOrder(int(pb.Order_ASSET), req.Unsigned.GetPset(), base64, breakdown)
 	if err != nil {
-		return nil, twirp.InternalError(fmt.Errorf("Storage: %w", err).Error())
+		return nil, twirp.InternalErrorWith(err)
 	}
 
 	// Get back the whole order to show to the user
 	order, notFound, err := store.GetOrderByID(orderID)
 	if !notFound && err != nil {
-		return nil, twirp.InternalError(fmt.Errorf("Storage: %w", err).Error())
+		return nil, twirp.InternalErrorWith(err)
 	}
 	if notFound {
-		return nil, twirp.InternalError(fmt.Errorf("Storage: %w", err).Error())
+		return nil, twirp.InternalErrorWith(err)
 	}
 
-	store.Close()
+	if err := store.Close(); err != nil {
+		return nil, twirp.InternalErrorWith(err)
+	}
 
 	res = &pb.TopupWithAssetReply{
 		Order:       order.ToProtobuf(orderID),

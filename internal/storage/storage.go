@@ -18,7 +18,6 @@ import (
 //Storage holds the Mongo client
 type Storage struct {
 	Client       *mongo.Client
-	Ctx          context.Context
 	DatabaseName string
 }
 
@@ -51,6 +50,27 @@ func (s *Storage) Close() error {
 	return nil
 }
 
+//GetOrderByID let get an order by id
+func (s *Storage) GetOrderByID(id string) (order *Order, notFound bool, err error) {
+	orderID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, false, fmt.Errorf("objectID: %w", err)
+	}
+
+	orders := s.Client.Database(s.DatabaseName).Collection("orders")
+
+	filter := bson.M{"_id": orderID}
+	err = orders.FindOne(context.Background(), filter).Decode(&order)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, true, fmt.Errorf("FindOne: %w", err)
+		}
+		return nil, false, fmt.Errorf("FindOne: %w", err)
+	}
+
+	return order, false, nil
+}
+
 // InsertOrder let add an order
 func (s *Storage) InsertOrder(method int, unsigned, partial string, breakdown *fees.Breakdown) (string, error) {
 
@@ -66,7 +86,7 @@ func (s *Storage) InsertOrder(method int, unsigned, partial string, breakdown *f
 		CreatedAt:   time.Now().Unix(),
 	}
 
-	result, err := orders.InsertOne(s.Ctx, document)
+	result, err := orders.InsertOne(context.Background(), document)
 	if err != nil {
 		return "", fmt.Errorf("insert: %w", err)
 	}
@@ -75,25 +95,53 @@ func (s *Storage) InsertOrder(method int, unsigned, partial string, breakdown *f
 	return objID.Hex(), nil
 }
 
-//GetOrderByID let get an order by id
-func (s *Storage) GetOrderByID(id string) (order *Order, notFound bool, err error) {
-	orderID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, false, fmt.Errorf("objectID: %w", err)
-	}
+//CheckLock compare the given unspent if present in the locks collection
+func (s *Storage) CheckLock(txid string, vout int) (isLocked bool, err error) {
+	locks := s.Client.Database(s.DatabaseName).Collection("locks")
 
-	orders := s.Client.Database(s.DatabaseName).Collection("orders")
-
-	filter := bson.M{"_id": orderID}
-	err = orders.FindOne(s.Ctx, filter).Decode(&order)
+	var uns Unspent
+	filter := bson.M{"txid": txid, "vout": vout}
+	err = locks.FindOne(context.Background(), filter).Decode(&uns)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, true, fmt.Errorf("FindOne: %w", err)
+			return false, nil
 		}
-		return nil, false, fmt.Errorf("FindOne: %w", err)
+		return true, fmt.Errorf("GetLock: %w", err)
 	}
 
-	return order, false, nil
+	return true, nil
+}
+
+//LockUnspent lock an UTXO so will not be picked up by others
+func (s *Storage) LockUnspent(txid string, vout int) error {
+	locks := s.Client.Database(s.DatabaseName).Collection("locks")
+
+	document := &Unspent{txid, vout}
+	_, err := locks.InsertOne(context.Background(), document)
+	if err != nil {
+		return fmt.Errorf("insert: %w", err)
+	}
+
+	return nil
+}
+
+//UnlockUnspent lock an UTXO so will not be picked up by others
+func (s *Storage) UnlockUnspent(txid string, vout int) error {
+	locks := s.Client.Database(s.DatabaseName).Collection("locks")
+
+	document := &Unspent{txid, vout}
+	_, err := locks.DeleteOne(context.Background(), document)
+	if err != nil {
+		return fmt.Errorf("insert: %w", err)
+	}
+
+	return nil
+}
+
+//Unspent defines the locked unspent defined by the outpoint
+type Unspent struct {
+	TxID string
+	Vout int
 }
 
 //Order defines the stored order
