@@ -5,19 +5,31 @@ go 1.14
 require (
 	github.com/apex/gateway v1.1.1
 	github.com/aws/aws-lambda-go v1.17.0 // indirect
+	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
+	github.com/kisielk/errcheck v1.2.0 // indirect
+	github.com/klauspost/compress v1.10.10 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/mitchellh/mapstructure v1.3.2 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
+	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/spf13/afero v1.3.1 // indirect
+	github.com/spf13/cast v1.3.1 // indirect
+	github.com/spf13/jwalterweatherman v1.1.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.6.1
-	github.com/tiero/ocean v0.0.0-20200619163011-0ba1e710a4aa
+	github.com/tiero/ocean v0.0.0-20200708170122-11e440dcc259
 	github.com/tj/assert v0.0.3 // indirect
 	github.com/twitchtv/twirp v5.12.0+incompatible
-	github.com/vulpemventures/go-elements v0.0.3-0.20200615095133-39cfed134246
+	github.com/vulpemventures/go-elements v0.0.4-0.20200707142930-e477e50f71e9
 	github.com/vulpemventures/taxi-protobuf v0.0.0-20200622110017-09936ff5c201
-	go.mongodb.org/mongo-driver v1.3.4
-	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37 // indirect
-	google.golang.org/protobuf v1.24.0 // indirect
+	go.mongodb.org/mongo-driver v1.3.5
+	golang.org/x/crypto v0.0.0-20200707235045-ab33eee955e0 // indirect
+	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208 // indirect
+	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
+	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
+	gopkg.in/ini.v1 v1.57.0 // indirect
 )

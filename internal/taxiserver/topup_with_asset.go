@@ -73,7 +73,8 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 	}
 
 	BitcoinAsset := NETWORK[config.GetString(config.NetworkKey)].AssetID
-	selectedUtxos, change, err := coinselect.CoinSelect(taxiUtxos, breakdown.Fee, BitcoinAsset)
+	coins := &coinselect.Coins{Utxos: taxiUtxos}
+	selectedUtxos, change, err := coins.CoinSelect(breakdown.Fee, BitcoinAsset)
 	if err != nil {
 		return nil, twirp.InternalErrorWith(fmt.Errorf("Coin Select: %w", err))
 	}
@@ -83,7 +84,6 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 		return nil, twirp.InternalErrorWith(fmt.Errorf("Storage: %w", err))
 	}
 
-	//var locked []*storage.Unspent
 	psetWithFees := &partial.Partial{Data: decoded, Network: &currentNetwork}
 	for _, utxo := range selectedUtxos {
 		txid := utxo.Hash()
@@ -98,7 +98,6 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 			if err := store.LockUnspent(txid, vout); err != nil {
 				return nil, twirp.InternalErrorWith(fmt.Errorf("Storage: %w", err))
 			}
-			//locked = append(locked, &storage.Unspent{TxID: txid, Vout: vout})
 		}
 	}
 	// this means we don't have any unlocked utxo to spend.
