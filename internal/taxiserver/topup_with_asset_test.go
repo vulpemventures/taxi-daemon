@@ -25,6 +25,7 @@ const bobHex = "1804e76aa3016013bc9969103554668913cf697c03c23aecb28136d0e0ac16f0
 const defaultExplorer = "http://localhost:3001"
 
 func TestTopupWithAsset(t *testing.T) {
+	time.Sleep(2 * time.Second)
 	explorerURL, ok := os.LookupEnv("TAXI_EXPLORER_ENDPOINT")
 	if !ok {
 		explorerURL = defaultExplorer
