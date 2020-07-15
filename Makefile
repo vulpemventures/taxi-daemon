@@ -31,5 +31,9 @@ run: clean build faucet
 	./bin/taxi
 
 
-test: clean build
+test: stop start clean build faucet
+	export TAXI_LAMBDA_CONTEXT=false; \
+	export TAXI_MONGO_ENDPOINT=mongodb://127.0.0.1:27017/test; \
+	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
+	export TAXI_PRIVATE_KEY=1cc080a4cd371eafcad489a29664af6a7276b362fe783443ce036552482b971d; \
 	go test -v -race ./...

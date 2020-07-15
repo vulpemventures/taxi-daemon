@@ -73,12 +73,14 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 	}
 
 	BitcoinAsset := NETWORK[config.GetString(config.NetworkKey)].AssetID
+	BitcoinFee := breakdown.Fee
 	coins := &coinselect.Coins{Utxos: taxiUtxos}
-	selectedUtxos, change, err := coins.CoinSelect(breakdown.Fee, BitcoinAsset)
+	selectedUtxos, change, err := coins.CoinSelect(BitcoinFee, BitcoinAsset)
 	if err != nil {
 		return nil, twirp.InternalErrorWith(fmt.Errorf("Coin Select: %w", err))
 	}
 
+	// Mongo DB connection
 	store, err := storage.NewStorage(config.GetString(config.MongoEndpoint))
 	if err != nil {
 		return nil, twirp.InternalErrorWith(fmt.Errorf("Storage: %w", err))
@@ -93,7 +95,11 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 			return nil, twirp.InternalErrorWith(fmt.Errorf("Storage: %w", err))
 		}
 		if !isLocked {
-			psetWithFees.AddInput(utxo.Hash(), utxo.Index(), &partial.WitnessUtxo{Asset: BitcoinAsset, Value: utxo.Value(), Script: taxiPayment.Script}, nil)
+			psetWithFees.AddInput(utxo.Hash(), utxo.Index(), &partial.WitnessUtxo{
+				Asset:  BitcoinAsset,
+				Value:  utxo.Value(),
+				Script: taxiPayment.WitnessScript,
+			}, nil)
 			// Lock the utxo
 			if err := store.LockUnspent(txid, vout); err != nil {
 				return nil, twirp.InternalErrorWith(fmt.Errorf("Storage: %w", err))
@@ -105,10 +111,10 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 		return nil, twirp.InternalError("All utxos are locked. Try in again in 5 minutes")
 	}
 	// payout to taxi expressed in Asset
-	psetWithFees.AddOutput(req.AssetHash, totalFeesInAsset, taxiPayment.Script, false)
+	psetWithFees.AddOutput(req.AssetHash, totalFeesInAsset, taxiPayment.WitnessScript, false)
 	// Taxi adds Fee LBTC output and his change
-	psetWithFees.AddOutput(BitcoinAsset, change, taxiPayment.Script, false)
-	psetWithFees.AddOutput(BitcoinAsset, breakdown.Fee, []byte{}, false)
+	psetWithFees.AddOutput(BitcoinAsset, change, taxiPayment.WitnessScript, false)
+	psetWithFees.AddOutput(BitcoinAsset, BitcoinFee, []byte{}, false)
 
 	// NOTICE: here we start the loop from givenInputsLenght so we sign ony the taxi inputs.
 	for i := givenInputsLen; i < len(psetWithFees.Data.Inputs); i++ {

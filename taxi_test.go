@@ -59,7 +59,7 @@ func TestEndToEnd(t *testing.T) {
 	// Retrieve Alice utxos
 	aliceUtxos, err := e.GetUnspents(aliceAddress)
 	if err != nil {
-		panic(err.Error())
+		t.Fatal(err)
 	}
 	aliceUtxoValue := aliceUtxos[0].Value()
 	bobValue := uint64(5000000)
@@ -67,53 +67,59 @@ func TestEndToEnd(t *testing.T) {
 	emptyPset, _ := pset.New([]*transaction.TxInput{}, []*transaction.TxOutput{}, 2, 0)
 	p := &partial.Partial{Data: emptyPset}
 
-	p.AddInput(aliceUtxos[0].Hash(), aliceUtxos[0].Index(), &partial.WitnessUtxo{network.Regtest.AssetID, aliceUtxoValue, alice.Script}, nil)
-	p.AddOutput(network.Regtest.AssetID, bobValue, bob.Script, false)
+	p.AddInput(aliceUtxos[0].Hash(), aliceUtxos[0].Index(), &partial.WitnessUtxo{network.Regtest.AssetID, aliceUtxoValue, alice.WitnessScript}, nil)
+	p.AddOutput(network.Regtest.AssetID, bobValue, bob.WitnessScript, false)
 	//Alice's change
-	p.AddOutput(network.Regtest.AssetID, aliceUtxoValue-bobValue, alice.Script, false)
+	p.AddOutput(network.Regtest.AssetID, aliceUtxoValue-bobValue, alice.WitnessScript, false)
+
+	b64, err := p.Data.ToBase64()
+	if err != nil {
+		t.Fatalf("base64: %s", err)
+	}
+	println(b64)
 
 	// Retrieve Taxi utxos
 	taxiUtxos, err := e.GetUnspents(treasuryAddress)
 	if err != nil {
-		panic(err.Error())
+		t.Fatal(err)
 	}
 
 	feeValue := uint64(500)
 	taxiUtxoValue := uint64(taxiUtxos[0].Value())
 	// Add input for fee
-	p.AddInput(taxiUtxos[0].Hash(), uint32(taxiUtxos[0].Index()), &partial.WitnessUtxo{network.Regtest.AssetID, taxiUtxoValue, treasury.Script}, nil)
+	p.AddInput(taxiUtxos[0].Hash(), uint32(taxiUtxos[0].Index()), &partial.WitnessUtxo{network.Regtest.AssetID, taxiUtxoValue, treasury.WitnessScript}, nil)
 	// Taxi's change
-	p.AddOutput(network.Regtest.AssetID, taxiUtxoValue-feeValue, treasury.Script, false)
+	p.AddOutput(network.Regtest.AssetID, taxiUtxoValue-feeValue, treasury.WitnessScript, false)
 	// Taxi adds Fee output
 	p.AddOutput(network.Regtest.AssetID, feeValue, []byte{}, false)
 
 	// Taxi signs last added input with his own private key
 	err = p.SignWithPrivateKey(1, treasuryKeyPair)
 	if err != nil {
-		panic(err.Error())
+		t.Fatal(err)
 	}
 
 	// back to Alice now signs with his privatekey
 	err = p.SignWithPrivateKey(0, aliceKeyPair)
 	if err != nil {
-		panic(err.Error())
+		t.Fatal(err)
 	}
 	pFinalized := p.Data
 	err = pset.FinalizeAll(pFinalized)
 	if err != nil {
-		panic(err.Error())
+		t.Fatal(err)
 	}
 
 	// Extract the final signed transaction from the Pset wrapper.
 	finalTx, err := pset.Extract(pFinalized)
 	if err != nil {
-		panic(err.Error())
+		t.Fatal(err)
 	}
 
 	// Serialize the transaction and try to broadcast.
 	txHex, err := finalTx.ToHex()
 	if err != nil {
-		panic(err.Error())
+		t.Fatal(err)
 	}
 	res, err := e.Broadcast(txHex)
 	if err != nil {
