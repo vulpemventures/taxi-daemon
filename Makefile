@@ -5,7 +5,13 @@ build:
 	env GOOS=linux go build -ldflags="-s -w" -o bin/taxi cmd/server/main.go
 	
 clean: 
-	rm -rf ./bin
+	@echo "Clean..."
+	@rm -rf ./bin
+
+## gofmt: Go Format
+fmt:
+	@echo "Gofmt..."
+	@if [ -n "$(gofmt -l .)" ]; then echo "Go code is not formatted"; exit 1; fi
 
 deploy: clean build
 	sls deploy --verbose --stage ${STAGE} --region eu-west-1
@@ -30,6 +36,9 @@ run: clean build faucet
 	export TAXI_PRIVATE_KEY=1cc080a4cd371eafcad489a29664af6a7276b362fe783443ce036552482b971d; \
 	./bin/taxi
 
-
-test: clean build
+test: fmt clean build faucet
+	export TAXI_LAMBDA_CONTEXT=false; \
+	export TAXI_MONGO_ENDPOINT=mongodb://127.0.0.1:27017/test; \
+	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
+	export TAXI_PRIVATE_KEY=1cc080a4cd371eafcad489a29664af6a7276b362fe783443ce036552482b971d; \
 	go test -v -race ./...
