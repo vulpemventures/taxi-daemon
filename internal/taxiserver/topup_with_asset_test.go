@@ -77,7 +77,7 @@ func TestTopupWithAsset(t *testing.T) {
 	replyEstimate, err := serv.GetAssetEstimate(context.Background(), &taxi.GetAssetEstimateRequest{
 		Unsigned: &taxi.Unsigned{
 			Pset:       b64,
-			SatPerByte: 0.1,
+			SatPerByte: 0.5,
 		},
 		AssetHash: asset,
 	})
@@ -105,7 +105,7 @@ func TestTopupWithAsset(t *testing.T) {
 	replyTopup, err := serv.TopupWithAsset(context.Background(), &taxi.TopupWithAssetRequest{
 		Unsigned: &taxi.Unsigned{
 			Pset:       b64,
-			SatPerByte: 0.1,
+			SatPerByte: 0.5,
 		},
 		AssetHash: asset,
 	})

@@ -10,7 +10,7 @@ type Breakdown struct {
 	Total      uint64
 }
 
-const defaultSatPerByte float32 = 0.1
+const defaultSatPerByte float32 = 0.5
 const defaultRate float32 = 0.1
 
 // CalculateWitness estimates the size and bitcoin fees (both network and for the topup service) of a segwit transaction
