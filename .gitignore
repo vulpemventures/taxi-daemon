@@ -17,3 +17,4 @@ bin/
 
 #sls
 .serverless/
+.vscode

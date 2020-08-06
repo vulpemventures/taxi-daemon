@@ -313,6 +313,10 @@ github.com/vulpemventures/go-secp256k1-zkp v1.0.1 h1:myxKDZRR9CEj7Tz262lb6CIsmRO
 github.com/vulpemventures/go-secp256k1-zkp v1.0.1/go.mod h1:zo7CpgkuPgoe7fAV+inyxsI9IhGmcoFgyD8nqZaPSOM=
 github.com/vulpemventures/taxi-protobuf v0.0.0-20200622110017-09936ff5c201 h1:/mJFNtBvrmu3aDavoPzPnoaLzK+HlWi9G67l/hYHNgU=
 github.com/vulpemventures/taxi-protobuf v0.0.0-20200622110017-09936ff5c201/go.mod h1:kFmVCMCp4Vj4Ota5aRCKddBWj6PRVaXKir02c2Xqsy8=
+github.com/vulpemventures/taxi-protobuf v0.0.0-20200806130253-0dfd74f3da66 h1:arZCJcRtstWeQAsewysxhUq73QMi/7LnqFDMSz8Hv00=
+github.com/vulpemventures/taxi-protobuf v0.0.0-20200806130253-0dfd74f3da66/go.mod h1:kFmVCMCp4Vj4Ota5aRCKddBWj6PRVaXKir02c2Xqsy8=
+github.com/vulpemventures/taxi-protobuf v0.0.0-20200806131611-9ce609419acf h1:/CYcFxFswN2zCA5FaFrWWihoUiwVPEz2HGI+BxG/Qg0=
+github.com/vulpemventures/taxi-protobuf v0.0.0-20200806131611-9ce609419acf/go.mod h1:kFmVCMCp4Vj4Ota5aRCKddBWj6PRVaXKir02c2Xqsy8=
 github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c h1:u40Z8hqBAAQyv+vATcGgV0YCnDjqSL7/q/JyPhhJSPk=
 github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c/go.mod h1:lB8K/P019DLNhemzwFU4jHLhdvlE6uDZjXFejJXr49I=
 github.com/xdg/stringprep v0.0.0-20180714160509-73f8eece6fdc h1:n+nNi93yXLkJvKwXNP9d55HC7lGK4H/SRcwB5IaUZLo=

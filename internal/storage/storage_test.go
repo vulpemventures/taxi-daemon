@@ -15,13 +15,13 @@ func TestNewStorageFail(t *testing.T) {
 	}
 }
 
-func TestStorage_InsertOrder(t *testing.T) {
+func TestStorage_InsertAssetOrder(t *testing.T) {
 	s, err := storage.NewStorage("mongodb://127.0.0.1:27017/test")
 	if err != nil {
 		t.Errorf(err.Error())
 		return
 	}
-	objectID, err := s.InsertOrder(2, `foo`, `bar`, &fees.Breakdown{Size: 200})
+	objectID, err := s.InsertAssetOrder(&fees.Breakdown{Size: 200}, 506077)
 	if err != nil {
 		t.Errorf(err.Error())
 		return
@@ -35,7 +35,7 @@ func TestStorage_InsertOrder(t *testing.T) {
 		t.Errorf(err.Error())
 		return
 	}
-	if got.Unsigned != "foo" || got.Partial != "bar" {
+	if got.Unsigned != "" || got.AssetAmount != 506077 || got.Breakdown.Size != 200 {
 		t.Errorf("Inserted values do not match")
 	}
 
@@ -50,5 +50,39 @@ func TestStorage_InsertOrder(t *testing.T) {
 	}
 
 	s.Close()
+
+}
+
+func TestStorage_UpdateOrderWithTransactions(t *testing.T) {
+	s, err := storage.NewStorage("mongodb://127.0.0.1:27017/test")
+	if err != nil {
+		t.Errorf(err.Error())
+		return
+	}
+	objectID, err := s.InsertAssetOrder(&fees.Breakdown{Size: 200}, 506077)
+	if err != nil {
+		t.Errorf(err.Error())
+		return
+	}
+
+	// test the update function
+	err = s.UpdateOrderWithTransactions(objectID, "foo", "bar")
+	if err != nil {
+		t.Errorf(err.Error())
+		return
+	}
+
+	order, notFound, err := s.GetOrderByID(objectID)
+	if err != nil {
+		t.Errorf(err.Error())
+		return
+	}
+	if notFound {
+		t.Error("not found")
+	}
+
+	if order.Unsigned != "foo" || order.Partial != "bar" {
+		t.Errorf("Inserted values do not match")
+	}
 
 }

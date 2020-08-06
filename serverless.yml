@@ -10,6 +10,10 @@ provider:
     TAXI_PRIVATE_KEY: ${env:KEY}
     # Mongo cloud instance
     TAXI_MONGO_ENDPOINT: mongodb+srv://${env:MONGO}?retryWrites=true&w=majority
+    # Network
+    TAXI_NETWORK: ${env:NETWORK}
+    # Explorer
+    TAXI_EXPLORER_ENDPOINT: ${env:EXPLORER}
   apiGateway:
     description: Liquid Taxi Server
     binaryMediaTypes: 

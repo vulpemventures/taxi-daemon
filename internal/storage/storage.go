@@ -71,18 +71,17 @@ func (s *Storage) GetOrderByID(id string) (order *Order, notFound bool, err erro
 	return order, false, nil
 }
 
-// InsertOrder let add an order
-func (s *Storage) InsertOrder(method int, unsigned, partial string, breakdown *fees.Breakdown) (string, error) {
+// InsertAssetOrder let add an order
+func (s *Storage) InsertAssetOrder(breakdown *fees.Breakdown, assetAmount uint64) (string, error) {
 
 	orders := s.Client.Database(s.DatabaseName).Collection("orders")
 
 	document := &Order{
 		Status:      0,
 		IsCompleted: false,
-		Unsigned:    unsigned,
-		Partial:     partial,
-		Method:      method,
+		Method:      2,
 		Breakdown:   breakdown,
+		AssetAmount: assetAmount,
 		CreatedAt:   time.Now().Unix(),
 	}
 
@@ -93,6 +92,35 @@ func (s *Storage) InsertOrder(method int, unsigned, partial string, breakdown *f
 
 	objID := result.InsertedID.(primitive.ObjectID)
 	return objID.Hex(), nil
+}
+
+// UpdateOrderWithTransactions updates an already inserted order
+func (s *Storage) UpdateOrderWithTransactions(id string, unsigned, partial string) error {
+	orderID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return fmt.Errorf("objectID: %w", err)
+	}
+
+	orders := s.Client.Database(s.DatabaseName).Collection("orders")
+
+	filter := bson.M{"_id": orderID}
+	update := bson.M{
+		"$set": bson.M{"unsigned": unsigned, "partial": partial},
+	}
+	upsert := false
+	opt := options.UpdateOptions{
+		Upsert: &upsert,
+	}
+
+	result, err := orders.UpdateOne(context.Background(), filter, update, &opt)
+	if err != nil {
+		return fmt.Errorf("UpdateOne %w", err)
+	}
+	if result.MatchedCount != 1 && result.ModifiedCount != 1 {
+		return fmt.Errorf("Update Count %w", err)
+	}
+
+	return nil
 }
 
 //CheckLock compare the given unspent if present in the locks collection
@@ -164,6 +192,7 @@ type Order struct {
 	Partial     string
 	CreatedAt   int64
 	Method      int
+	AssetAmount uint64
 }
 
 //ToProtobuf converts a Storage.Order to pb.Order
@@ -185,5 +214,6 @@ func (order *Order) ToProtobuf(orderID string) *pb.Order {
 			Rate:       breakdown.Rate,
 			Total:      breakdown.Total,
 		},
+		AssetAmount: order.AssetAmount,
 	}
 }
