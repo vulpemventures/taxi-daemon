@@ -13,14 +13,17 @@ import (
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/storage"
-	"github.com/vulpemventures/liquid-taxi/pkg/fees"
-	"github.com/vulpemventures/liquid-taxi/pkg/price"
 
 	pb "github.com/vulpemventures/taxi-protobuf/rpc/taxi"
 )
 
 // TopupWithAsset implements TopupWithAsset rpc
 func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetRequest) (res *pb.TopupWithAssetReply, err error) {
+	orderID := req.GetOrderId()
+	if orderID == "" {
+		return nil, twirp.RequiredArgumentError("order_id")
+	}
+
 	if req.Unsigned == nil || req.Unsigned.GetPset() == "" {
 		return nil, twirp.RequiredArgumentError("unsigned.pset")
 	}
@@ -32,27 +35,29 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 		return nil, twirp.InvalidArgumentError("asset_hash", "not accepted as payment")
 	}
 
+	// Mongo DB connection
+	store, err := storage.NewStorage(config.GetString(config.MongoEndpoint))
+	if err != nil {
+		return nil, twirp.InternalErrorWith(fmt.Errorf("Storage: %w", err))
+	}
+
+	// Get back the whole order to show to the user
+	order, notFound, err := store.GetOrderByID(orderID)
+	if !notFound && err != nil {
+		return nil, twirp.InternalErrorWith(err)
+	}
+	if notFound {
+		return nil, twirp.InternalErrorWith(err)
+	}
+
 	currentNetwork := NETWORK[config.GetString(config.NetworkKey)]
 
 	decoded, err := pset.NewPsetFromBase64(req.Unsigned.GetPset())
 	if err != nil {
 		return nil, twirp.InvalidArgumentError("pset", "not valid")
 	}
-
-	// Breakdown
 	givenInputsLen := len(decoded.Inputs)
-	givenOutputsLen := len(decoded.Outputs)
-	breakdown, err := fees.CalculateWitness(1+givenInputsLen, 2+givenOutputsLen, req.Unsigned.GetSatPerByte(), 0.1)
-	if err != nil {
-		return nil, twirp.InvalidArgumentError("pset", "is not valid")
-	}
-	// Exchange Prices
-	prices, err := price.GetPriceOfPair("XBTUSDT")
-	if err != nil {
-		return nil, twirp.InternalError(fmt.Errorf("Price: %w", err).Error())
-	}
-	usdtPrice := prices[0]
-	totalFeesInAsset := price.BitcoinToUsdt(breakdown.Total, usdtPrice)
+	totalFeesInAsset := order.AssetAmount
 
 	// Taxi Key Pair
 	keyPair, err := keypair.FromPrivateKey(config.GetString(config.PrivateKeyKey))
@@ -73,17 +78,11 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 	}
 
 	BitcoinAsset := NETWORK[config.GetString(config.NetworkKey)].AssetID
-	BitcoinFee := breakdown.Fee
+	BitcoinFee := order.Breakdown.Fee
 	coins := &coinselect.Coins{Utxos: taxiUtxos}
 	selectedUtxos, change, err := coins.CoinSelect(BitcoinFee, BitcoinAsset)
 	if err != nil {
 		return nil, twirp.InternalErrorWith(fmt.Errorf("Coin Select: %w", err))
-	}
-
-	// Mongo DB connection
-	store, err := storage.NewStorage(config.GetString(config.MongoEndpoint))
-	if err != nil {
-		return nil, twirp.InternalErrorWith(fmt.Errorf("Storage: %w", err))
 	}
 
 	psetWithFees := &partial.Partial{Data: decoded, Network: &currentNetwork}
@@ -95,11 +94,14 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 			return nil, twirp.InternalErrorWith(fmt.Errorf("Storage: %w", err))
 		}
 		if !isLocked {
-			psetWithFees.AddInput(utxo.Hash(), utxo.Index(), &partial.WitnessUtxo{
+			err := psetWithFees.AddInput(utxo.Hash(), utxo.Index(), &partial.WitnessUtxo{
 				Asset:  BitcoinAsset,
 				Value:  utxo.Value(),
 				Script: taxiPayment.WitnessScript,
 			}, nil)
+			if err != nil {
+				return nil, twirp.InternalErrorWith(fmt.Errorf("AddInput: %w", err))
+			}
 			// Lock the utxo
 			if err := store.LockUnspent(txid, vout); err != nil {
 				return nil, twirp.InternalErrorWith(fmt.Errorf("Storage: %w", err))
@@ -130,13 +132,13 @@ func (s *Server) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetReque
 	}
 
 	// Persist order for history purpose and lock utxos
-	orderID, err := store.InsertOrder(int(pb.Order_ASSET), req.Unsigned.GetPset(), base64, breakdown)
+	err = store.UpdateOrderWithTransactions(orderID, req.Unsigned.GetPset(), base64)
 	if err != nil {
 		return nil, twirp.InternalErrorWith(err)
 	}
 
 	// Get back the whole order to show to the user
-	order, notFound, err := store.GetOrderByID(orderID)
+	order, notFound, err = store.GetOrderByID(orderID)
 	if !notFound && err != nil {
 		return nil, twirp.InternalErrorWith(err)
 	}

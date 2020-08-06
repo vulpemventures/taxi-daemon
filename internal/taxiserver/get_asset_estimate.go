@@ -2,9 +2,12 @@ package taxiserver
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/twitchtv/twirp"
 	"github.com/vulpemventures/go-elements/pset"
+	"github.com/vulpemventures/liquid-taxi/config"
+	"github.com/vulpemventures/liquid-taxi/internal/storage"
 	"github.com/vulpemventures/liquid-taxi/pkg/fees"
 	"github.com/vulpemventures/liquid-taxi/pkg/price"
 
@@ -40,6 +43,17 @@ func (s *Server) GetAssetEstimate(ctx context.Context, req *pb.GetAssetEstimateR
 	usdtPrice := prices[0]
 	totalFeesInAsset := price.BitcoinToUsdt(breakdown.Total, usdtPrice)
 
+	// Mongo DB connection
+	store, err := storage.NewStorage(config.GetString(config.MongoEndpoint))
+	if err != nil {
+		return nil, twirp.InternalErrorWith(fmt.Errorf("Storage: %w", err))
+	}
+
+	orderID, err := store.InsertAssetOrder(breakdown, totalFeesInAsset)
+	if err != nil {
+		return nil, twirp.InternalErrorWith(fmt.Errorf("Storage: InsertAssetOrder: %w", err))
+	}
+
 	res = &pb.GetAssetEstimateReply{
 		Breakdown: &pb.Breakdown{
 			Size:       breakdown.Size,
@@ -51,6 +65,7 @@ func (s *Server) GetAssetEstimate(ctx context.Context, req *pb.GetAssetEstimateR
 		},
 		AssetAmount: totalFeesInAsset,
 		AssetHash:   req.AssetHash,
+		OrderId:     orderID,
 	}
 
 	return res, nil

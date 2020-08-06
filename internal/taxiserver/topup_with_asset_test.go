@@ -25,7 +25,7 @@ const bobHex = "1804e76aa3016013bc9969103554668913cf697c03c23aecb28136d0e0ac16f0
 const defaultExplorer = "http://localhost:3001"
 
 func TestTopupWithAsset(t *testing.T) {
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 	explorerURL, ok := os.LookupEnv("TAXI_EXPLORER_ENDPOINT")
 	if !ok {
 		explorerURL = defaultExplorer
@@ -56,7 +56,7 @@ func TestTopupWithAsset(t *testing.T) {
 	}
 	aliceUtxo := utxos[0]
 	// How much we send to Bob
-	amount := 250000
+	amount := 25000000000000
 	// The asset change
 	change := aliceUtxo.Value() - uint64(amount)
 
@@ -108,7 +108,11 @@ func TestTopupWithAsset(t *testing.T) {
 			SatPerByte: 0.5,
 		},
 		AssetHash: asset,
+		OrderId:   replyEstimate.OrderId,
 	})
+	if err != nil {
+		t.Fatalf("TopupWithAsset: %s", err)
+	}
 
 	decoded, err := pset.NewPsetFromBase64(replyTopup.GetOrder().GetPartial().GetPset())
 	if err != nil {
@@ -136,6 +140,7 @@ func TestTopupWithAsset(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	res, err := e.Broadcast(txHex)
 	if err != nil {
 		t.Fatal(err)

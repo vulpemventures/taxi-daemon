@@ -24,7 +24,7 @@ require (
 	github.com/tj/assert v0.0.3 // indirect
 	github.com/twitchtv/twirp v5.12.0+incompatible
 	github.com/vulpemventures/go-elements v0.0.4-0.20200707142930-e477e50f71e9
-	github.com/vulpemventures/taxi-protobuf v0.0.0-20200622110017-09936ff5c201
+	github.com/vulpemventures/taxi-protobuf v0.0.0-20200806131611-9ce609419acf
 	go.mongodb.org/mongo-driver v1.3.5
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899 // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208 // indirect
