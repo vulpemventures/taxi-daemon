@@ -8,6 +8,7 @@ import (
 
 type ExplorerService interface {
 	GetUnspents(address string) ([]Utxo, error)
+	FetchTx(txId string) (string, error)
 	Broadcast(txHex string) (string, error)
 }
 
@@ -22,6 +23,20 @@ func NewEsplorerService(endpoint string) ExplorerService {
 		endpoint: endpoint,
 		client:   newHttpClient(),
 	}
+}
+
+func (explorer explorerService) FetchTx(txId string) (string, error) {
+	url := fmt.Sprintf("%s/tx/%s/hex", explorer.endpoint, txId)
+	status, response, err := explorer.client.get(url)
+	if err != nil {
+		return "", err
+	}
+
+	if status != http.StatusOK {
+		return "", errStatusIsNotOk{httpCode: status}
+	}
+
+	return response, nil
 }
 
 // GetUnspents returns utxos for a given addresses
