@@ -12,5 +12,9 @@ type Utxo struct {
 }
 
 func (u Utxo) IsConfidential() bool {
-	return u.ValueCommitment == "" && u.AssetCommitment == "" && u.NonceCommitment == ""
+	return u.ValueCommitment != "" &&
+		u.AssetCommitment != "" &&
+		u.NonceCommitment != "" &&
+		u.Asset == "" &&
+		u.Value == 0
 }
