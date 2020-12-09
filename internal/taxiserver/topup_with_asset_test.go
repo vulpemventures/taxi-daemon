@@ -11,17 +11,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tiero/ocean/pkg/explorer/blockstream"
-	"github.com/tiero/ocean/pkg/keypair"
-	"github.com/tiero/ocean/pkg/partial"
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/pset"
+	"github.com/vulpemventures/go-elements/transaction"
+	"github.com/vulpemventures/liquid-taxi/internal/explorer"
 	"github.com/vulpemventures/taxi-protobuf/rpc/taxi"
 )
 
-const aliceHex = "bfb96a215dfb07d1a193464174b9ea8e91f2a15bba79800dea838add330f6d86"
-const bobHex = "1804e76aa3016013bc9969103554668913cf697c03c23aecb28136d0e0ac16f0"
 const defaultExplorer = "http://localhost:3001"
 
 func TestTopupWithAsset(t *testing.T) {
@@ -31,19 +31,19 @@ func TestTopupWithAsset(t *testing.T) {
 		explorerURL = defaultExplorer
 	}
 	//Explorer
-	e := blockstream.NewExplorer(explorerURL)
+	e := explorer.NewEsplorerService(explorerURL)
 
 	// Network
 	currentNetwork := network.Regtest
 
 	// Alice
-	fromKeyPair, _ := keypair.FromPrivateKey(aliceHex)
-	fromPayment := payment.FromPublicKey(fromKeyPair.PublicKey, &currentNetwork, nil)
+	fromKeyPair, _ := btcec.NewPrivateKey(btcec.S256())
+	fromPayment := payment.FromPublicKey(fromKeyPair.PubKey(), &currentNetwork, nil)
 	from, _ := fromPayment.WitnessPubKeyHash()
 	fromScript := fromPayment.WitnessScript
 	//Bob
-	toKeyPair, _ := keypair.FromPrivateKey(bobHex)
-	toPayment := payment.FromPublicKey(toKeyPair.PublicKey, &currentNetwork, nil)
+	toKeyPair, _ := btcec.NewPrivateKey(btcec.S256())
+	toPayment := payment.FromPublicKey(toKeyPair.PubKey(), &currentNetwork, nil)
 	toScript := toPayment.WitnessScript
 	asset, err := mint(from, 500000, explorerURL)
 	if err != nil {
@@ -58,17 +58,46 @@ func TestTopupWithAsset(t *testing.T) {
 	// How much we send to Bob
 	amount := 25000000000000
 	// The asset change
-	change := aliceUtxo.Value() - uint64(amount)
+	change := aliceUtxo.Value - uint64(amount)
 
-	// Empty PSET
-	psetWithoutFees := partial.NewPartial(&currentNetwork)
+	amountValue, err := elementsutil.SatoshiToElementsValue(uint64(amount))
+	if err != nil {
+		t.Error(err)
+	}
 
-	psetWithoutFees.AddInput(aliceUtxo.Hash(), aliceUtxo.Index(), &partial.WitnessUtxo{Asset: asset, Value: aliceUtxo.Value(), Script: fromScript}, nil)
-	psetWithoutFees.AddOutput(asset, uint64(amount), toScript, false)
-	psetWithoutFees.AddOutput(asset, change, fromScript, false)
+	changeValue, err := elementsutil.SatoshiToElementsValue(uint64(change))
+	if err != nil {
+		t.Error(err)
+	}
+
+	assetH := assetHash(asset)
+	input := transaction.NewTxInput(aliceUtxo.Hash(), aliceUtxo.Vout)
+	toOutput := transaction.NewTxOutput(assetH, amountValue, toScript)
+	fromOutput := transaction.NewTxOutput(assetH, changeValue, fromScript)
+
+	inputs := []*transaction.TxInput{input}
+	outputs := []*transaction.TxOutput{toOutput, fromOutput}
+	p, err := pset.New(inputs, outputs, 2, 0)
+	if err != nil {
+		t.Error(err)
+	}
+
+	updater, err := pset.NewUpdater(p)
+	if err != nil {
+		t.Error(err)
+	}
+
+	aliceWitnessUtxo, err := aliceUtxo.FetchPrevout(e)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if err := updater.AddInWitnessUtxo(aliceWitnessUtxo, 0); err != nil {
+		t.Error(err)
+	}
 
 	// Base64 encode
-	b64, err := psetWithoutFees.Data.ToBase64()
+	b64, err := p.ToBase64()
 	if err != nil {
 		t.Fatalf("base64: %s", err)
 	}
@@ -89,14 +118,22 @@ func TestTopupWithAsset(t *testing.T) {
 	}
 
 	// Delete last inserted element that in our case is the change
-	psetWithoutFees.Data.Outputs = psetWithoutFees.Data.Outputs[:1]
-	psetWithoutFees.Data.UnsignedTx.Outputs = psetWithoutFees.Data.UnsignedTx.Outputs[:1]
+	p.Outputs = p.Outputs[:1]
+	p.UnsignedTx.Outputs = p.UnsignedTx.Outputs[:1]
 	// Add recalculated change after estimate with taxi
 	recalculatedChange := uint64(change) - replyEstimate.AssetAmount
-	psetWithoutFees.AddOutput(asset, recalculatedChange, fromScript, false)
+
+	recalculatedChangeValue, err := elementsutil.SatoshiToElementsValue(recalculatedChange)
+	if err != nil {
+		t.Error(err)
+	}
+
+	newChangeOutput := transaction.NewTxOutput(assetH, recalculatedChangeValue, fromScript)
+
+	updater.AddOutput(newChangeOutput)
 
 	// Base64 encode
-	b64, err = psetWithoutFees.Data.ToBase64()
+	b64, err = p.ToBase64()
 	if err != nil {
 		t.Fatalf("base64: %s", err)
 	}
@@ -119,18 +156,40 @@ func TestTopupWithAsset(t *testing.T) {
 		t.Fatalf("decode: %s", err)
 	}
 
-	psetWithFees := &partial.Partial{Data: decoded, Network: &currentNetwork}
-	err = psetWithFees.SignWithPrivateKey(0, fromKeyPair)
+	signUpdater, err := pset.NewUpdater(decoded)
 	if err != nil {
-		t.Fatalf("SignWithPrivateKey: %s", err)
+		t.Error(err)
 	}
 
-	err = pset.FinalizeAll(psetWithFees.Data)
+	if err := signUpdater.AddInSighashType(txscript.SigHashAll, 0); err != nil {
+		t.Error(err)
+	}
+
+	sigHash := decoded.UnsignedTx.HashForWitnessV0(
+		0,
+		fromPayment.Script,
+		decoded.Inputs[0].WitnessUtxo.Value,
+		txscript.SigHashAll,
+	)
+
+	sig, err := fromKeyPair.Sign(sigHash[:])
+	if err != nil {
+		t.Error(err)
+	}
+
+	sigWithHashType := append(sig.Serialize(), byte(txscript.SigHashAll))
+
+	_, err = signUpdater.Sign(0, sigWithHashType, fromKeyPair.PubKey().SerializeCompressed(), nil, nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = pset.FinalizeAll(decoded)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// Extract the final signed transaction from the Pset wrapper.
-	finalTx, err := pset.Extract(psetWithFees.Data)
+	finalTx, err := pset.Extract(decoded)
 	if err != nil {
 		t.Fatal(err)
 	}
