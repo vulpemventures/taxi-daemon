@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// Utxo = unspent
 type Utxo struct {
 	TxId            string `json:"txid"`
 	Vout            int    `json:"vout"`
@@ -26,6 +27,7 @@ type explorerService struct {
 	client   explorerHttpClient
 }
 
+// NewEsplorerService returns an ExplorerService interface
 func NewEsplorerService(endpoint string) ExplorerService {
 	return &explorerService{
 		endpoint: endpoint,
@@ -33,6 +35,7 @@ func NewEsplorerService(endpoint string) ExplorerService {
 	}
 }
 
+// GetUnspents returns utxos for a given addresses
 func (explorer explorerService) GetUnspents(address string) ([]Utxo, error) {
 	url := fmt.Sprintf(
 		"%s/address/%s/utxo",
@@ -58,6 +61,7 @@ func (explorer explorerService) GetUnspents(address string) ([]Utxo, error) {
 	return utxos, nil
 }
 
+// Broadcast spreads a transaction hex
 func (explorer explorerService) Broadcast(txHex string) (string, error) {
 	url := fmt.Sprintf("%s/tx", explorer.endpoint)
 	status, response, err := explorer.client.post(url, txHex)
