@@ -49,7 +49,7 @@ func TestTopupWithAsset(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mint: %s", err)
 	}
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 	utxos, err := e.GetUnspents(from)
 	if err != nil {
 		t.Fatalf("unspents: %s", err)
