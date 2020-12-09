@@ -6,17 +6,6 @@ import (
 	"net/http"
 )
 
-// Utxo = unspent
-type Utxo struct {
-	TxId            string `json:"txid"`
-	Vout            int    `json:"vout"`
-	Value           int    `json:"value"`
-	Asset           string `json:"asset"`
-	ValueCommitment string `json:"valuecommitment"`
-	AssetCommitment string `json:"assetcommitment"`
-	NonceCommitment string `json:"noncecommitment"`
-}
-
 type ExplorerService interface {
 	GetUnspents(address string) ([]Utxo, error)
 	Broadcast(txHex string) (string, error)
