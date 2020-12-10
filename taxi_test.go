@@ -2,26 +2,25 @@ package main
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/tiero/ocean/pkg/explorer/blockstream"
-	"github.com/tiero/ocean/pkg/keypair"
-	"github.com/tiero/ocean/pkg/partial"
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
+	"github.com/vulpemventures/liquid-taxi/internal/explorer"
 )
 
-const treasuryHex = "1cc080a4cd371eafcad489a29664af6a7276b362fe783443ce036552482b971d"
-const aliceHex = "bfb96a215dfb07d1a193464174b9ea8e91f2a15bba79800dea838add330f6d86"
-const bobHex = "1804e76aa3016013bc9969103554668913cf697c03c23aecb28136d0e0ac16f0"
 const defaultExplorer = "http://localhost:3001"
 
 func TestEndToEnd(t *testing.T) {
@@ -30,19 +29,19 @@ func TestEndToEnd(t *testing.T) {
 		explorerURL = defaultExplorer
 	}
 	//Explorer
-	e := blockstream.NewExplorer(explorerURL)
+	e := explorer.NewEsplorerService(explorerURL)
 
 	// Treasury
-	treasuryKeyPair, _ := keypair.FromPrivateKey(treasuryHex)
-	treasury := payment.FromPublicKey(treasuryKeyPair.PublicKey, &network.Regtest, nil)
+	treasuryKeyPair, _ := btcec.NewPrivateKey(btcec.S256())
+	treasury := payment.FromPublicKey(treasuryKeyPair.PubKey(), &network.Regtest, nil)
 	treasuryAddress, _ := treasury.WitnessPubKeyHash()
 	// Alice
-	aliceKeyPair, _ := keypair.FromPrivateKey(aliceHex)
-	alice := payment.FromPublicKey(aliceKeyPair.PublicKey, &network.Regtest, nil)
+	aliceKeyPair, _ := btcec.NewPrivateKey(btcec.S256())
+	alice := payment.FromPublicKey(aliceKeyPair.PubKey(), &network.Regtest, nil)
 	aliceAddress, _ := alice.WitnessPubKeyHash()
 	//Bob
-	bobKeyPair, _ := keypair.FromPrivateKey(bobHex)
-	bob := payment.FromPublicKey(bobKeyPair.PublicKey, &network.Regtest, nil)
+	bobKeyPair, _ := btcec.NewPrivateKey(btcec.S256())
+	bob := payment.FromPublicKey(bobKeyPair.PubKey(), &network.Regtest, nil)
 	bobAddress, _ := bob.WitnessPubKeyHash()
 	println("alice: "+aliceAddress, "bob: "+bobAddress, "taxi: "+treasuryAddress)
 
@@ -56,62 +55,187 @@ func TestEndToEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 	time.Sleep(5 * time.Second)
+
+	LBTC := assetHash(network.Regtest.AssetID)
+
 	// Retrieve Alice utxos
-	aliceUtxos, err := e.GetUnspents(aliceAddress)
+	aliceAllUtxos, err := e.GetUnspents(aliceAddress)
 	if err != nil {
 		t.Fatal(err)
 	}
-	aliceUtxoValue := aliceUtxos[0].Value()
+
+	// filter --> use only unconfidential utxos
+	aliceUtxos := make([]explorer.Utxo, 0)
+	for _, utxo := range aliceAllUtxos {
+		if !utxo.IsConfidential() {
+			aliceUtxos = append(aliceUtxos, utxo)
+		}
+	}
+
+	aliceUtxoValue := aliceUtxos[0].Value
 	bobValue := uint64(5000000)
 
-	emptyPset, _ := pset.New([]*transaction.TxInput{}, []*transaction.TxOutput{}, 2, 0)
-	p := &partial.Partial{Data: emptyPset}
+	aliceInput := transaction.NewTxInput(aliceUtxos[0].Hash(), aliceUtxos[0].Vout)
+	bobElementsValue, err := elementsutil.SatoshiToElementsValue(bobValue)
+	if err != nil {
+		t.Error(err)
+	}
+	aliceOutput := transaction.NewTxOutput(LBTC, bobElementsValue, bob.WitnessScript)
+	changeValue, err := elementsutil.SatoshiToElementsValue(aliceUtxoValue - bobValue)
+	if err != nil {
+		t.Error(err)
+	}
+	aliceChangeOutput := transaction.NewTxOutput(LBTC, changeValue, alice.WitnessScript)
 
-	p.AddInput(aliceUtxos[0].Hash(), aliceUtxos[0].Index(), &partial.WitnessUtxo{network.Regtest.AssetID, aliceUtxoValue, alice.WitnessScript}, nil)
-	p.AddOutput(network.Regtest.AssetID, bobValue, bob.WitnessScript, false)
-	//Alice's change
-	p.AddOutput(network.Regtest.AssetID, aliceUtxoValue-bobValue, alice.WitnessScript, false)
+	inputs := []*transaction.TxInput{aliceInput}
+	outputs := []*transaction.TxOutput{aliceOutput, aliceChangeOutput}
+	p, err := pset.New(inputs, outputs, 2, 0)
+	if err != nil {
+		t.Error(err)
+	}
 
-	b64, err := p.Data.ToBase64()
+	updater, err := pset.NewUpdater(p)
+	if err != nil {
+		t.Error(err)
+	}
+
+	aliceWitnessUtxo, err := aliceUtxos[0].FetchPrevout(e)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if err := updater.AddInWitnessUtxo(aliceWitnessUtxo, 0); err != nil {
+		t.Error(err)
+	}
+
+	b64, err := p.ToBase64()
 	if err != nil {
 		t.Fatalf("base64: %s", err)
 	}
 	println(b64)
 
-	// Retrieve Taxi utxos
-	taxiUtxos, err := e.GetUnspents(treasuryAddress)
+	// Retrieve Alice utxos
+	taxiAllUtxos, err := e.GetUnspents(treasuryAddress)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// filter --> use only unconfidential utxos
+	taxiUtxos := make([]explorer.Utxo, 0)
+	for _, utxo := range taxiAllUtxos {
+		if !utxo.IsConfidential() {
+			taxiUtxos = append(taxiUtxos, utxo)
+		}
+	}
+
+	taxiInput := transaction.NewTxInput(taxiUtxos[0].Hash(), taxiUtxos[0].Vout)
+
+	taxiUtxoValue := taxiUtxos[0].Value
 	feeValue := uint64(500)
-	taxiUtxoValue := uint64(taxiUtxos[0].Value())
-	// Add input for fee
-	p.AddInput(taxiUtxos[0].Hash(), uint32(taxiUtxos[0].Index()), &partial.WitnessUtxo{network.Regtest.AssetID, taxiUtxoValue, treasury.WitnessScript}, nil)
-	// Taxi's change
-	p.AddOutput(network.Regtest.AssetID, taxiUtxoValue-feeValue, treasury.WitnessScript, false)
-	// Taxi adds Fee output
-	p.AddOutput(network.Regtest.AssetID, feeValue, []byte{}, false)
-
-	// Taxi signs last added input with his own private key
-	err = p.SignWithPrivateKey(1, treasuryKeyPair)
+	taxiOutputValue, err := elementsutil.SatoshiToElementsValue(taxiUtxoValue - feeValue)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
-	// back to Alice now signs with his privatekey
-	err = p.SignWithPrivateKey(0, aliceKeyPair)
+	feeValueElements, err := elementsutil.SatoshiToElementsValue(feeValue)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
-	pFinalized := p.Data
-	err = pset.FinalizeAll(pFinalized)
+
+	taxiOutput := transaction.NewTxOutput(LBTC, taxiOutputValue, treasury.WitnessScript)
+	feeOutput := transaction.NewTxOutput(LBTC, feeValueElements, []byte{})
+
+	pTaxi, err := pset.NewPsetFromBase64(b64)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
+	}
+
+	updaterTaxi, err := pset.NewUpdater(pTaxi)
+	if err != nil {
+		t.Error(err)
+	}
+
+	updaterTaxi.AddInput(taxiInput)
+
+	taxiWitnessUtxo, err := taxiUtxos[0].FetchPrevout(e)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if err := updaterTaxi.AddInWitnessUtxo(taxiWitnessUtxo, 1); err != nil {
+		t.Error(err)
+	}
+
+	updaterTaxi.AddOutput(taxiOutput)
+	updaterTaxi.AddOutput(feeOutput)
+
+	sigHashes := make([][32]byte, len(pTaxi.Inputs))
+	scripts := [][]byte{
+		alice.Script,
+		treasury.Script,
+	}
+	for i, in := range pTaxi.Inputs {
+		if err := updaterTaxi.AddInSighashType(txscript.SigHashAll, i); err != nil {
+			t.Error(err)
+		}
+
+		sigHash := pTaxi.UnsignedTx.HashForWitnessV0(
+			i,
+			scripts[i],
+			in.WitnessUtxo.Value,
+			txscript.SigHashAll,
+		)
+
+		sigHashes[i] = sigHash
+	}
+
+	sig, err := aliceKeyPair.Sign(sigHashes[0][:])
+	if err != nil {
+		t.Error(err)
+	}
+
+	sigWithHashType := append(sig.Serialize(), byte(txscript.SigHashAll))
+	if _, err := updaterTaxi.Sign(
+		0,
+		sigWithHashType,
+		aliceKeyPair.PubKey().SerializeCompressed(),
+		nil,
+		nil,
+	); err != nil {
+		t.Error(err)
+	}
+
+	sig, err = treasuryKeyPair.Sign(sigHashes[1][:])
+	if err != nil {
+		t.Error(err)
+	}
+	sigWithHashType = append(sig.Serialize(), byte(txscript.SigHashAll))
+	if _, err := updaterTaxi.Sign(
+		1,
+		sigWithHashType,
+		treasuryKeyPair.PubKey().SerializeCompressed(),
+		nil,
+		nil,
+	); err != nil {
+		t.Error(err)
+	}
+
+	valid, err := pTaxi.ValidateAllSignatures()
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !valid {
+		t.Error(errors.New("Signature is invalid"))
+	}
+
+	err = pset.FinalizeAll(pTaxi)
+	if err != nil {
+		t.Error(err)
 	}
 
 	// Extract the final signed transaction from the Pset wrapper.
-	finalTx, err := pset.Extract(pFinalized)
+	finalTx, err := pset.Extract(pTaxi)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,23 +250,7 @@ func TestEndToEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(res) <= 0 || strings.Contains(res, "sendrawtransaction") {
-		t.Fatalf("Expected transaction to be broadcasted, failed for reason: %s", res)
-	}
-
 	println(res)
-}
-
-// reverseBytes returns the given byte slice with elems in reverse order.
-func reverseBytes(buf []byte) []byte {
-	if len(buf) < 1 {
-		return buf
-	}
-	for i := len(buf)/2 - 1; i >= 0; i-- {
-		j := len(buf) - 1 - i
-		buf[i], buf[j] = buf[j], buf[i]
-	}
-	return buf
 }
 
 // Faucet ...
@@ -165,4 +273,10 @@ func faucet(address string, baseURL string) (string, error) {
 	}
 
 	return respBody["txId"], nil
+}
+
+func assetHash(asset string) []byte {
+	buf, _ := hex.DecodeString(asset)
+	assetBuf := append([]byte{0x01}, elementsutil.ReverseBytes(buf)...)
+	return assetBuf
 }
