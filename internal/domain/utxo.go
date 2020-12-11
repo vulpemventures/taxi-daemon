@@ -1,11 +1,15 @@
-package explorer
+package domain
 
 import (
 	"encoding/hex"
 
 	"github.com/vulpemventures/go-elements/elementsutil"
-	"github.com/vulpemventures/go-elements/transaction"
 )
+
+type UtxoKey struct {
+	TxId string
+	Vout uint32
+}
 
 // Utxo = unspent
 type Utxo struct {
@@ -18,18 +22,11 @@ type Utxo struct {
 	NonceCommitment string `json:"noncecommitment"`
 }
 
-func (u Utxo) FetchPrevout(explorer ExplorerService) (*transaction.TxOutput, error) {
-	hex, err := explorer.FetchTx(u.TxId)
-	if err != nil {
-		return nil, err
+func (u Utxo) Key() UtxoKey {
+	return UtxoKey{
+		TxId: u.TxId,
+		Vout: u.Vout,
 	}
-
-	prevTx, err := transaction.NewTxFromHex(hex)
-	if err != nil {
-		return nil, err
-	}
-
-	return prevTx.Outputs[u.Vout], nil
 }
 
 func (u Utxo) Hash() []byte {

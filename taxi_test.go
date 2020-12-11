@@ -13,12 +13,14 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/tiero/ocean/pkg/explorer"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
-	"github.com/vulpemventures/liquid-taxi/internal/explorer"
+	"github.com/vulpemventures/liquid-taxi/internal/application"
+	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
 
 const defaultExplorer = "http://localhost:3001"
@@ -29,7 +31,7 @@ func TestEndToEnd(t *testing.T) {
 		explorerURL = defaultExplorer
 	}
 	//Explorer
-	e := explorer.NewEsplorerService(explorerURL)
+	e := application.NewEsplorerService(explorerURL)
 
 	// Treasury
 	treasuryKeyPair, _ := btcec.NewPrivateKey(btcec.S256())
@@ -65,7 +67,7 @@ func TestEndToEnd(t *testing.T) {
 	}
 
 	// filter --> use only unconfidential utxos
-	aliceUtxos := make([]explorer.Utxo, 0)
+	aliceUtxos := make([]domain.Utxo, 0)
 	for _, utxo := range aliceAllUtxos {
 		if !utxo.IsConfidential() {
 			aliceUtxos = append(aliceUtxos, utxo)

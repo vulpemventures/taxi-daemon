@@ -26,10 +26,12 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	github.com/tidwall/pretty v1.0.2 // indirect
-	github.com/twitchtv/twirp v7.1.0+incompatible
+	github.com/tiero/ocean v0.0.1
+	github.com/tj/assert v0.0.3
+	github.com/twitchtv/twirp v7.1.0+incompatible // indirect
 	github.com/vulpemventures/go-elements v0.1.1
 	github.com/vulpemventures/taxi-protobuf v0.0.0-20200806131611-9ce609419acf
-	go.mongodb.org/mongo-driver v1.4.4
+	go.mongodb.org/mongo-driver v1.4.4 // indirect
 	golang.org/x/crypto v0.0.0-20201208171446-5f87f3452ae9 // indirect
 	golang.org/x/net v0.0.0-20201207224615-747e23833adb // indirect
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a // indirect
