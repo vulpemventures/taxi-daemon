@@ -40,11 +40,11 @@ type taxiService struct {
 	receivePayment  *payment.Payment
 	receiveAddress  string
 	network         *network.Network
-	basisPoint      float64
+	basisPoint      uint32
 }
 
 // NewTaxiService ...
-func NewTaxiService(explorerEndpoint string, mnemonic []string, network *network.Network, basisPoint float64) (TaxiService, error) {
+func NewTaxiService(explorerEndpoint string, mnemonic []string, network *network.Network, basisPoint uint32) (TaxiService, error) {
 	w, err := wallet.NewWallet(mnemonic)
 	if err != nil {
 		return nil, err
@@ -136,7 +136,7 @@ func (taxi *taxiService) TopupWithAsset(assetHash string, feeAmount uint64, satP
 
 	// TO DO: fetch the prices
 	assetAmount := 10 * totalFees
-	assetAmount += uint64(float64(assetAmount) * taxi.basisPoint)
+	assetAmount += uint64(float64(assetAmount) * float64(taxi.basisPoint) / 100)
 
 	// create transaction
 	taxiPset, err := taxi.createPset(selectedUtxos, totalFees, changeAmount, assetHash, assetAmount)
