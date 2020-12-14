@@ -71,12 +71,13 @@ func generateSigningMasterKey(seed []byte) ([]byte, error) {
 }
 
 type SignInputArgs struct {
-	Updater     *pset.Updater
-	UnsignedTx  *transaction.Transaction
-	Path        string
-	InputIndex  int
-	WitnessUtxo *transaction.TxOutput
-	HashType    txscript.SigHashType
+	Updater       *pset.Updater
+	UnsignedTx    *transaction.Transaction
+	Path          string
+	InputIndex    int
+	WitnessUtxo   *transaction.TxOutput
+	WitnessScript []byte
+	HashType      txscript.SigHashType
 }
 
 func (w *wallet) SignInput(args SignInputArgs) error {
@@ -87,7 +88,7 @@ func (w *wallet) SignInput(args SignInputArgs) error {
 
 	sigHash := args.UnsignedTx.HashForWitnessV0(
 		args.InputIndex,
-		args.WitnessUtxo.Script,
+		args.WitnessScript,
 		args.WitnessUtxo.Value,
 		args.HashType,
 	)

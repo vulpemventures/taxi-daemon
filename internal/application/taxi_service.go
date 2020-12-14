@@ -28,6 +28,7 @@ const (
 type TaxiService interface {
 	TopupWithAsset(assetHash string, feeAmount uint64, satPerBytes int) (*domain.Topup, error)
 	ListAssets() []string
+	getAddresses() (string, string)
 }
 
 type taxiService struct {
@@ -39,18 +40,18 @@ type taxiService struct {
 	changeAddress   string
 	receivePayment  *payment.Payment
 	receiveAddress  string
-	network         *network.Network
+	network         network.Network
 	basisPoint      uint32
 }
 
 // NewTaxiService ...
-func NewTaxiService(explorerEndpoint string, mnemonic []string, network *network.Network, basisPoint uint32) (TaxiService, error) {
+func NewTaxiService(explorerEndpoint string, mnemonic []string, network network.Network, basisPoint uint32) (TaxiService, error) {
 	w, err := wallet.NewWallet(mnemonic)
 	if err != nil {
 		return nil, err
 	}
 
-	receivePayment, err := w.DerivePath(receiveDerivationPath, network)
+	receivePayment, err := w.DerivePath(receiveDerivationPath, &network)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +61,7 @@ func NewTaxiService(explorerEndpoint string, mnemonic []string, network *network
 		return nil, err
 	}
 
-	changePayment, err := w.DerivePath(changeDerivationPath, network)
+	changePayment, err := w.DerivePath(changeDerivationPath, &network)
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +81,7 @@ func NewTaxiService(explorerEndpoint string, mnemonic []string, network *network
 		receivePayment:  receivePayment,
 		receiveAddress:  receiveAddr,
 		basisPoint:      basisPoint,
+		network:         network,
 	}, nil
 }
 
@@ -167,18 +169,21 @@ func (taxi *taxiService) TopupWithAsset(assetHash string, feeAmount uint64, satP
 	// sign with wallet
 	for index, witnessUtxo := range prevouts {
 		path := receiveDerivationPath
+		script := taxi.receivePayment.Script
 
-		if res := bytes.Compare(witnessUtxo.Script, taxi.changePayment.Script); res == 0 {
+		if bytes.Equal(witnessUtxo.Script, taxi.changePayment.Script) {
 			path = changeDerivationPath
+			script = taxi.changePayment.Script
 		}
 
 		signOpts := wallet.SignInputArgs{
-			Updater:     updater,
-			UnsignedTx:  taxiPset.UnsignedTx,
-			Path:        path,
-			InputIndex:  index,
-			WitnessUtxo: witnessUtxo,
-			HashType:    txscript.SigHashAll + txscript.SigHashAnyOneCanPay,
+			Updater:       updater,
+			UnsignedTx:    taxiPset.UnsignedTx,
+			Path:          path,
+			InputIndex:    index,
+			WitnessUtxo:   witnessUtxo,
+			WitnessScript: script,
+			HashType:      txscript.SigHashAll + txscript.SigHashAnyOneCanPay,
 		}
 
 		if err := taxi.wallet.SignInput(signOpts); err != nil {
@@ -300,6 +305,10 @@ func (taxi *taxiService) createPset(
 	}
 
 	return pset, nil
+}
+
+func (taxi *taxiService) getAddresses() (string, string) {
+	return taxi.receiveAddress, taxi.changeAddress
 }
 
 func (taxi *taxiService) fetchAvailableUtxos() ([]domain.Utxo, error) {
