@@ -1,12 +1,22 @@
 package application
 
 import (
+	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
+	"time"
 
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/google/uuid"
+	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
+	"github.com/vulpemventures/go-elements/payment"
+	"github.com/vulpemventures/go-elements/pset"
+	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
+	"github.com/vulpemventures/liquid-taxi/pkg/fees"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
@@ -16,7 +26,7 @@ const (
 )
 
 type TaxiService interface {
-	TopupWithAsset(assetHash string, feeAmount uint64) (*domain.Topup, uint64, error)
+	TopupWithAsset(assetHash string, feeAmount uint64, satPerBytes int) (*domain.Topup, error)
 	ListAssets() []string
 }
 
@@ -25,11 +35,16 @@ type taxiService struct {
 	topupRepository domain.TopupRepository
 	eplorer         ExplorerService
 	wallet          wallet.Wallet
+	changePayment   *payment.Payment
 	changeAddress   string
+	receivePayment  *payment.Payment
 	receiveAddress  string
+	network         *network.Network
+	basisPoint      float64
 }
 
-func NewTaxiService(explorerEndpoint string, mnemonic []string, network *network.Network) (TaxiService, error) {
+// NewTaxiService ...
+func NewTaxiService(explorerEndpoint string, mnemonic []string, network *network.Network, basisPoint float64) (TaxiService, error) {
 	w, err := wallet.NewWallet(mnemonic)
 	if err != nil {
 		return nil, err
@@ -60,23 +75,231 @@ func NewTaxiService(explorerEndpoint string, mnemonic []string, network *network
 		topupRepository: inmemory.NewInmemoryTopupRepository(),
 		eplorer:         NewEsplorerService(explorerEndpoint),
 		wallet:          w,
+		changePayment:   changePayment,
 		changeAddress:   changeAddr,
+		receivePayment:  receivePayment,
 		receiveAddress:  receiveAddr,
+		basisPoint:      basisPoint,
 	}, nil
 }
 
-func (taxi *taxiService) TopupWithAsset(assetHash string, feeAmount uint64) (*domain.Topup, uint64, error) {
-	// TO DO
-	// estimate fee increase
-	// lock utxo
-	// create tx with taxi's utxo and outputs
-	// set locktime on tx matching the unspent lock
+func (taxi *taxiService) TopupWithAsset(assetHash string, feeAmount uint64, satPerBytes int) (*domain.Topup, error) {
+	ttlUtxo := 10 * time.Minute
 
-	panic("not implemented")
+	// TO DO : check if asset is available
+
+	emptyContext := context.Background()
+
+	// fetchUtxos + coin select
+	utxos, err := taxi.fetchAvailableUtxos()
+	if err != nil {
+		return nil, err
+	}
+
+	selectedUtxos, changeAmount, err := coinSelect(utxos, feeAmount, taxi.network.AssetID)
+	if err != nil {
+		return nil, err
+	}
+
+	// estimate fee increase
+	feeIncrease := fees.CalculateFeeIncrease(len(selectedUtxos), 3, satPerBytes)
+	totalFees := feeAmount + feeIncrease
+
+	if changeAmount >= feeIncrease {
+		changeAmount -= feeIncrease
+	} else {
+		selectedUtxos, changeAmount, err = coinSelect(utxos, totalFees, taxi.network.AssetID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	expireAt := time.Now().Add(ttlUtxo)
+	// Lock utxos
+	for _, utxo := range selectedUtxos {
+		utxoKey := utxo.Key()
+
+		if taxi.utxosLocker.Contains(emptyContext, utxoKey) {
+			return nil, ErrUtxoNotAvailable
+		}
+
+		err := taxi.utxosLocker.AddKeys(emptyContext, []domain.UtxoKey{utxoKey})
+		if err != nil {
+			return nil, err
+		}
+
+		go func() {
+			time.Sleep(ttlUtxo)
+			taxi.utxosLocker.Remove(emptyContext, utxoKey)
+		}()
+	}
+
+	// TO DO: fetch the prices
+	assetAmount := 10 * totalFees
+	assetAmount += uint64(float64(assetAmount) * taxi.basisPoint)
+
+	// create transaction
+	taxiPset, err := taxi.createPset(selectedUtxos, totalFees, changeAmount, assetHash, assetAmount)
+	if err != nil {
+		return nil, err
+	}
+
+	updater, err := pset.NewUpdater(taxiPset)
+	if err != nil {
+		return nil, err
+	}
+
+	prevouts := make([]*transaction.TxOutput, 0)
+	// add prevouts to pset inputs
+	for inputIndex, utxo := range selectedUtxos {
+		prevout, err := taxi.eplorer.FetchPrevout(utxo)
+		if err != nil {
+			return nil, err
+		}
+
+		prevouts = append(prevouts, prevout)
+
+		if err := updater.AddInWitnessUtxo(prevout, inputIndex); err != nil {
+			return nil, err
+		}
+	}
+
+	// sign with wallet
+	for index, witnessUtxo := range prevouts {
+		path := receiveDerivationPath
+
+		if res := bytes.Compare(witnessUtxo.Script, taxi.changePayment.Script); res == 0 {
+			path = changeDerivationPath
+		}
+
+		signOpts := wallet.SignInputArgs{
+			Updater:     updater,
+			UnsignedTx:  taxiPset.UnsignedTx,
+			Path:        path,
+			InputIndex:  index,
+			WitnessUtxo: witnessUtxo,
+			HashType:    txscript.SigHashAll + txscript.SigHashAnyOneCanPay,
+		}
+
+		if err := taxi.wallet.SignInput(signOpts); err != nil {
+			return nil, err
+		}
+	}
+
+	// check the signatures
+	valid, err := taxiPset.ValidateAllSignatures()
+	if err != nil {
+		return nil, err
+	}
+
+	if !valid {
+		return nil, ErrInvalidSignature
+	}
+
+	partialBase64, err := taxiPset.ToBase64()
+	if err != nil {
+		return nil, err
+	}
+
+	topup := domain.Topup{
+		Id:          uuid.New().String(),
+		Partial:     partialBase64,
+		AssetHash:   assetHash,
+		AssetPrice:  10,
+		AssetAmount: assetAmount,
+		FeeAmount:   totalFees,
+		BasisPoint:  int32(taxi.basisPoint),
+		ExpireAt:    expireAt,
+	}
+
+	err = taxi.topupRepository.AddTopup(emptyContext, topup)
+	if err != nil {
+		return nil, err
+	}
+
+	err = taxi.topupRepository.SetRequested(emptyContext, topup.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &topup, nil
 }
 
 func (taxi *taxiService) ListAssets() []string {
 	panic("not implemented")
+}
+
+func (taxi *taxiService) createPset(
+	selectedUtxos []domain.Utxo,
+	totalFees uint64,
+	changeAmount uint64,
+	assetHash string,
+	assetAmount uint64,
+) (*pset.Pset, error) {
+	// create taxi tx
+	inputs := make([]*transaction.TxInput, 0)
+	outputs := make([]*transaction.TxOutput, 0)
+
+	// inputs
+	for _, utxo := range selectedUtxos {
+		input := transaction.NewTxInput(utxo.Hash(), utxo.Vout)
+		inputs = append(inputs, input)
+	}
+
+	// outputs
+
+	// 1. fees output
+	feesElementsValue, err := elementsutil.SatoshiToElementsValue(totalFees)
+	if err != nil {
+		return nil, err
+	}
+
+	LBTCbytes := assetHashBytes(taxi.network.AssetID)
+	feesOutput := transaction.NewTxOutput(
+		LBTCbytes,
+		feesElementsValue,
+		[]byte{},
+	)
+
+	outputs = append(outputs, feesOutput)
+
+	// 2. payout output
+	// TO DO : fetch the prices
+	payoutElementsValue, err := elementsutil.SatoshiToElementsValue(uint64(assetAmount))
+	if err != nil {
+		return nil, err
+	}
+
+	payoutOutput := transaction.NewTxOutput(
+		assetHashBytes(assetHash),
+		payoutElementsValue,
+		taxi.receivePayment.WitnessScript,
+	)
+
+	outputs = append(outputs, payoutOutput)
+
+	// 3. The change output
+	if changeAmount > 0 {
+		changeElementsValue, err := elementsutil.SatoshiToElementsValue(changeAmount)
+		if err != nil {
+			return nil, err
+		}
+
+		changeOutput := transaction.NewTxOutput(
+			LBTCbytes,
+			changeElementsValue,
+			taxi.changePayment.WitnessScript,
+		)
+
+		outputs = append(outputs, changeOutput)
+	}
+
+	pset, err := pset.New(inputs, outputs, 2, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return pset, nil
 }
 
 func (taxi *taxiService) fetchAvailableUtxos() ([]domain.Utxo, error) {
@@ -126,4 +349,10 @@ func coinSelect(utxos []domain.Utxo, targetAmount uint64, targetAsset string) ([
 	changeAmount := totalAmount - targetAmount
 
 	return selectedUtxos, changeAmount, nil
+}
+
+func assetHashBytes(asset string) []byte {
+	buf, _ := hex.DecodeString(asset)
+	assetBuf := append([]byte{0x01}, elementsutil.ReverseBytes(buf)...)
+	return assetBuf
 }

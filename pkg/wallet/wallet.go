@@ -8,11 +8,14 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/tyler-smith/go-bip39"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
+	"github.com/vulpemventures/go-elements/pset"
+	"github.com/vulpemventures/go-elements/transaction"
 )
 
 type DerivationPath []uint32
@@ -27,6 +30,7 @@ var (
 
 type Wallet interface {
 	DerivePath(path string, network *network.Network) (*payment.Payment, error)
+	SignInput(args SignInputArgs) error
 }
 
 type wallet struct {
@@ -64,6 +68,53 @@ func generateSigningMasterKey(seed []byte) ([]byte, error) {
 		}
 	}
 	return base58.Decode(hdNode.String()), nil
+}
+
+type SignInputArgs struct {
+	Updater     *pset.Updater
+	UnsignedTx  *transaction.Transaction
+	Path        string
+	InputIndex  int
+	WitnessUtxo *transaction.TxOutput
+	HashType    txscript.SigHashType
+}
+
+func (w *wallet) SignInput(args SignInputArgs) error {
+	privKey, pubKey, err := w.deriveSigningKeyPair(args.Path)
+	if err != nil {
+		return err
+	}
+
+	sigHash := args.UnsignedTx.HashForWitnessV0(
+		args.InputIndex,
+		args.WitnessUtxo.Script,
+		args.WitnessUtxo.Value,
+		args.HashType,
+	)
+
+	if err := args.Updater.AddInSighashType(args.HashType, args.InputIndex); err != nil {
+		return err
+	}
+
+	signature, err := privKey.Sign(sigHash[:])
+	if err != nil {
+		return err
+	}
+
+	sigWithHashType := append(signature.Serialize(), byte(args.HashType))
+
+	// sign with the updater
+	if _, err := args.Updater.Sign(
+		args.InputIndex,
+		sigWithHashType,
+		pubKey.SerializeCompressed(),
+		nil,
+		nil,
+	); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (w *wallet) DerivePath(path string, network *network.Network) (*payment.Payment, error) {
