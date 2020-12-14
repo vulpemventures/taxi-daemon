@@ -1,4 +1,4 @@
-package application
+package wallet
 
 import (
 	"fmt"
@@ -25,19 +25,23 @@ var (
 	}
 )
 
-type taxiWallet struct {
+type Wallet interface {
+	DerivePath(path string, network *network.Network) (*payment.Payment, error)
+}
+
+type wallet struct {
 	mnemonic  []string
 	masterKey []byte
 }
 
-func newTaxiWallet(words []string) (*taxiWallet, error) {
+func NewWallet(words []string) (Wallet, error) {
 	seed := generateSeedFromMnemonic(words)
 	masterKey, err := generateSigningMasterKey(seed)
 	if err != nil {
 		return nil, err
 	}
 
-	return &taxiWallet{
+	return &wallet{
 		mnemonic:  words,
 		masterKey: masterKey,
 	}, nil
@@ -62,7 +66,7 @@ func generateSigningMasterKey(seed []byte) ([]byte, error) {
 	return base58.Decode(hdNode.String()), nil
 }
 
-func (w *taxiWallet) derivePath(path string, network *network.Network) (*payment.Payment, error) {
+func (w *wallet) DerivePath(path string, network *network.Network) (*payment.Payment, error) {
 	_, pubkey, err := w.deriveSigningKeyPair(path)
 	if err != nil {
 		return nil, err
@@ -72,7 +76,7 @@ func (w *taxiWallet) derivePath(path string, network *network.Network) (*payment
 	return p2wpkh, nil
 }
 
-func (w *taxiWallet) deriveSigningKeyPair(path string) (
+func (w *wallet) deriveSigningKeyPair(path string) (
 	*btcec.PrivateKey,
 	*btcec.PublicKey,
 	error,

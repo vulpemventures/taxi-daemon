@@ -7,6 +7,7 @@ import (
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
+	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
 const (
@@ -23,18 +24,18 @@ type taxiService struct {
 	utxosLocker     domain.UtxoKeyRepository
 	topupRepository domain.TopupRepository
 	eplorer         ExplorerService
-	wallet          *taxiWallet
+	wallet          wallet.Wallet
 	changeAddress   string
 	receiveAddress  string
 }
 
 func NewTaxiService(explorerEndpoint string, mnemonic []string, network *network.Network) (TaxiService, error) {
-	w, err := newTaxiWallet(mnemonic)
+	w, err := wallet.NewWallet(mnemonic)
 	if err != nil {
 		return nil, err
 	}
 
-	receivePayment, err := w.derivePath(receiveDerivationPath, network)
+	receivePayment, err := w.DerivePath(receiveDerivationPath, network)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +45,7 @@ func NewTaxiService(explorerEndpoint string, mnemonic []string, network *network
 		return nil, err
 	}
 
-	changePayment, err := w.derivePath(changeDerivationPath, network)
+	changePayment, err := w.DerivePath(changeDerivationPath, network)
 	if err != nil {
 		return nil, err
 	}
