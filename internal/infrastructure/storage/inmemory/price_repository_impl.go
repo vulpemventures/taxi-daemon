@@ -2,7 +2,6 @@ package inmemory
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	"github.com/shopspring/decimal"
@@ -28,7 +27,7 @@ func (r *inmemoryPriceRepository) UpdateOrCreatePrice(_ context.Context, price d
 	return nil
 }
 
-func (r *inmemoryPriceRepository) GetPrice(_ context.Context, assetHash string) (*domain.Price, error) {
+func (r *inmemoryPriceRepository) GetPrice(_ context.Context, assetHash string) (*domain.Price, bool, error) {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
@@ -36,8 +35,8 @@ func (r *inmemoryPriceRepository) GetPrice(_ context.Context, assetHash string) 
 		return &domain.Price{
 			AssetHash: assetHash,
 			Amount:    amount,
-		}, nil
+		}, true, nil
 	}
 
-	return nil, errors.New("Price does not exist")
+	return nil, false, nil
 }
