@@ -9,6 +9,7 @@ import (
 
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
@@ -113,6 +114,7 @@ func (taxi *taxiService) TopupWithAsset(
 	emptyContext := context.Background()
 
 	// check if asset is available
+	// price will be used later
 	price, assetSupported, err := taxi.priceRepository.GetPrice(emptyContext, assetHash)
 	if err != nil {
 		return nil, err
@@ -166,9 +168,14 @@ func (taxi *taxiService) TopupWithAsset(
 		}()
 	}
 
-	// TO DO: fetch the prices
-	assetAmount := 10 * totalFees
-	assetAmount += uint64(float64(assetAmount) * float64(taxi.basisPoint) / 100)
+	// express total fee as asset amount and add service fee
+	totalFeesAsDecimal := decimal.NewFromInt(int64(totalFees))
+	basisPointAsDecimal := decimal.NewFromInt(int64(taxi.basisPoint)).Div(decimal.NewFromInt(100))
+
+	feeInAsset := price.Amount.Mul(totalFeesAsDecimal)
+	taxiServiceCost := feeInAsset.Mul(basisPointAsDecimal)
+
+	assetAmount := uint64(feeInAsset.Add(taxiServiceCost).IntPart())
 
 	// create transaction
 	taxiPset, err := taxi.createPset(selectedUtxos, totalFees, changeAmount, assetHash, assetAmount)
