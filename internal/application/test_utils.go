@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/shopspring/decimal"
 	"github.com/vulpemventures/go-elements/network"
 )
 
@@ -18,8 +19,9 @@ const (
 )
 
 var (
-	regtest = network.Regtest
-	words   = strings.Split(mnemonic, " ")
+	regtest            = network.Regtest
+	words              = strings.Split(mnemonic, " ")
+	defaultSatsPerByte = decimal.NewFromFloat(0.1)
 )
 
 // Faucet ...

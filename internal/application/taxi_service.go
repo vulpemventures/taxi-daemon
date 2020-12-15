@@ -28,8 +28,7 @@ const (
 )
 
 type TaxiService interface {
-	// TODO satPerBytes as decimal
-	TopupWithAsset(assetHash string, feeAmount uint64, satPerBytes int) (*domain.Topup, error)
+	TopupWithAsset(assetHash string, feeAmount uint64, satPerBytes decimal.Decimal) (*domain.Topup, error)
 	ListAssets() []string
 	getAddresses() (string, string)
 	updateBasisPoint(newBasisPoint uint32)
@@ -116,9 +115,13 @@ func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
 func (taxi *taxiService) TopupWithAsset(
 	assetHash string,
 	feeAmount uint64,
-	satPerBytes int,
+	satPerBytes decimal.Decimal,
 ) (*domain.Topup, error) {
 	// TODO implement new sighash
+
+	if satPerBytes.LessThan(decimal.NewFromFloat(0.1)) {
+		return nil, ErrSatsPerByteIsInvalid{SatsPerByte: satPerBytes}
+	}
 
 	ttlUtxo := 10 * time.Minute
 	emptyContext := context.Background()

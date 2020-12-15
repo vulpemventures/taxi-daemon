@@ -41,12 +41,12 @@ func TestListTopups(t *testing.T) {
 	time.Sleep(5 * time.Second)
 
 	// do some topups
-	_, err = taxiSvc.TopupWithAsset(superToken, 5000, 1)
+	_, err = taxiSvc.TopupWithAsset(superToken, 5000, defaultSatsPerByte)
 	if err != nil {
 		t.Error(err)
 	}
 
-	topupHyperToken, err := taxiSvc.TopupWithAsset(hyperToken, 10000, 1)
+	topupHyperToken, err := taxiSvc.TopupWithAsset(hyperToken, 10000, defaultSatsPerByte)
 	if err != nil {
 		t.Error(err)
 	}
@@ -90,7 +90,7 @@ func TestChangeSpread(t *testing.T) {
 	}
 	time.Sleep(5 * time.Second)
 
-	topup0, err := taxiSvc.TopupWithAsset(superToken, 5000, 1)
+	topup0, err := taxiSvc.TopupWithAsset(superToken, 5000, defaultSatsPerByte)
 	if err != nil {
 		t.Error(err)
 	}
@@ -98,7 +98,7 @@ func TestChangeSpread(t *testing.T) {
 	adminSvc := NewAdminService(taxiSvc)
 	adminSvc.ChangeSpread(12)
 
-	topup1, err := taxiSvc.TopupWithAsset(superToken, 5000, 1)
+	topup1, err := taxiSvc.TopupWithAsset(superToken, 5000, defaultSatsPerByte)
 	if err != nil {
 		t.Error(err)
 	}
