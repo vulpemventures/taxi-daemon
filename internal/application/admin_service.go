@@ -45,5 +45,5 @@ func (adminSvc *adminService) ListTopups(assetHashFilter string) ([]domain.Topup
 
 // ChangeSpread sets the basisPoint of the taxiService
 func (adminSvc *adminService) ChangeSpread(basisPoint uint32) {
-	adminSvc.taxiSvc.updateBasisPoint(basisPoint)
+	panic("not implemented")
 }

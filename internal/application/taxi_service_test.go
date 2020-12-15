@@ -20,7 +20,7 @@ func TestTopupWithAsset(t *testing.T) {
 		ExplorerEndpoint: explorerEndpoint,
 		Mnemonic:         words,
 		Network:          regtest,
-		BasisPoint:       10,
+		AmountToConvert:  100000000,
 		TopupRepository:  inmemory.NewInmemoryTopupRepository(),
 		InitialPrices: []domain.Price{
 			domain.Price{
@@ -44,7 +44,7 @@ func TestTopupWithAsset(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
-	topup, err := taxiSvc.TopupWithAsset(superToken, 5000, defaultSatsPerByte)
+	topup, err := taxiSvc.TopupWithAsset(superToken)
 	assert.Nil(t, err)
 	assert.NotNil(t, topup)
 
@@ -109,7 +109,7 @@ func TestListAssets(t *testing.T) {
 			ExplorerEndpoint: explorerEndpoint,
 			Mnemonic:         words,
 			Network:          regtest,
-			BasisPoint:       10,
+			AmountToConvert:  100000000,
 			TopupRepository:  inmemory.NewInmemoryTopupRepository(),
 			InitialPrices:    test.initialPrices,
 		}

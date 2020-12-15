@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"errors"
 	"sync"
 	"time"
 
@@ -18,7 +17,6 @@ import (
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
-	"github.com/vulpemventures/liquid-taxi/pkg/fees"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
@@ -28,10 +26,9 @@ const (
 )
 
 type TaxiService interface {
-	TopupWithAsset(assetHash string, feeAmount uint64, satPerBytes decimal.Decimal) (*domain.Topup, error)
+	TopupWithAsset(assetHash string) (*domain.Topup, error)
 	ListAssets() []string
 	getAddresses() (string, string)
-	updateBasisPoint(newBasisPoint uint32)
 	getTopups() ([]domain.Topup, error)
 }
 
@@ -46,7 +43,7 @@ type taxiService struct {
 	receivePayment   *payment.Payment
 	receiveAddress   string
 	network          network.Network
-	basisPoint       uint32
+	amountToConvert  uint64
 	basisPointLocker sync.Locker
 }
 
@@ -54,7 +51,7 @@ type NewTaxiServiceArgs struct {
 	ExplorerEndpoint string
 	Mnemonic         []string
 	Network          network.Network
-	BasisPoint       uint32
+	AmountToConvert  uint64
 	InitialPrices    []domain.Price
 	TopupRepository  domain.TopupRepository
 }
@@ -105,27 +102,18 @@ func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
 		changeAddress:    changeAddr,
 		receivePayment:   receivePayment,
 		receiveAddress:   receiveAddr,
-		basisPoint:       args.BasisPoint,
+		amountToConvert:  args.AmountToConvert,
 		basisPointLocker: &sync.Mutex{},
 		network:          args.Network,
 	}, nil
 }
 
 // TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
-func (taxi *taxiService) TopupWithAsset(
-	assetHash string,
-	feeAmount uint64,
-	satPerBytes decimal.Decimal,
-) (*domain.Topup, error) {
-	// TODO implement new sighash
-
-	if satPerBytes.LessThan(decimal.NewFromFloat(0.1)) {
-		return nil, ErrSatsPerByteIsInvalid{SatsPerByte: satPerBytes}
-	}
+func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error) {
 
 	ttlUtxo := 10 * time.Minute
 	emptyContext := context.Background()
-	basisPoint := taxi.safeGetBasisPoint()
+	totalFees := taxi.amountToConvert
 
 	// check if asset is available
 	// price will be used later
@@ -144,55 +132,35 @@ func (taxi *taxiService) TopupWithAsset(
 		return nil, err
 	}
 
-	selectedUtxos, changeAmount, err := coinSelect(utxos, feeAmount, taxi.network.AssetID)
+	utxo, err := selectOneUtxo(utxos, totalFees, taxi.network.AssetID)
 	if err != nil {
 		return nil, err
 	}
 
-	// estimate fee increase
-	feeIncrease := fees.CalculateFeeIncrease(len(selectedUtxos), 3, satPerBytes)
-	totalFees := feeAmount + feeIncrease
-
-	if changeAmount >= feeIncrease {
-		changeAmount -= feeIncrease
-	} else {
-		selectedUtxos, changeAmount, err = coinSelect(utxos, totalFees, taxi.network.AssetID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	expireAt := time.Now().Add(ttlUtxo)
-	// Lock utxos
-	for _, utxo := range selectedUtxos {
-		utxoKey := utxo.Key()
 
-		if taxi.utxosLocker.Contains(emptyContext, utxoKey) {
-			return nil, ErrUtxoNotAvailable
-		}
+	// Lock utxo
+	utxoKey := utxo.Key()
 
-		err := taxi.utxosLocker.Add(emptyContext, []domain.Lock{utxoKey})
-		if err != nil {
-			return nil, err
-		}
-
-		go func() {
-			time.Sleep(ttlUtxo)
-			taxi.utxosLocker.Remove(emptyContext, utxoKey)
-		}()
+	if taxi.utxosLocker.Contains(emptyContext, utxoKey) {
+		return nil, ErrUtxoNotAvailable
 	}
 
-	// express total fee as asset amount and add service fee
-	totalFeesAsDecimal := decimal.NewFromInt(int64(totalFees))
-	basisPointAsDecimal := decimal.NewFromInt(int64(basisPoint)).Div(decimal.NewFromInt(100))
+	err = taxi.utxosLocker.Add(emptyContext, []domain.Lock{utxoKey})
+	if err != nil {
+		return nil, err
+	}
 
-	feeInAsset := price.Amount.Mul(totalFeesAsDecimal)
-	taxiServiceCost := feeInAsset.Mul(basisPointAsDecimal)
+	go func() {
+		time.Sleep(ttlUtxo)
+		taxi.utxosLocker.Remove(emptyContext, utxoKey)
+	}()
 
-	assetAmount := uint64(feeInAsset.Add(taxiServiceCost).IntPart())
+	amountAsDecimal := decimal.NewFromInt(int64(taxi.amountToConvert))
+	assetAmount := uint64(price.Amount.Mul(amountAsDecimal).IntPart())
 
 	// create transaction
-	taxiPset, err := taxi.createPset(selectedUtxos, totalFees, changeAmount, assetHash, assetAmount)
+	taxiPset, err := taxi.createPset(*utxo, totalFees, assetHash, assetAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -202,44 +170,37 @@ func (taxi *taxiService) TopupWithAsset(
 		return nil, err
 	}
 
-	prevouts := make([]*transaction.TxOutput, 0)
-	// add prevouts to pset inputs
-	for inputIndex, utxo := range selectedUtxos {
-		prevout, err := taxi.eplorer.FetchPrevout(utxo)
-		if err != nil {
-			return nil, err
-		}
-
-		prevouts = append(prevouts, prevout)
-
-		if err := updater.AddInWitnessUtxo(prevout, inputIndex); err != nil {
-			return nil, err
-		}
+	// add prevout to input
+	prevout, err := taxi.eplorer.FetchPrevout(*utxo)
+	if err != nil {
+		return nil, err
 	}
 
-	// sign with wallet
-	for index, witnessUtxo := range prevouts {
-		path := receiveDerivationPath
-		script := taxi.receivePayment.Script
+	if err := updater.AddInWitnessUtxo(prevout, 0); err != nil {
+		return nil, err
+	}
 
-		if bytes.Equal(witnessUtxo.Script, taxi.changePayment.Script) {
-			path = changeDerivationPath
-			script = taxi.changePayment.Script
-		}
+	// sign the input
+	path := receiveDerivationPath
+	script := taxi.receivePayment.Script
 
-		signOpts := wallet.SignInputArgs{
-			Updater:       updater,
-			UnsignedTx:    taxiPset.UnsignedTx,
-			Path:          path,
-			InputIndex:    index,
-			WitnessUtxo:   witnessUtxo,
-			WitnessScript: script,
-			HashType:      txscript.SigHashAll + txscript.SigHashAnyOneCanPay,
-		}
+	if bytes.Equal(prevout.Script, taxi.changePayment.Script) {
+		path = changeDerivationPath
+		script = taxi.changePayment.Script
+	}
 
-		if err := taxi.wallet.SignInput(signOpts); err != nil {
-			return nil, err
-		}
+	signOpts := wallet.SignInputArgs{
+		Updater:       updater,
+		UnsignedTx:    taxiPset.UnsignedTx,
+		Path:          path,
+		InputIndex:    0,
+		WitnessUtxo:   prevout,
+		WitnessScript: script,
+		HashType:      txscript.SigHashSingle + txscript.SigHashAnyOneCanPay,
+	}
+
+	if err := taxi.wallet.SignInput(signOpts); err != nil {
+		return nil, err
 	}
 
 	// check the signatures
@@ -264,8 +225,9 @@ func (taxi *taxiService) TopupWithAsset(
 		AssetPrice:  10,
 		AssetAmount: assetAmount,
 		FeeAmount:   totalFees,
-		BasisPoint:  int32(basisPoint),
-		ExpireAt:    expireAt,
+		// TODO remove basis point (useless)
+		BasisPoint: 0,
+		ExpireAt:   expireAt,
 	}
 
 	err = taxi.topupRepository.AddTopup(emptyContext, topup)
@@ -298,25 +260,37 @@ func (taxi *taxiService) ListAssets() []string {
 }
 
 func (taxi *taxiService) createPset(
-	selectedUtxos []Utxo,
+	utxo Utxo,
 	totalFees uint64,
-	changeAmount uint64,
 	assetHash string,
 	assetAmount uint64,
 ) (*pset.Pset, error) {
 	// create taxi tx
-	inputs := make([]*transaction.TxInput, 0)
-	outputs := make([]*transaction.TxOutput, 0)
+	inputs := make([]*transaction.TxInput, 1)
+	outputs := make([]*transaction.TxOutput, 2)
 
 	// inputs
-	for _, utxo := range selectedUtxos {
-		input := transaction.NewTxInput(utxo.Hash(), utxo.Vout)
-		inputs = append(inputs, input)
-	}
+	input := transaction.NewTxInput(utxo.Hash(), utxo.Vout)
+	inputs[0] = input
 
 	// outputs
 
-	// 1. fees output
+	// 1. payout output
+	payoutElementsValue, err := elementsutil.SatoshiToElementsValue(uint64(assetAmount))
+	if err != nil {
+		return nil, err
+	}
+
+	payoutOutput := transaction.NewTxOutput(
+		assetHashBytes(assetHash),
+		payoutElementsValue,
+		taxi.receivePayment.WitnessScript,
+	)
+
+	//	 /!\ payoutOutput MUST be output index 0 /!\
+	outputs[0] = payoutOutput
+
+	// 2. fees output
 	feesElementsValue, err := elementsutil.SatoshiToElementsValue(totalFees)
 	if err != nil {
 		return nil, err
@@ -329,37 +303,7 @@ func (taxi *taxiService) createPset(
 		[]byte{},
 	)
 
-	outputs = append(outputs, feesOutput)
-
-	// 2. payout output
-	payoutElementsValue, err := elementsutil.SatoshiToElementsValue(uint64(assetAmount))
-	if err != nil {
-		return nil, err
-	}
-
-	payoutOutput := transaction.NewTxOutput(
-		assetHashBytes(assetHash),
-		payoutElementsValue,
-		taxi.receivePayment.WitnessScript,
-	)
-
-	outputs = append(outputs, payoutOutput)
-
-	// 3. The change output
-	if changeAmount > 0 {
-		changeElementsValue, err := elementsutil.SatoshiToElementsValue(changeAmount)
-		if err != nil {
-			return nil, err
-		}
-
-		changeOutput := transaction.NewTxOutput(
-			LBTCbytes,
-			changeElementsValue,
-			taxi.changePayment.WitnessScript,
-		)
-
-		outputs = append(outputs, changeOutput)
-	}
+	outputs[1] = feesOutput
 
 	pset, err := pset.New(inputs, outputs, 2, 0)
 	if err != nil {
@@ -374,19 +318,12 @@ func (taxi *taxiService) getAddresses() (string, string) {
 	return taxi.receiveAddress, taxi.changeAddress
 }
 
-func (taxi *taxiService) safeGetBasisPoint() uint32 {
-	taxi.basisPointLocker.Lock()
-	defer taxi.basisPointLocker.Unlock()
+// func (taxi *taxiService) updateBasisPoint(newBasisPoint uint32) {
+// 	taxi.basisPointLocker.Lock()
+// 	defer taxi.basisPointLocker.Unlock()
 
-	return taxi.basisPoint
-}
-
-func (taxi *taxiService) updateBasisPoint(newBasisPoint uint32) {
-	taxi.basisPointLocker.Lock()
-	defer taxi.basisPointLocker.Unlock()
-
-	taxi.basisPoint = newBasisPoint
-}
+// 	taxi.basisPoint = newBasisPoint
+// }
 
 func (taxi *taxiService) getTopups() ([]domain.Topup, error) {
 	return taxi.topupRepository.GetAllTopups(context.Background())
@@ -416,29 +353,17 @@ func (taxi *taxiService) fetchAvailableUtxos() ([]Utxo, error) {
 	return availableUtxos, nil
 }
 
-func coinSelect(utxos []Utxo, targetAmount uint64, targetAsset string) ([]Utxo, uint64, error) {
-	var totalAmount uint64 = 0
-	selectedUtxos := make([]Utxo, 0)
-
+func selectOneUtxo(utxos []Utxo, targetAmount uint64, targetAsset string) (*Utxo, error) {
 	for _, utxo := range utxos {
-		if !utxo.IsConfidential() && utxo.Asset == targetAsset {
-			totalAmount += utxo.Value
-			selectedUtxos = append(selectedUtxos, utxo)
-			if totalAmount >= targetAmount {
-				break
-			}
+		if !utxo.IsConfidential() && utxo.Asset == targetAsset && utxo.Value == targetAmount {
+			return &utxo, nil
 		}
 	}
 
-	if totalAmount < targetAmount {
-		return nil, 0, errors.New(
-			"error on target amount: total utxo amount does not cover target amount",
-		)
+	return nil, ErrUtxoNotFound{
+		TargetedAmount: targetAmount,
+		TargetedAsset:  targetAsset,
 	}
-
-	changeAmount := totalAmount - targetAmount
-
-	return selectedUtxos, changeAmount, nil
 }
 
 func assetHashBytes(asset string) []byte {

@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 
-	"github.com/shopspring/decimal"
 	"github.com/vulpemventures/liquid-taxi/internal/application"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 )
@@ -27,10 +26,7 @@ func (t *taxiServer) ListAssets(_ context.Context, _ *pb.ListAssetsRequest) (*pb
 }
 
 func (t *taxiServer) TopupWithAsset(_ context.Context, req *pb.TopupWithAssetRequest) (*pb.TopupWithAssetReply, error) {
-	thousandAsDecimal := decimal.NewFromInt(1000)
-	satPerByte := decimal.NewFromInt(int64(req.GetMillisatPerByte())).Div(thousandAsDecimal)
-
-	topup, err := t.taxiSvc.TopupWithAsset(req.GetAssetHash(), req.GetFeeAmount(), satPerByte)
+	topup, err := t.taxiSvc.TopupWithAsset(req.GetAssetHash())
 	if err != nil {
 		return nil, err
 	}

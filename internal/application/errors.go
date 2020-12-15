@@ -37,6 +37,17 @@ func (e ErrSatsPerByteIsInvalid) Error() string {
 	return "Sats per byte value " + e.SatsPerByte.String() + " is lower than 0.1"
 }
 
+type ErrUtxoNotFound struct {
+	TargetedAmount uint64
+	TargetedAsset  string
+}
+
+var _ error = (*ErrUtxoNotFound)(nil)
+
+func (e ErrUtxoNotFound) Error() string {
+	return "utxo with amount = " + fmt.Sprint(e.TargetedAmount) + " and asset = " + e.TargetedAsset + " not found."
+}
+
 var (
 	ErrUtxoNotAvailable = errors.New("a selected utxo is not available")
 	ErrInvalidSignature = errors.New("at least one signature is invalid")
