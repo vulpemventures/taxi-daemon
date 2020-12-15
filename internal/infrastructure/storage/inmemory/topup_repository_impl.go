@@ -43,12 +43,12 @@ func (r *inmemoryTopupRepository) GetAllTopups(ctx context.Context) ([]domain.To
 	return topups, nil
 }
 
-func (r *inmemoryTopupRepository) SetRequested(ctx context.Context, topupId string) error {
+func (r *inmemoryTopupRepository) SetRequested(ctx context.Context, topupId string) (*domain.Topup, error) {
 	r.repositoryLocker.Lock()
 	defer r.repositoryLocker.Unlock()
 	topup, ok := r.topups[topupId]
 	if !ok {
-		return errors.New("Topup does not exist")
+		return nil, errors.New("Topup does not exist")
 	}
 
 	timestamp := time.Now()
@@ -57,15 +57,15 @@ func (r *inmemoryTopupRepository) SetRequested(ctx context.Context, topupId stri
 
 	r.topups[topupId] = topup
 
-	return nil
+	return &topup, nil
 }
 
-func (r *inmemoryTopupRepository) SetCompleted(ctx context.Context, topupId string) error {
+func (r *inmemoryTopupRepository) SetCompleted(ctx context.Context, topupId string) (*domain.Topup, error) {
 	r.repositoryLocker.Lock()
 	defer r.repositoryLocker.Unlock()
 	topup, ok := r.topups[topupId]
 	if !ok {
-		return errors.New("Topup does not exist")
+		return nil, errors.New("Topup does not exist")
 	}
 
 	timestamp := time.Now()
@@ -74,15 +74,15 @@ func (r *inmemoryTopupRepository) SetCompleted(ctx context.Context, topupId stri
 
 	r.topups[topupId] = topup
 
-	return nil
+	return &topup, nil
 }
 
-func (r *inmemoryTopupRepository) SetSettled(ctx context.Context, topupId string) error {
+func (r *inmemoryTopupRepository) SetSettled(ctx context.Context, topupId string) (*domain.Topup, error) {
 	r.repositoryLocker.Lock()
 	defer r.repositoryLocker.Unlock()
 	topup, ok := r.topups[topupId]
 	if !ok {
-		return errors.New("Topup does not exist")
+		return nil, errors.New("Topup does not exist")
 	}
 
 	timestamp := time.Now()
@@ -91,5 +91,5 @@ func (r *inmemoryTopupRepository) SetSettled(ctx context.Context, topupId string
 
 	r.topups[topupId] = topup
 
-	return nil
+	return &topup, nil
 }
