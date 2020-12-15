@@ -7,6 +7,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/tj/assert"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 )
 
 func TestListTopups(t *testing.T) {
@@ -15,6 +16,7 @@ func TestListTopups(t *testing.T) {
 		Mnemonic:         words,
 		Network:          regtest,
 		BasisPoint:       10,
+		TopupRepository:  inmemory.NewInmemoryTopupRepository(),
 		InitialPrices: []domain.Price{
 			domain.Price{
 				AssetHash: superToken,
@@ -69,6 +71,7 @@ func TestChangeSpread(t *testing.T) {
 		Mnemonic:         words,
 		Network:          regtest,
 		BasisPoint:       10,
+		TopupRepository:  inmemory.NewInmemoryTopupRepository(),
 		InitialPrices: []domain.Price{
 			domain.Price{
 				AssetHash: superToken,

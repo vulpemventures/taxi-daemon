@@ -56,11 +56,11 @@ type NewTaxiServiceArgs struct {
 	Network          network.Network
 	BasisPoint       uint32
 	InitialPrices    []domain.Price
+	TopupRepository  domain.TopupRepository
 }
 
 // NewTaxiService returns a TaxiService interface
 func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
-	// TODO create taxi service directly from repositories
 	w, err := wallet.NewWallet(args.Mnemonic)
 	if err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
 
 	return &taxiService{
 		utxosLocker:      inmemory.NewInmemoryLockRepository(),
-		topupRepository:  inmemory.NewInmemoryTopupRepository(),
+		topupRepository:  args.TopupRepository,
 		priceRepository:  priceRepo,
 		eplorer:          NewEsplorerService(explorerEndpoint),
 		wallet:           w,

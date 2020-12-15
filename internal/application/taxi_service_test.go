@@ -12,6 +12,7 @@ import (
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 )
 
 func TestTopupWithAsset(t *testing.T) {
@@ -20,6 +21,7 @@ func TestTopupWithAsset(t *testing.T) {
 		Mnemonic:         words,
 		Network:          regtest,
 		BasisPoint:       10,
+		TopupRepository:  inmemory.NewInmemoryTopupRepository(),
 		InitialPrices: []domain.Price{
 			domain.Price{
 				AssetHash: superToken,
@@ -108,6 +110,7 @@ func TestListAssets(t *testing.T) {
 			Mnemonic:         words,
 			Network:          regtest,
 			BasisPoint:       10,
+			TopupRepository:  inmemory.NewInmemoryTopupRepository(),
 			InitialPrices:    test.initialPrices,
 		}
 
