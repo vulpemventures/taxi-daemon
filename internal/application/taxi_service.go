@@ -34,6 +34,7 @@ type TaxiService interface {
 type taxiService struct {
 	utxosLocker     domain.LockRepository
 	topupRepository domain.TopupRepository
+	priceRepository domain.PriceRepository
 	eplorer         ExplorerService
 	wallet          wallet.Wallet
 	changePayment   *payment.Payment
@@ -44,14 +45,22 @@ type taxiService struct {
 	basisPoint      uint32
 }
 
+type NewTaxiServiceArgs struct {
+	ExplorerEndpoint string
+	Mnemonic         []string
+	Network          network.Network
+	BasisPoint       uint32
+	InitialPrices    []domain.Price
+}
+
 // NewTaxiService ...
-func NewTaxiService(explorerEndpoint string, mnemonic []string, network network.Network, basisPoint uint32) (TaxiService, error) {
-	w, err := wallet.NewWallet(mnemonic)
+func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
+	w, err := wallet.NewWallet(args.Mnemonic)
 	if err != nil {
 		return nil, err
 	}
 
-	receivePayment, err := w.DerivePath(receiveDerivationPath, &network)
+	receivePayment, err := w.DerivePath(receiveDerivationPath, &args.Network)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +70,7 @@ func NewTaxiService(explorerEndpoint string, mnemonic []string, network network.
 		return nil, err
 	}
 
-	changePayment, err := w.DerivePath(changeDerivationPath, &network)
+	changePayment, err := w.DerivePath(changeDerivationPath, &args.Network)
 	if err != nil {
 		return nil, err
 	}
@@ -71,26 +80,47 @@ func NewTaxiService(explorerEndpoint string, mnemonic []string, network network.
 		return nil, err
 	}
 
+	priceRepo := inmemory.NewInmemoryPriceRepository()
+
+	for _, price := range args.InitialPrices {
+		err := priceRepo.UpdateOrCreatePrice(context.Background(), price)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &taxiService{
 		utxosLocker:     inmemory.NewInmemoryLockRepository(),
 		topupRepository: inmemory.NewInmemoryTopupRepository(),
+		priceRepository: priceRepo,
 		eplorer:         NewEsplorerService(explorerEndpoint),
 		wallet:          w,
 		changePayment:   changePayment,
 		changeAddress:   changeAddr,
 		receivePayment:  receivePayment,
 		receiveAddress:  receiveAddr,
-		basisPoint:      basisPoint,
-		network:         network,
+		basisPoint:      args.BasisPoint,
+		network:         args.Network,
 	}, nil
 }
 
-func (taxi *taxiService) TopupWithAsset(assetHash string, feeAmount uint64, satPerBytes int) (*domain.Topup, error) {
+func (taxi *taxiService) TopupWithAsset(
+	assetHash string,
+	feeAmount uint64,
+	satPerBytes int,
+) (*domain.Topup, error) {
 	ttlUtxo := 10 * time.Minute
-
-	// TO DO : check if asset is available
-
 	emptyContext := context.Background()
+
+	// check if asset is available
+	price, assetSupported, err := taxi.priceRepository.GetPrice(emptyContext, assetHash)
+	if err != nil {
+		return nil, err
+	}
+
+	if !assetSupported {
+		return nil, ErrAssetNotSupported{AssetHash: assetHash}
+	}
 
 	// fetchUtxos + coin select
 	utxos, err := taxi.fetchAvailableUtxos()

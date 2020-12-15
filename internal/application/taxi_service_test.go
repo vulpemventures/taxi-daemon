@@ -7,10 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
+	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
 
 const (
@@ -23,7 +25,20 @@ var (
 )
 
 func TestTopupWithAsset(t *testing.T) {
-	taxiSvc, err := NewTaxiService(explorerEndpoint, words, regtest, 10)
+	newTaxiOpts := NewTaxiServiceArgs{
+		ExplorerEndpoint: explorerEndpoint,
+		Mnemonic:         words,
+		Network:          regtest,
+		BasisPoint:       10,
+		InitialPrices: []domain.Price{
+			domain.Price{
+				AssetHash: superToken,
+				Amount:    decimal.NewFromFloat(8.0026),
+			},
+		},
+	}
+
+	taxiSvc, err := NewTaxiService(newTaxiOpts)
 	if err != nil {
 		t.Error(nil)
 	}
