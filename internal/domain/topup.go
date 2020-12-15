@@ -1,6 +1,10 @@
 package domain
 
-import "time"
+import (
+	"time"
+
+	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
+)
 
 type TopupStatus int
 
@@ -23,4 +27,15 @@ type Topup struct {
 	CompletedAt time.Time
 	SettledAt   time.Time
 	ExpireAt    time.Time
+}
+
+func (t *Topup) ToProtobufTopupMessage() *pb.Topup {
+	return &pb.Topup{
+		TopupId:     t.Id,
+		Partial:     t.Partial,
+		AssetHash:   t.AssetHash,
+		AssetAmount: t.AssetAmount,
+		AssetPrice:  float32(t.AssetPrice),
+		BasisPoint:  t.BasisPoint,
+	}
 }
