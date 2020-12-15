@@ -7,19 +7,19 @@ import (
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
 
-type inmemoryUtxoRepository struct {
-	utxosKeys map[domain.UtxoKey]bool
+type inmemoryLockRepository struct {
+	utxosKeys map[domain.Lock]bool
 	locker    sync.Locker
 }
 
-func NewInmemoryUtxoKeyRepository() domain.UtxoKeyRepository {
-	return &inmemoryUtxoRepository{
-		utxosKeys: make(map[domain.UtxoKey]bool),
+func NewInmemoryLockRepository() domain.LockRepository {
+	return &inmemoryLockRepository{
+		utxosKeys: make(map[domain.Lock]bool),
 		locker:    &sync.Mutex{},
 	}
 }
 
-func (r *inmemoryUtxoRepository) AddKeys(ctx context.Context, keys []domain.UtxoKey) error {
+func (r *inmemoryLockRepository) Add(ctx context.Context, keys []domain.Lock) error {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
@@ -30,7 +30,7 @@ func (r *inmemoryUtxoRepository) AddKeys(ctx context.Context, keys []domain.Utxo
 	return nil
 }
 
-func (r *inmemoryUtxoRepository) Contains(ctx context.Context, key domain.UtxoKey) bool {
+func (r *inmemoryLockRepository) Contains(ctx context.Context, key domain.Lock) bool {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
@@ -38,7 +38,7 @@ func (r *inmemoryUtxoRepository) Contains(ctx context.Context, key domain.UtxoKe
 	return ok
 }
 
-func (r *inmemoryUtxoRepository) Remove(ctx context.Context, key domain.UtxoKey) error {
+func (r *inmemoryLockRepository) Remove(ctx context.Context, key domain.Lock) error {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 

@@ -32,7 +32,7 @@ type TaxiService interface {
 }
 
 type taxiService struct {
-	utxosLocker     domain.UtxoKeyRepository
+	utxosLocker     domain.LockRepository
 	topupRepository domain.TopupRepository
 	eplorer         ExplorerService
 	wallet          wallet.Wallet
@@ -72,7 +72,7 @@ func NewTaxiService(explorerEndpoint string, mnemonic []string, network network.
 	}
 
 	return &taxiService{
-		utxosLocker:     inmemory.NewInmemoryUtxoKeyRepository(),
+		utxosLocker:     inmemory.NewInmemoryLockRepository(),
 		topupRepository: inmemory.NewInmemoryTopupRepository(),
 		eplorer:         NewEsplorerService(explorerEndpoint),
 		wallet:          w,
@@ -125,7 +125,7 @@ func (taxi *taxiService) TopupWithAsset(assetHash string, feeAmount uint64, satP
 			return nil, ErrUtxoNotAvailable
 		}
 
-		err := taxi.utxosLocker.AddKeys(emptyContext, []domain.UtxoKey{utxoKey})
+		err := taxi.utxosLocker.Add(emptyContext, []domain.Lock{utxoKey})
 		if err != nil {
 			return nil, err
 		}
@@ -235,7 +235,7 @@ func (taxi *taxiService) ListAssets() []string {
 }
 
 func (taxi *taxiService) createPset(
-	selectedUtxos []domain.Utxo,
+	selectedUtxos []Utxo,
 	totalFees uint64,
 	changeAmount uint64,
 	assetHash string,
@@ -311,7 +311,7 @@ func (taxi *taxiService) getAddresses() (string, string) {
 	return taxi.receiveAddress, taxi.changeAddress
 }
 
-func (taxi *taxiService) fetchAvailableUtxos() ([]domain.Utxo, error) {
+func (taxi *taxiService) fetchAvailableUtxos() ([]Utxo, error) {
 	utxosChange, err := taxi.eplorer.GetUnspents(taxi.changeAddress)
 	if err != nil {
 		return nil, err
@@ -324,7 +324,7 @@ func (taxi *taxiService) fetchAvailableUtxos() ([]domain.Utxo, error) {
 
 	utxos := append(utxosChange, utxosReceive...)
 
-	availableUtxos := make([]domain.Utxo, 0)
+	availableUtxos := make([]Utxo, 0)
 
 	for _, utxo := range utxos {
 		if !taxi.utxosLocker.Contains(context.Background(), utxo.Key()) {
@@ -335,9 +335,9 @@ func (taxi *taxiService) fetchAvailableUtxos() ([]domain.Utxo, error) {
 	return availableUtxos, nil
 }
 
-func coinSelect(utxos []domain.Utxo, targetAmount uint64, targetAsset string) ([]domain.Utxo, uint64, error) {
+func coinSelect(utxos []Utxo, targetAmount uint64, targetAsset string) ([]Utxo, uint64, error) {
 	var totalAmount uint64 = 0
-	selectedUtxos := make([]domain.Utxo, 0)
+	selectedUtxos := make([]Utxo, 0)
 
 	for _, utxo := range utxos {
 		if !utxo.IsConfidential() && utxo.Asset == targetAsset {

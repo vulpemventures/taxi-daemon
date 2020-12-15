@@ -1,15 +1,11 @@
-package domain
+package application
 
 import (
 	"encoding/hex"
 
 	"github.com/vulpemventures/go-elements/elementsutil"
+	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
-
-type UtxoKey struct {
-	TxId string
-	Vout uint32
-}
 
 // Utxo = unspent
 type Utxo struct {
@@ -22,8 +18,8 @@ type Utxo struct {
 	NonceCommitment string `json:"noncecommitment"`
 }
 
-func (u Utxo) Key() UtxoKey {
-	return UtxoKey{
+func (u Utxo) Key() domain.Lock {
+	return domain.Lock{
 		TxId: u.TxId,
 		Vout: u.Vout,
 	}

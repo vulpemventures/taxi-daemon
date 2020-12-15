@@ -9,14 +9,13 @@ import (
 	"time"
 
 	"github.com/vulpemventures/go-elements/transaction"
-	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
 
 type ExplorerService interface {
-	GetUnspents(address string) ([]domain.Utxo, error)
+	GetUnspents(address string) ([]Utxo, error)
 	FetchTx(txId string) (string, error)
 	Broadcast(txHex string) (string, error)
-	FetchPrevout(utxo domain.Utxo) (*transaction.TxOutput, error)
+	FetchPrevout(utxo Utxo) (*transaction.TxOutput, error)
 }
 
 type explorerService struct {
@@ -47,7 +46,7 @@ func (explorer explorerService) FetchTx(txId string) (string, error) {
 }
 
 // GetUnspents returns utxos for a given addresses
-func (explorer explorerService) GetUnspents(address string) ([]domain.Utxo, error) {
+func (explorer explorerService) GetUnspents(address string) ([]Utxo, error) {
 	url := fmt.Sprintf(
 		"%s/address/%s/utxo",
 		explorer.endpoint,
@@ -63,7 +62,7 @@ func (explorer explorerService) GetUnspents(address string) ([]domain.Utxo, erro
 		return nil, errStatusIsNotOk{httpCode: status}
 	}
 
-	var utxos []domain.Utxo
+	var utxos []Utxo
 	err = json.Unmarshal([]byte(response), &utxos)
 	if err != nil {
 		return nil, err
@@ -87,7 +86,7 @@ func (explorer explorerService) Broadcast(txHex string) (string, error) {
 	return response, nil
 }
 
-func (explorer explorerService) FetchPrevout(utxo domain.Utxo) (*transaction.TxOutput, error) {
+func (explorer explorerService) FetchPrevout(utxo Utxo) (*transaction.TxOutput, error) {
 	hex, err := explorer.FetchTx(utxo.TxId)
 	if err != nil {
 		return nil, err
