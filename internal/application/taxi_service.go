@@ -54,7 +54,7 @@ type NewTaxiServiceArgs struct {
 	InitialPrices    []domain.Price
 }
 
-// NewTaxiService ...
+// NewTaxiService returns a TaxiService interface
 func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
 	w, err := wallet.NewWallet(args.Mnemonic)
 	if err != nil {
@@ -105,6 +105,7 @@ func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
 	}, nil
 }
 
+// TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
 func (taxi *taxiService) TopupWithAsset(
 	assetHash string,
 	feeAmount uint64,
@@ -267,8 +268,20 @@ func (taxi *taxiService) TopupWithAsset(
 	return &topup, nil
 }
 
+// ListAssets return all the available assets of the taxi service
 func (taxi *taxiService) ListAssets() []string {
-	panic("not implemented")
+	prices, err := taxi.priceRepository.GetAllPrices(context.Background())
+	if err != nil {
+		return nil
+	}
+
+	supportedAssets := make([]string, 0)
+
+	for _, price := range prices {
+		supportedAssets = append(supportedAssets, price.AssetHash)
+	}
+
+	return supportedAssets
 }
 
 func (taxi *taxiService) createPset(
@@ -306,7 +319,6 @@ func (taxi *taxiService) createPset(
 	outputs = append(outputs, feesOutput)
 
 	// 2. payout output
-	// TO DO : fetch the prices
 	payoutElementsValue, err := elementsutil.SatoshiToElementsValue(uint64(assetAmount))
 	if err != nil {
 		return nil, err
@@ -344,6 +356,7 @@ func (taxi *taxiService) createPset(
 	return pset, nil
 }
 
+// utils function using to fund the service
 func (taxi *taxiService) getAddresses() (string, string) {
 	return taxi.receiveAddress, taxi.changeAddress
 }

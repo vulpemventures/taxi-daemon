@@ -79,3 +79,55 @@ func TestTopupWithAsset(t *testing.T) {
 
 	assert.NotNil(t, payoutOutput)
 }
+
+func TestListAssets(t *testing.T) {
+	doesnotmatterAmount := decimal.NewFromFloat(66.6)
+
+	type testFixture struct {
+		initialPrices []domain.Price
+		expected      []string
+	}
+
+	tests := []testFixture{
+		{
+			initialPrices: []domain.Price{
+				domain.Price{
+					AssetHash: "bitcoin",
+					Amount:    doesnotmatterAmount,
+				},
+				domain.Price{
+					AssetHash: "bobtoken",
+					Amount:    doesnotmatterAmount,
+				},
+				domain.Price{
+					AssetHash: "liquidbitcoin",
+					Amount:    doesnotmatterAmount,
+				},
+				domain.Price{
+					AssetHash: "solidbitcoin",
+					Amount:    doesnotmatterAmount,
+				},
+			},
+			expected: []string{"bitcoin", "bobtoken", "liquidbitcoin", "solidbitcoin"},
+		},
+	}
+
+	for _, test := range tests {
+		newTaxiOpts := NewTaxiServiceArgs{
+			ExplorerEndpoint: explorerEndpoint,
+			Mnemonic:         words,
+			Network:          regtest,
+			BasisPoint:       10,
+			InitialPrices:    test.initialPrices,
+		}
+
+		taxiSvc, err := NewTaxiService(newTaxiOpts)
+		if err != nil {
+			t.Error(err)
+		}
+
+		assets := taxiSvc.ListAssets()
+		assert.Equal(t, test.expected, assets)
+	}
+
+}
