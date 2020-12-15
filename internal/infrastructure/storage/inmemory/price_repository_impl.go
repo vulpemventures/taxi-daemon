@@ -23,6 +23,7 @@ func NewInmemoryPriceRepository() domain.PriceRepository {
 func (r *inmemoryPriceRepository) UpdateOrCreatePrice(_ context.Context, price domain.Price) error {
 	r.locker.Lock()
 	defer r.locker.Unlock()
+
 	r.assetToAmountMap[price.AssetHash] = price.Amount
 	return nil
 }
@@ -39,4 +40,20 @@ func (r *inmemoryPriceRepository) GetPrice(_ context.Context, assetHash string) 
 	}
 
 	return nil, false, nil
+}
+
+func (r *inmemoryPriceRepository) GetAllPrices(_ context.Context) ([]domain.Price, error) {
+	r.locker.Lock()
+	defer r.locker.Unlock()
+
+	prices := make([]domain.Price, 0)
+
+	for key, value := range r.assetToAmountMap {
+		prices = append(prices, domain.Price{
+			AssetHash: key,
+			Amount:    value,
+		})
+	}
+
+	return prices, nil
 }
