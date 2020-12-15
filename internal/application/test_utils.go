@@ -5,11 +5,21 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
+
+	"github.com/vulpemventures/go-elements/network"
 )
 
 const (
 	mnemonic         = "clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"
 	explorerEndpoint = "http://localhost:3001"
+	superToken       = "2e4c430667f861d010b6c78ce6a3943d35d84ca77ca1898031b8799c4798bc4f"
+	hyperToken       = "6666430667f861d010b6c78ce6a3943d35d84ca77ca1898031b8799c47986666"
+)
+
+var (
+	regtest = network.Regtest
+	words   = strings.Split(mnemonic, " ")
 )
 
 // Faucet ...

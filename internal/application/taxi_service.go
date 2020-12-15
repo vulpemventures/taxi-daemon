@@ -28,10 +28,11 @@ const (
 )
 
 type TaxiService interface {
+	// TODO satPerBytes as decimal
 	TopupWithAsset(assetHash string, feeAmount uint64, satPerBytes int) (*domain.Topup, error)
 	ListAssets() []string
 	getAddresses() (string, string)
-	updateBasisPoint(newBasisPoint uint32) error
+	updateBasisPoint(newBasisPoint uint32)
 	getTopups() ([]domain.Topup, error)
 }
 
@@ -60,6 +61,7 @@ type NewTaxiServiceArgs struct {
 
 // NewTaxiService returns a TaxiService interface
 func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
+	// TODO create taxi service directly from repositories
 	w, err := wallet.NewWallet(args.Mnemonic)
 	if err != nil {
 		return nil, err
@@ -116,6 +118,8 @@ func (taxi *taxiService) TopupWithAsset(
 	feeAmount uint64,
 	satPerBytes int,
 ) (*domain.Topup, error) {
+	// TODO implement new sighash
+
 	ttlUtxo := 10 * time.Minute
 	emptyContext := context.Background()
 	basisPoint := taxi.safeGetBasisPoint()
@@ -266,12 +270,12 @@ func (taxi *taxiService) TopupWithAsset(
 		return nil, err
 	}
 
-	err = taxi.topupRepository.SetRequested(emptyContext, topup.Id)
+	topupToReturn, err := taxi.topupRepository.SetRequested(emptyContext, topup.Id)
 	if err != nil {
 		return nil, err
 	}
 
-	return &topup, nil
+	return topupToReturn, nil
 }
 
 // ListAssets return all the available assets of the taxi service
@@ -374,12 +378,11 @@ func (taxi *taxiService) safeGetBasisPoint() uint32 {
 	return taxi.basisPoint
 }
 
-func (taxi *taxiService) updateBasisPoint(newBasisPoint uint32) error {
+func (taxi *taxiService) updateBasisPoint(newBasisPoint uint32) {
 	taxi.basisPointLocker.Lock()
 	defer taxi.basisPointLocker.Unlock()
 
 	taxi.basisPoint = newBasisPoint
-	return nil
 }
 
 func (taxi *taxiService) getTopups() ([]domain.Topup, error) {

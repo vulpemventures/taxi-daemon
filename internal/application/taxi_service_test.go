@@ -3,25 +3,15 @@ package application
 import (
 	"bytes"
 	"log"
-	"strings"
+	"sort"
 	"testing"
 	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
-	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
-)
-
-const (
-	superToken = "2e4c430667f861d010b6c78ce6a3943d35d84ca77ca1898031b8799c4798bc4f"
-)
-
-var (
-	regtest = network.Regtest
-	words   = strings.Split(mnemonic, " ")
 )
 
 func TestTopupWithAsset(t *testing.T) {
@@ -127,6 +117,8 @@ func TestListAssets(t *testing.T) {
 		}
 
 		assets := taxiSvc.ListAssets()
+		sort.Strings(assets)
+		sort.Strings(test.expected)
 		assert.Equal(t, test.expected, assets)
 	}
 
