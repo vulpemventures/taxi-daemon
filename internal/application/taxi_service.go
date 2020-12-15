@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/btcsuite/btcd/txscript"
@@ -30,20 +31,23 @@ type TaxiService interface {
 	TopupWithAsset(assetHash string, feeAmount uint64, satPerBytes int) (*domain.Topup, error)
 	ListAssets() []string
 	getAddresses() (string, string)
+	updateBasisPoint(newBasisPoint uint32) error
+	getTopups() ([]domain.Topup, error)
 }
 
 type taxiService struct {
-	utxosLocker     domain.LockRepository
-	topupRepository domain.TopupRepository
-	priceRepository domain.PriceRepository
-	eplorer         ExplorerService
-	wallet          wallet.Wallet
-	changePayment   *payment.Payment
-	changeAddress   string
-	receivePayment  *payment.Payment
-	receiveAddress  string
-	network         network.Network
-	basisPoint      uint32
+	utxosLocker      domain.LockRepository
+	topupRepository  domain.TopupRepository
+	priceRepository  domain.PriceRepository
+	eplorer          ExplorerService
+	wallet           wallet.Wallet
+	changePayment    *payment.Payment
+	changeAddress    string
+	receivePayment   *payment.Payment
+	receiveAddress   string
+	network          network.Network
+	basisPoint       uint32
+	basisPointLocker sync.Locker
 }
 
 type NewTaxiServiceArgs struct {
@@ -91,17 +95,18 @@ func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
 	}
 
 	return &taxiService{
-		utxosLocker:     inmemory.NewInmemoryLockRepository(),
-		topupRepository: inmemory.NewInmemoryTopupRepository(),
-		priceRepository: priceRepo,
-		eplorer:         NewEsplorerService(explorerEndpoint),
-		wallet:          w,
-		changePayment:   changePayment,
-		changeAddress:   changeAddr,
-		receivePayment:  receivePayment,
-		receiveAddress:  receiveAddr,
-		basisPoint:      args.BasisPoint,
-		network:         args.Network,
+		utxosLocker:      inmemory.NewInmemoryLockRepository(),
+		topupRepository:  inmemory.NewInmemoryTopupRepository(),
+		priceRepository:  priceRepo,
+		eplorer:          NewEsplorerService(explorerEndpoint),
+		wallet:           w,
+		changePayment:    changePayment,
+		changeAddress:    changeAddr,
+		receivePayment:   receivePayment,
+		receiveAddress:   receiveAddr,
+		basisPoint:       args.BasisPoint,
+		basisPointLocker: &sync.Mutex{},
+		network:          args.Network,
 	}, nil
 }
 
@@ -113,6 +118,7 @@ func (taxi *taxiService) TopupWithAsset(
 ) (*domain.Topup, error) {
 	ttlUtxo := 10 * time.Minute
 	emptyContext := context.Background()
+	basisPoint := taxi.safeGetBasisPoint()
 
 	// check if asset is available
 	// price will be used later
@@ -171,7 +177,7 @@ func (taxi *taxiService) TopupWithAsset(
 
 	// express total fee as asset amount and add service fee
 	totalFeesAsDecimal := decimal.NewFromInt(int64(totalFees))
-	basisPointAsDecimal := decimal.NewFromInt(int64(taxi.basisPoint)).Div(decimal.NewFromInt(100))
+	basisPointAsDecimal := decimal.NewFromInt(int64(basisPoint)).Div(decimal.NewFromInt(100))
 
 	feeInAsset := price.Amount.Mul(totalFeesAsDecimal)
 	taxiServiceCost := feeInAsset.Mul(basisPointAsDecimal)
@@ -251,7 +257,7 @@ func (taxi *taxiService) TopupWithAsset(
 		AssetPrice:  10,
 		AssetAmount: assetAmount,
 		FeeAmount:   totalFees,
-		BasisPoint:  int32(taxi.basisPoint),
+		BasisPoint:  int32(basisPoint),
 		ExpireAt:    expireAt,
 	}
 
@@ -359,6 +365,25 @@ func (taxi *taxiService) createPset(
 // utils function using to fund the service
 func (taxi *taxiService) getAddresses() (string, string) {
 	return taxi.receiveAddress, taxi.changeAddress
+}
+
+func (taxi *taxiService) safeGetBasisPoint() uint32 {
+	taxi.basisPointLocker.Lock()
+	defer taxi.basisPointLocker.Unlock()
+
+	return taxi.basisPoint
+}
+
+func (taxi *taxiService) updateBasisPoint(newBasisPoint uint32) error {
+	taxi.basisPointLocker.Lock()
+	defer taxi.basisPointLocker.Unlock()
+
+	taxi.basisPoint = newBasisPoint
+	return nil
+}
+
+func (taxi *taxiService) getTopups() ([]domain.Topup, error) {
+	return taxi.topupRepository.GetAllTopups(context.Background())
 }
 
 func (taxi *taxiService) fetchAvailableUtxos() ([]Utxo, error) {
