@@ -26,6 +26,8 @@ const (
 	FragmentAmountKey = "FRAGMENT_AMOUNT"
 	// LogLevelKey ...
 	LogLevelKey = "LOG_LEVEL"
+	// AssetHashKey is a temporary var for test
+	AssetHashKey = "ASSET_HASH"
 )
 
 var vip *viper.Viper
@@ -89,6 +91,15 @@ func validatePort(port int) error {
 		log.Fatal("Can't close: ", err)
 	}
 	return nil
+}
+
+// TODO refacto ASSETHASH key
+func GetAssetHash() string {
+	return vip.GetString(AssetHashKey)
+}
+
+func SetAssetHash(hash string) {
+	vip.Set(AssetHashKey, hash)
 }
 
 func GetExplorerEndpoint() string {

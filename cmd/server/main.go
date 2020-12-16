@@ -29,7 +29,7 @@ func main() {
 		InitialPrices: []domain.Price{
 			// TODO this should be configurable from config.json file for intance
 			domain.Price{
-				AssetHash: "2e4c430667f861d010b6c78ce6a3943d35d84ca77ca1898031b8799c4798bc4f",
+				AssetHash: config.GetAssetHash(),
 				Amount:    decimal.NewFromFloat(10.894),
 			},
 		},
