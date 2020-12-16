@@ -195,10 +195,10 @@ func TestTaxiServer(t *testing.T) {
 
 	log.Info(txHex)
 
-	_, err = aliceExplorerSvc.Broadcast(txHex)
-	if err != nil {
-		t.Error(err)
-	}
+	// _, err = aliceExplorerSvc.Broadcast(txHex)
+	// if err != nil {
+	// 	t.Error(err)
+	// }
 }
 
 func mint(apiUrl string, address string, amount int) (string, string, error) {
