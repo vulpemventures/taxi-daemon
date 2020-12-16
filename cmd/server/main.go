@@ -38,7 +38,7 @@ func main() {
 
 	taxiSvc, err := application.NewTaxiService(taxiSvcOptions)
 	if err != nil {
-		log.Fatal("taxi service creation error", err)
+		log.Fatal("taxi service creation error ", err)
 	}
 
 	adminSvc := application.NewAdminService(taxiSvc)
@@ -59,29 +59,29 @@ func main() {
 	// serve
 	lisTaxi, err := net.Listen("tcp", taxiAddress)
 	if err != nil {
-		log.Fatal("failed to listen", err)
+		log.Fatal("failed to listen ", err)
 	}
 
 	lisAdmin, err := net.Listen("tcp", adminAddress)
 	if err != nil {
-		log.Fatal("failed to listen", err)
+		log.Fatal("failed to listen ", err)
 	}
 
 	go func() {
 		err := taxiServer.Serve(lisTaxi)
 		if err != nil {
-			log.Fatal("failed to serve", err)
+			log.Fatal("failed to serve ", err)
 		}
 	}()
 
-	log.Info("taxi server is listening on", taxiAddress)
+	log.Info("taxi server is listening on ", taxiAddress)
 
 	go func() {
 		err := adminServer.Serve(lisAdmin)
 		if err != nil {
-			log.Fatal("failed to serve", err)
+			log.Fatal("failed to serve ", err)
 		}
 	}()
 
-	log.Info("admin server is listening on", adminAddress)
+	log.Info("admin server is listening on ", adminAddress)
 }
