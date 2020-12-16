@@ -14,6 +14,10 @@ import (
 var emptyContext = context.Background()
 
 func TestTaxiServer(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
 	go main()
 
 	// give time to server to serve
