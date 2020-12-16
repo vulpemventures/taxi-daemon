@@ -3,10 +3,11 @@ package domain
 import (
 	"time"
 
+	"github.com/vulpemventures/liquid-taxi/pkg/utils"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 )
 
-type TopupStatus int
+type TopupStatus int32
 
 const (
 	Requested TopupStatus = 0
@@ -37,5 +38,23 @@ func (t *Topup) ToProtobufTopupMessage() *pb.Topup {
 		AssetAmount: t.AssetAmount,
 		AssetPrice:  float32(t.AssetPrice),
 		BasisPoint:  t.BasisPoint,
+	}
+}
+
+func (t *Topup) ToProtobufTimestampsMessage() *pb.Timestamps {
+	return &pb.Timestamps{
+		RequestedAt: utils.MakeMillisecondTimestamp(t.RequestedAt),
+		CompletedAt: utils.MakeMillisecondTimestamp(t.CompletedAt),
+		SettledAt:   utils.MakeMillisecondTimestamp(t.SettledAt),
+	}
+}
+
+func (t *Topup) ToProtobufTopupInfoMessage() *pb.TopupInfo {
+	return &pb.TopupInfo{
+		Topup:           t.ToProtobufTopupMessage(),
+		Status:          pb.TopupInfo_Status(t.Status),
+		FeeAmount:       t.FeeAmount,
+		MillisatPerByte: 0,
+		Times:           t.ToProtobufTimestampsMessage(),
 	}
 }

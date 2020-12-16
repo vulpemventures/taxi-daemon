@@ -20,13 +20,19 @@ func NewAdminHandler(adminSvc application.AdminService) pb.AdminServer {
 }
 
 func (a *adminServer) ListTopups(ctx context.Context, req *pb.ListTopupsRequest) (*pb.ListTopupsReply, error) {
-	_, err := a.adminSvc.ListTopups(req.GetAssetHash())
+	topups, err := a.adminSvc.ListTopups(req.GetAssetHash())
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO return listTopupsReply
-	return nil, errors.New("Not implemented")
+	reply := make([]*pb.TopupInfo, 0)
+	for _, t := range topups {
+		reply = append(reply, t.ToProtobufTopupInfoMessage())
+	}
+
+	return &pb.ListTopupsReply{
+		Topups: reply,
+	}, nil
 }
 
 func (a *adminServer) ChangeSpread(ctx context.Context, req *pb.ChangeSpreadRequest) (*pb.ChangeSpreadReply, error) {
