@@ -52,8 +52,9 @@ func main() {
 	pb.RegisterAdminServer(adminServer, adminHandler)
 	pb.RegisterTaxiServer(taxiServer, taxiHandler)
 
-	taxiAddress := fmt.Sprintf(":%+v", config.GetTaxiPort())
-	adminAddress := fmt.Sprintf(":%+v", config.GetAdminPort())
+	domainUrl := "localhost"
+	taxiAddress := fmt.Sprintf("%s:%+v", domainUrl, config.GetTaxiPort())
+	adminAddress := fmt.Sprintf("%s:%+v", domainUrl, config.GetAdminPort())
 
 	// serve
 	lisTaxi, err := net.Listen("tcp", taxiAddress)
@@ -66,17 +67,21 @@ func main() {
 		log.Fatal("failed to listen", err)
 	}
 
-	err = taxiServer.Serve(lisTaxi)
-	if err != nil {
-		log.Fatal("failed to serve", err)
-	}
+	go func() {
+		err := taxiServer.Serve(lisTaxi)
+		if err != nil {
+			log.Fatal("failed to serve", err)
+		}
+	}()
 
 	log.Info("taxi server is listening on", taxiAddress)
 
-	err = adminServer.Serve(lisAdmin)
-	if err != nil {
-		log.Fatal("failed to serve", err)
-	}
+	go func() {
+		err := adminServer.Serve(lisAdmin)
+		if err != nil {
+			log.Fatal("failed to serve", err)
+		}
+	}()
 
 	log.Info("admin server is listening on", adminAddress)
 }
