@@ -3,7 +3,10 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
@@ -84,4 +87,18 @@ func main() {
 	}()
 
 	log.Info("admin server is listening on ", adminAddress)
+
+	// Interrupt Notification.
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+
+	<-interrupt
+	fmt.Println("")
+	log.Info("Shutting down Taxi service...")
+	adminServer.Stop()
+	log.Info("Admin server stopped")
+	taxiServer.Stop()
+	log.Info("Taxi server stopped")
+
+	os.Exit(0)
 }
