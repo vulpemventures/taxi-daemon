@@ -37,10 +37,6 @@ type taxiService struct {
 	priceRepository  domain.PriceRepository
 	eplorer          explorer.Explorer
 	wallet           wallet.Wallet
-	changePayment    *payment.Payment
-	changeAddress    string
-	receivePayment   *payment.Payment
-	receiveAddress   string
 	network          network.Network
 	fixedFeeAmount   uint64
 	basisPointLocker sync.Locker
@@ -68,36 +64,12 @@ func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 		return nil, err
 	}
 
-	receivePayment, err := w.DerivePath(receiveDerivationPath, &args.Network)
-	if err != nil {
-		return nil, err
-	}
-
-	receiveAddr, err := receivePayment.WitnessPubKeyHash()
-	if err != nil {
-		return nil, err
-	}
-
-	changePayment, err := w.DerivePath(changeDerivationPath, &args.Network)
-	if err != nil {
-		return nil, err
-	}
-
-	changeAddr, err := changePayment.WitnessPubKeyHash()
-	if err != nil {
-		return nil, err
-	}
-
 	return &taxiService{
 		lockRepository:   args.LockRepository,
 		topupRepository:  args.TopupRepository,
 		priceRepository:  args.PriceRepository,
 		eplorer:          explorer.NewEsplorerService(explorerEndpoint),
 		wallet:           w,
-		changePayment:    changePayment,
-		changeAddress:    changeAddr,
-		receivePayment:   receivePayment,
-		receiveAddress:   receiveAddr,
 		fixedFeeAmount:   args.FixedFeeAmount,
 		basisPointLocker: &sync.Mutex{},
 		network:          args.Network,
@@ -188,13 +160,23 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 		return nil, err
 	}
 
+	receivePayment, err := taxi.getReceivePayment()
+	if err != nil {
+		return nil, err
+	}
+
+	changePayment, err := taxi.getChangePayment()
+	if err != nil {
+		return nil, err
+	}
+
 	// sign the input
 	path := receiveDerivationPath
-	script := taxi.receivePayment.Script
+	script := receivePayment.Script
 
-	if bytes.Equal(prevout.Script, taxi.changePayment.Script) {
+	if bytes.Equal(prevout.Script, changePayment.Script) {
 		path = changeDerivationPath
-		script = taxi.changePayment.Script
+		script = changePayment.Script
 	}
 
 	signOpts := wallet.SignInputArgs{
@@ -273,10 +255,15 @@ func (taxi *taxiService) createPset(
 		return nil, err
 	}
 
+	taxiPayment, err := taxi.getReceivePayment()
+	if err != nil {
+		return nil, err
+	}
+
 	payoutOutput := transaction.NewTxOutput(
 		assetHashBytes(assetHash),
 		payoutElementsValue,
-		taxi.receivePayment.WitnessScript,
+		taxiPayment.WitnessScript,
 	)
 
 	//	 /!\ payoutOutput MUST be output index 0 /!\
@@ -306,8 +293,28 @@ func (taxi *taxiService) createPset(
 }
 
 // utils function using to fund the service
-func (taxi *taxiService) getAddresses() (string, string) {
-	return taxi.receiveAddress, taxi.changeAddress
+func (taxi *taxiService) getAddresses() (string, string, error) {
+	rcvPayment, err := taxi.getReceivePayment()
+	if err != nil {
+		return "", "", err
+	}
+
+	rcvAddress, err := rcvPayment.WitnessPubKeyHash()
+	if err != nil {
+		return "", "", err
+	}
+
+	changePayment, err := taxi.getChangePayment()
+	if err != nil {
+		return "", "", err
+	}
+
+	changeAddress, err := changePayment.WitnessPubKeyHash()
+	if err != nil {
+		return "", "", err
+	}
+
+	return rcvAddress, changeAddress, nil
 }
 
 func (taxi *taxiService) getTopups() ([]domain.Topup, error) {
@@ -315,12 +322,17 @@ func (taxi *taxiService) getTopups() ([]domain.Topup, error) {
 }
 
 func (taxi *taxiService) fetchAvailableUtxos() ([]explorer.Utxo, error) {
-	utxosChange, err := taxi.eplorer.GetUnspents(taxi.changeAddress)
+	rcvAddress, changeAddress, err := taxi.getAddresses()
 	if err != nil {
 		return nil, err
 	}
 
-	utxosReceive, err := taxi.eplorer.GetUnspents(taxi.receiveAddress)
+	utxosChange, err := taxi.eplorer.GetUnspents(changeAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	utxosReceive, err := taxi.eplorer.GetUnspents(rcvAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -336,6 +348,14 @@ func (taxi *taxiService) fetchAvailableUtxos() ([]explorer.Utxo, error) {
 	}
 
 	return availableUtxos, nil
+}
+
+func (taxi *taxiService) getReceivePayment() (*payment.Payment, error) {
+	return taxi.wallet.DerivePath(receiveDerivationPath, &taxi.network)
+}
+
+func (taxi *taxiService) getChangePayment() (*payment.Payment, error) {
+	return taxi.wallet.DerivePath(changeDerivationPath, &taxi.network)
 }
 
 func selectOneUtxo(utxos []explorer.Utxo, targetAmount uint64, targetAsset string) (explorer.Utxo, error) {
