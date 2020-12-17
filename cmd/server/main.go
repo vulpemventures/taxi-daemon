@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -23,20 +24,22 @@ func main() {
 	log.Info("Taxi server is starting...")
 
 	topupRepository := inmemory.NewInmemoryTopupRepository()
+	lockRepository := inmemory.NewInmemoryLockRepository()
+	priceRepository := inmemory.NewInmemoryPriceRepository()
+
+	priceRepository.UpdateOrCreatePrice(context.Background(), domain.Price{
+		AssetHash: config.GetAssetHash(),
+		Amount:    decimal.NewFromFloat(10.154),
+	})
 
 	taxiSvcOptions := application.NewTaxiServiceArgs{
 		ExplorerEndpoint: config.GetExplorerEndpoint(),
 		Mnemonic:         strings.Split(config.GetMnemonic(), " "),
 		Network:          *config.GetNetwork(),
 		AmountToConvert:  uint64(config.GetFragmentAmount()),
-		InitialPrices: []domain.Price{
-			// TODO this should be configurable from config.json file for intance
-			domain.Price{
-				AssetHash: config.GetAssetHash(),
-				Amount:    decimal.NewFromFloat(10.894),
-			},
-		},
-		TopupRepository: topupRepository,
+		LockRepository:   lockRepository,
+		PriceRepository:  priceRepository,
+		TopupRepository:  topupRepository,
 	}
 
 	taxiSvc, err := application.NewTaxiService(taxiSvcOptions)

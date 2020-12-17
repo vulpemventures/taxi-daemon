@@ -15,7 +15,6 @@ import (
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
-	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
@@ -52,8 +51,9 @@ type NewTaxiServiceArgs struct {
 	Mnemonic         []string
 	Network          network.Network
 	AmountToConvert  uint64
-	InitialPrices    []domain.Price
 	TopupRepository  domain.TopupRepository
+	LockRepository   domain.LockRepository
+	PriceRepository  domain.PriceRepository
 }
 
 // NewTaxiService returns a TaxiService interface
@@ -87,19 +87,10 @@ func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 		return nil, err
 	}
 
-	priceRepo := inmemory.NewInmemoryPriceRepository()
-
-	for _, price := range args.InitialPrices {
-		err := priceRepo.UpdateOrCreatePrice(context.Background(), price)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return &taxiService{
-		lockRepository:   inmemory.NewInmemoryLockRepository(),
+		lockRepository:   args.LockRepository,
 		topupRepository:  args.TopupRepository,
-		priceRepository:  priceRepo,
+		priceRepository:  args.PriceRepository,
 		eplorer:          NewEsplorerService(explorerEndpoint),
 		wallet:           w,
 		changePayment:    changePayment,
@@ -317,13 +308,6 @@ func (taxi *taxiService) createPset(
 func (taxi *taxiService) getAddresses() (string, string) {
 	return taxi.receiveAddress, taxi.changeAddress
 }
-
-// func (taxi *taxiService) updateBasisPoint(newBasisPoint uint32) {
-// 	taxi.basisPointLocker.Lock()
-// 	defer taxi.basisPointLocker.Unlock()
-
-// 	taxi.basisPoint = newBasisPoint
-// }
 
 func (taxi *taxiService) getTopups() ([]domain.Topup, error) {
 	return taxi.topupRepository.GetAllTopups(context.Background())

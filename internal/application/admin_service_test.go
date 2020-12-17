@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shopspring/decimal"
 	"github.com/tj/assert"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
@@ -17,16 +16,8 @@ func TestListTopups(t *testing.T) {
 		Network:          regtest,
 		AmountToConvert:  100000000,
 		TopupRepository:  inmemory.NewInmemoryTopupRepository(),
-		InitialPrices: []domain.Price{
-			domain.Price{
-				AssetHash: superToken,
-				Amount:    decimal.NewFromFloat(8.0026),
-			},
-			domain.Price{
-				AssetHash: hyperToken,
-				Amount:    decimal.NewFromFloat(7.032),
-			},
-		},
+		LockRepository:   inmemory.NewInmemoryLockRepository(),
+		PriceRepository:  newMockedPriceRepository(t, []string{superToken, hyperToken}),
 	}
 
 	taxiSvc, err := newTaxiService(newTaxiOpts)

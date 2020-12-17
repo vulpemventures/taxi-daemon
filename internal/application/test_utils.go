@@ -2,13 +2,17 @@ package application
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"testing"
 
 	"github.com/shopspring/decimal"
 	"github.com/vulpemventures/go-elements/network"
+	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 )
 
 const (
@@ -19,9 +23,10 @@ const (
 )
 
 var (
-	regtest            = network.Regtest
-	words              = strings.Split(mnemonic, " ")
-	defaultSatsPerByte = decimal.NewFromFloat(0.1)
+	regtest             = network.Regtest
+	words               = strings.Split(mnemonic, " ")
+	defaultSatsPerByte  = decimal.NewFromFloat(0.1)
+	doesnotmatterAmount = decimal.NewFromFloat(66.6)
 )
 
 // Faucet ...
@@ -44,4 +49,25 @@ func faucet(address string, baseURL string) (string, error) {
 	}
 
 	return respBody["txId"], nil
+}
+
+func newMockedPriceRepository(t *testing.T, assets []string) domain.PriceRepository {
+	repo := inmemory.NewInmemoryPriceRepository()
+	initialPrices := []domain.Price{}
+
+	for _, a := range assets {
+		initialPrices = append(initialPrices, domain.Price{
+			AssetHash: a,
+			Amount:    doesnotmatterAmount,
+		})
+	}
+
+	for _, price := range initialPrices {
+		err := repo.UpdateOrCreatePrice(context.Background(), price)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+
+	return repo
 }

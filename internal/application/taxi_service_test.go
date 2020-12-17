@@ -7,27 +7,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
-	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 )
 
 func TestTopupWithAsset(t *testing.T) {
+
 	newTaxiOpts := NewTaxiServiceArgs{
 		ExplorerEndpoint: explorerEndpoint,
 		Mnemonic:         words,
 		Network:          regtest,
 		AmountToConvert:  100000000,
 		TopupRepository:  inmemory.NewInmemoryTopupRepository(),
-		InitialPrices: []domain.Price{
-			domain.Price{
-				AssetHash: superToken,
-				Amount:    decimal.NewFromFloat(8.0026),
-			},
-		},
+		LockRepository:   inmemory.NewInmemoryLockRepository(),
+		PriceRepository:  newMockedPriceRepository(t, []string{superToken}),
 	}
 
 	taxiSvc, err := newTaxiService(newTaxiOpts)
@@ -73,33 +68,14 @@ func TestTopupWithAsset(t *testing.T) {
 }
 
 func TestListAssets(t *testing.T) {
-	doesnotmatterAmount := decimal.NewFromFloat(66.6)
-
 	type testFixture struct {
-		initialPrices []domain.Price
-		expected      []string
+		input    []string
+		expected []string
 	}
 
 	tests := []testFixture{
 		{
-			initialPrices: []domain.Price{
-				domain.Price{
-					AssetHash: "bitcoin",
-					Amount:    doesnotmatterAmount,
-				},
-				domain.Price{
-					AssetHash: "bobtoken",
-					Amount:    doesnotmatterAmount,
-				},
-				domain.Price{
-					AssetHash: "liquidbitcoin",
-					Amount:    doesnotmatterAmount,
-				},
-				domain.Price{
-					AssetHash: "solidbitcoin",
-					Amount:    doesnotmatterAmount,
-				},
-			},
+			input:    []string{"bitcoin", "bobtoken", "liquidbitcoin", "solidbitcoin"},
 			expected: []string{"bitcoin", "bobtoken", "liquidbitcoin", "solidbitcoin"},
 		},
 	}
@@ -111,7 +87,8 @@ func TestListAssets(t *testing.T) {
 			Network:          regtest,
 			AmountToConvert:  100000000,
 			TopupRepository:  inmemory.NewInmemoryTopupRepository(),
-			InitialPrices:    test.initialPrices,
+			LockRepository:   inmemory.NewInmemoryLockRepository(),
+			PriceRepository:  newMockedPriceRepository(t, test.input),
 		}
 
 		taxiSvc, err := NewTaxiService(newTaxiOpts)
