@@ -22,8 +22,8 @@ const (
 	NetworkKey = "NETWORK"
 	// MnemonicKey defines the private key used by the taxi
 	MnemonicKey = "MNEMONIC"
-	// FragmentAmountKey defines the amount provided by taxi for a topup
-	FragmentAmountKey = "FRAGMENT_AMOUNT"
+	// FixedFeeAmountKey defines the amount provided by taxi for a topup
+	FixedFeeAmountKey = "FIXED_FEE_AMOUNT"
 	// LogLevelKey is the level used as logus' logger level
 	LogLevelKey = "LOG_LEVEL"
 	// AssetHashKey is a temporary var for test
@@ -44,7 +44,7 @@ func init() {
 	vip.SetDefault(AdminPortKey, 8081)
 	vip.SetDefault(MnemonicKey, "")
 	vip.SetDefault(LogLevelKey, 4)
-	vip.SetDefault(FragmentAmountKey, 1000)
+	vip.SetDefault(FixedFeeAmountKey, 1000)
 
 	validate()
 
@@ -60,7 +60,7 @@ func validate() {
 		log.Fatal("network does not exist")
 	}
 
-	if GetFragmentAmount() < 1 {
+	if GetFixedFeeAmount() < 1 {
 		log.Fatal("fragment amount can't be lower than 1 satoshi")
 	}
 
@@ -115,9 +115,9 @@ func GetMnemonic() string {
 	return vip.GetString(MnemonicKey)
 }
 
-// GetFragmentAmount returns the value of fragment amount as integer
-func GetFragmentAmount() int {
-	return vip.GetInt(FragmentAmountKey)
+// GetFixedFeeAmount returns the value of fragment amount as integer
+func GetFixedFeeAmount() int {
+	return vip.GetInt(FixedFeeAmountKey)
 }
 
 // GetTaxiPort returns the port of the taxi server
