@@ -9,13 +9,13 @@ import (
 
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/shopspring/decimal"
-	"github.com/tiero/ocean/pkg/explorer"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
@@ -92,7 +92,7 @@ func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 		lockRepository:   args.LockRepository,
 		topupRepository:  args.TopupRepository,
 		priceRepository:  args.PriceRepository,
-		eplorer:          NewEsplorerService(explorerEndpoint),
+		eplorer:          explorer.NewEsplorerService(explorerEndpoint),
 		wallet:           w,
 		changePayment:    changePayment,
 		changeAddress:    changeAddr,
@@ -168,7 +168,7 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 	assetAmount := uint64(price.Amount.Mul(amountAsDecimal).IntPart())
 
 	// create transaction
-	taxiPset, err := taxi.createPset(*utxo, totalFees, assetHash, assetAmount)
+	taxiPset, err := taxi.createPset(utxo, totalFees, assetHash, assetAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 	}
 
 	// add prevout to input
-	prevout, err := taxi.eplorer.FetchPrevout(*utxo)
+	prevout, err := taxi.eplorer.FetchPrevout(utxo)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func (taxi *taxiService) ListAssets() []string {
 
 // createPset is an util function used to generate taxi transaction
 func (taxi *taxiService) createPset(
-	utxo Utxo,
+	utxo explorer.Utxo,
 	totalFees uint64,
 	assetHash string,
 	assetAmount uint64,
@@ -262,7 +262,7 @@ func (taxi *taxiService) createPset(
 	outputs := make([]*transaction.TxOutput, 2)
 
 	// inputs
-	input := transaction.NewTxInput(utxo.Hash(), utxo.Vout)
+	input := transaction.NewTxInput(utxo.Hash(), utxo.Key().Vout)
 	inputs[0] = input
 
 	// outputs
@@ -314,7 +314,7 @@ func (taxi *taxiService) getTopups() ([]domain.Topup, error) {
 	return taxi.topupRepository.GetAllTopups(context.Background())
 }
 
-func (taxi *taxiService) fetchAvailableUtxos() ([]Utxo, error) {
+func (taxi *taxiService) fetchAvailableUtxos() ([]explorer.Utxo, error) {
 	utxosChange, err := taxi.eplorer.GetUnspents(taxi.changeAddress)
 	if err != nil {
 		return nil, err
@@ -327,7 +327,7 @@ func (taxi *taxiService) fetchAvailableUtxos() ([]Utxo, error) {
 
 	utxos := append(utxosChange, utxosReceive...)
 
-	availableUtxos := make([]Utxo, 0)
+	availableUtxos := make([]explorer.Utxo, 0)
 
 	for _, utxo := range utxos {
 		if !taxi.lockRepository.Contains(context.Background(), utxo.Key()) {
@@ -338,10 +338,10 @@ func (taxi *taxiService) fetchAvailableUtxos() ([]Utxo, error) {
 	return availableUtxos, nil
 }
 
-func selectOneUtxo(utxos []Utxo, targetAmount uint64, targetAsset string) (*Utxo, error) {
+func selectOneUtxo(utxos []explorer.Utxo, targetAmount uint64, targetAsset string) (explorer.Utxo, error) {
 	for _, utxo := range utxos {
-		if !utxo.IsConfidential() && utxo.Asset == targetAsset && utxo.Value == targetAmount {
-			return &utxo, nil
+		if !utxo.IsConfidential() && utxo.Asset() == targetAsset && utxo.Value() == targetAmount {
+			return utxo, nil
 		}
 	}
 

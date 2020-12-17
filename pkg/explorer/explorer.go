@@ -19,20 +19,20 @@ type Explorer interface {
 	FetchPrevout(utxo Utxo) (*transaction.TxOutput, error)
 }
 
-type explorerService struct {
+type explorer struct {
 	endpoint string
 	client   explorerHTTPClient
 }
 
-// NewEsplorerService returns an ExplorerService interface
+// NewEsplorerService returns an explorer interface
 func NewEsplorerService(endpoint string) Explorer {
-	return &explorerService{
+	return &explorer{
 		endpoint: endpoint,
 		client:   newHTTPClient(),
 	}
 }
 
-func (explorer explorerService) FetchTx(txID string) (string, error) {
+func (explorer explorer) FetchTx(txID string) (string, error) {
 	url := fmt.Sprintf("%s/tx/%s/hex", explorer.endpoint, txID)
 	status, response, err := explorer.client.get(url)
 	if err != nil {
@@ -47,7 +47,7 @@ func (explorer explorerService) FetchTx(txID string) (string, error) {
 }
 
 // GetUnspents returns utxos for a given addresses
-func (explorer explorerService) GetUnspents(address string) ([]Utxo, error) {
+func (explorer explorer) GetUnspents(address string) ([]Utxo, error) {
 	url := fmt.Sprintf(
 		"%s/address/%s/utxo",
 		explorer.endpoint,
@@ -63,17 +63,22 @@ func (explorer explorerService) GetUnspents(address string) ([]Utxo, error) {
 		return nil, ErrStatusIsNotOk{httpCode: status}
 	}
 
-	var utxos []Utxo
+	var utxos []utxo
 	err = json.Unmarshal([]byte(response), &utxos)
 	if err != nil {
 		return nil, err
 	}
 
-	return utxos, nil
+	var results []Utxo
+	for _, u := range utxos {
+		results = append(results, &u)
+	}
+
+	return results, nil
 }
 
 // Broadcast spreads a transaction hex
-func (explorer explorerService) Broadcast(txHex string) (string, error) {
+func (explorer explorer) Broadcast(txHex string) (string, error) {
 	url := fmt.Sprintf("%s/tx", explorer.endpoint)
 	status, response, err := explorer.client.post(url, txHex)
 	if err != nil {
@@ -87,8 +92,8 @@ func (explorer explorerService) Broadcast(txHex string) (string, error) {
 	return response, nil
 }
 
-func (explorer explorerService) FetchPrevout(utxo Utxo) (*transaction.TxOutput, error) {
-	hex, err := explorer.FetchTx(utxo.TxID)
+func (explorer explorer) FetchPrevout(utxo Utxo) (*transaction.TxOutput, error) {
+	hex, err := explorer.FetchTx(utxo.Key().TxID)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +103,7 @@ func (explorer explorerService) FetchPrevout(utxo Utxo) (*transaction.TxOutput, 
 		return nil, err
 	}
 
-	return prevTx.Outputs[utxo.Vout], nil
+	return prevTx.Outputs[int(utxo.Key().Vout)], nil
 }
 
 // http client designed for explorer

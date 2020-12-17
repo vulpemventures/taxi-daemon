@@ -21,7 +21,7 @@ import (
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/config"
-	"github.com/vulpemventures/liquid-taxi/internal/application"
+	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 	g "google.golang.org/grpc"
 )
@@ -82,7 +82,7 @@ func TestTaxiServer(t *testing.T) {
 	// bobAddress, _ := bob.WitnessPubKeyHash()
 
 	// Now, alice adds his own inputs and outputs
-	aliceExplorerSvc := application.NewEsplorerService(config.GetExplorerEndpoint())
+	aliceExplorerSvc := explorer.NewEsplorerService(config.GetExplorerEndpoint())
 	time.Sleep(3 * time.Second)
 	utxos, err := aliceExplorerSvc.GetUnspents(aliceAddress)
 
@@ -98,8 +98,8 @@ func TestTaxiServer(t *testing.T) {
 	var witnessUtxoValue []byte
 
 	for _, utxo := range utxos {
-		if utxo.Asset == USDT && utxo.Value >= totalToSend {
-			aliceInput := transaction.NewTxInput(utxo.Hash(), utxo.Vout)
+		if utxo.Asset() == USDT && utxo.Value() >= totalToSend {
+			aliceInput := transaction.NewTxInput(utxo.Hash(), utxo.Key().Vout)
 			prevout, err := aliceExplorerSvc.FetchPrevout(utxo)
 			if err != nil {
 				t.Error(err)
@@ -107,7 +107,7 @@ func TestTaxiServer(t *testing.T) {
 
 			witnessUtxoValue = prevout.Value
 
-			change = utxo.Value - totalToSend
+			change = utxo.Value() - totalToSend
 
 			aliceUpdater.AddInput(aliceInput)
 			err = aliceUpdater.AddInWitnessUtxo(prevout, 1)

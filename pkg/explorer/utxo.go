@@ -9,36 +9,54 @@ import (
 
 // Utxo = unspent
 // it is json decodable and encodable
-type Utxo struct {
-	TxID            string `json:"txid"`
+type Utxo interface {
+	Key() domain.Lock
+	Hash() []byte
+	IsConfidential() bool
+	Value() uint64
+	Asset() string
+}
+
+type utxo struct {
+	Txid            string `json:"txid"`
 	Vout            uint32 `json:"vout"`
-	Value           uint64 `json:"value"`
-	Asset           string `json:"asset"`
+	UnblindedValue  uint64 `json:"value"`
+	UnblindedAsset  string `json:"asset"`
 	ValueCommitment string `json:"valuecommitment"`
 	AssetCommitment string `json:"assetcommitment"`
 	NonceCommitment string `json:"noncecommitment"`
 }
 
+var _ Utxo = (*utxo)(nil)
+
+func (u utxo) Value() uint64 {
+	return u.UnblindedValue
+}
+
+func (u utxo) Asset() string {
+	return u.UnblindedAsset
+}
+
 // Key returns the unique identifier of the Utxo
 // it returns a Lock domain type
-func (u Utxo) Key() domain.Lock {
+func (u utxo) Key() domain.Lock {
 	return domain.Lock{
-		TxID: u.TxID,
+		TxID: u.Txid,
 		Vout: u.Vout,
 	}
 }
 
 // Hash returns the TxID as bytes
-func (u Utxo) Hash() []byte {
-	buf, _ := hex.DecodeString(u.TxID)
+func (u utxo) Hash() []byte {
+	buf, _ := hex.DecodeString(u.Txid)
 	return elementsutil.ReverseBytes(buf)
 }
 
 // IsConfidential equals true if the utxo references a confidential output, false otherwise
-func (u Utxo) IsConfidential() bool {
+func (u utxo) IsConfidential() bool {
 	return u.ValueCommitment != "" &&
 		u.AssetCommitment != "" &&
 		u.NonceCommitment != "" &&
-		u.Asset == "" &&
-		u.Value == 0
+		u.UnblindedAsset == "" &&
+		u.UnblindedValue == 0
 }

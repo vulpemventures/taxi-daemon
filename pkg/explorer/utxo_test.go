@@ -12,42 +12,42 @@ func TestIsConfidential(t *testing.T) {
 		expected bool
 	}{
 		{
-			utxo: Utxo{
+			utxo: utxo{
 				ValueCommitment: "",
 				NonceCommitment: "",
 				AssetCommitment: "",
-				Asset:           "",
-				Value:           0,
+				UnblindedAsset:  "",
+				UnblindedValue:  0,
 			},
 			expected: false,
 		},
 		{
-			utxo: Utxo{
+			utxo: utxo{
 				ValueCommitment: "notnull",
 				NonceCommitment: "notnull",
 				AssetCommitment: "notnull",
-				Asset:           "",
-				Value:           0,
+				UnblindedAsset:  "",
+				UnblindedValue:  0,
 			},
 			expected: true,
 		},
 		{
-			utxo: Utxo{
+			utxo: utxo{
 				ValueCommitment: "notnull",
 				NonceCommitment: "notnull",
 				AssetCommitment: "notnull",
-				Asset:           "notnull",
-				Value:           10,
+				UnblindedAsset:  "notnull",
+				UnblindedValue:  10,
 			},
 			expected: false,
 		},
 		{
-			utxo: Utxo{
+			utxo: utxo{
 				ValueCommitment: "",
 				NonceCommitment: "",
 				AssetCommitment: "",
-				Asset:           "notnull",
-				Value:           10000,
+				UnblindedAsset:  "notnull",
+				UnblindedValue:  10000,
 			},
 			expected: false,
 		},
