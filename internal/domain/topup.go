@@ -3,6 +3,7 @@ package domain
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/vulpemventures/liquid-taxi/pkg/utils"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 )
@@ -28,6 +29,22 @@ type Topup struct {
 	CompletedAt time.Time
 	SettledAt   time.Time
 	ExpireAt    time.Time
+}
+
+func NewTopup(
+	assetHash string,
+	totalFee uint64,
+	assetPrice float64,
+	expireAt time.Time,
+) Topup {
+	return Topup{
+		Id:         uuid.New().String(),
+		Partial:    "",
+		AssetHash:  assetHash,
+		AssetPrice: assetPrice,
+		FeeAmount:  totalFee,
+		ExpireAt:   expireAt,
+	}
 }
 
 func (t *Topup) ToProtobufTopupMessage() *pb.Topup {
