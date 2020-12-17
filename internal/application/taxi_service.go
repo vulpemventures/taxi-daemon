@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	receiveDerivationPath = "m/84/0/0/0/0"
-	changeDerivationPath  = "m/84/0/0/1/0"
+	receiveDerivationPath = "m/84'/0'/0'/0/0"
+	changeDerivationPath  = "m/84'/0'/0'/1/0"
 )
 
 type TaxiService interface {
