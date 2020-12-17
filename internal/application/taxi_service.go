@@ -32,7 +32,7 @@ type TaxiService interface {
 }
 
 type taxiService struct {
-	utxosLocker      domain.LockRepository
+	lockRepository   domain.LockRepository
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
 	eplorer          ExplorerService
@@ -97,7 +97,7 @@ func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 	}
 
 	return &taxiService{
-		utxosLocker:      inmemory.NewInmemoryLockRepository(),
+		lockRepository:   inmemory.NewInmemoryLockRepository(),
 		topupRepository:  args.TopupRepository,
 		priceRepository:  priceRepo,
 		eplorer:          NewEsplorerService(explorerEndpoint),
@@ -143,18 +143,18 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 	// Lock utxo
 	utxoKey := utxo.Key()
 
-	if taxi.utxosLocker.Contains(emptyContext, utxoKey) {
+	if taxi.lockRepository.Contains(emptyContext, utxoKey) {
 		return nil, ErrUtxoNotAvailable
 	}
 
-	err = taxi.utxosLocker.Add(emptyContext, []domain.Lock{utxoKey})
+	err = taxi.lockRepository.Add(emptyContext, []domain.Lock{utxoKey})
 	if err != nil {
 		return nil, err
 	}
 
 	go func() {
 		time.Sleep(ttlUtxo)
-		taxi.utxosLocker.Remove(emptyContext, utxoKey)
+		taxi.lockRepository.Remove(emptyContext, utxoKey)
 	}()
 
 	expireAt := time.Now().Add(ttlUtxo)
@@ -345,7 +345,7 @@ func (taxi *taxiService) fetchAvailableUtxos() ([]Utxo, error) {
 	availableUtxos := make([]Utxo, 0)
 
 	for _, utxo := range utxos {
-		if !taxi.utxosLocker.Contains(context.Background(), utxo.Key()) {
+		if !taxi.lockRepository.Contains(context.Background(), utxo.Key()) {
 			availableUtxos = append(availableUtxos, utxo)
 		}
 	}
