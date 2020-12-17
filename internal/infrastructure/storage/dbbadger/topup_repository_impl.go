@@ -2,7 +2,9 @@ package dbbadger
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
+	"time"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/timshannon/badgerhold/v2"
@@ -26,16 +28,75 @@ func NewBadgerTopupRepository(baseDirPath string, logger badger.Logger) (domain.
 	}, nil
 }
 
-func (r *badgerTopupRepository) AddTopup(ctx context.Context, topup Topup) error {
-
+func (r *badgerTopupRepository) AddTopup(ctx context.Context, topup domain.Topup) error {
+	return r.store.Insert(topup.Id, topup)
 }
 
-func (r *badgerTopupRepository) GetAllTopups(ctx context.Context) ([]Topup, error) {
-
+func (r *badgerTopupRepository) GetAllTopups(ctx context.Context) ([]domain.Topup, error) {
+	var topups []domain.Topup = []domain.Topup{}
+	err := r.store.Find(&topups, nil)
+	return topups, err
 }
 
-func (r *badgerTopupRepository) SetRequested(ctx context.Context, topupId string) (*Topup, error) {}
+func (r *badgerTopupRepository) SetRequested(ctx context.Context, topupId string) (*domain.Topup, error) {
+	var topupUpdated *domain.Topup
 
-func (r *badgerTopupRepository)
+	query := badgerhold.Where("Id").Eq(topupId)
+	err := r.store.UpdateMatching(topupId, query, func(record interface{}) error {
+		update, ok := record.(*domain.Topup)
+		if !ok {
+			return errors.New("Record isn't the correct type! Need domain.Topup type.")
+		}
 
-func (r *badgerTopupRepository)
+		update.RequestedAt = time.Now()
+		update.Status = domain.Requested
+
+		topupUpdated = update
+		return nil
+	})
+
+	return topupUpdated, err
+}
+
+func (r *badgerTopupRepository) SetCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
+	var topupUpdated *domain.Topup
+
+	query := badgerhold.Where("Id").Eq(topupID)
+	err := r.store.UpdateMatching(topupID, query, func(record interface{}) error {
+		update, ok := record.(*domain.Topup)
+		if !ok {
+			return errors.New("record isn't the correct type! Need domain.Topup type")
+		}
+
+		update.CompletedAt = time.Now()
+		update.Status = domain.Completed
+		update.Partial = partial
+		update.AssetAmount = assetAmount
+
+		topupUpdated = update
+		return nil
+	})
+
+	return topupUpdated, err
+}
+
+func (r *badgerTopupRepository) SetSettled(ctx context.Context, topupID string, txID string) (*domain.Topup, error) {
+	var topupUpdated *domain.Topup
+
+	query := badgerhold.Where("Id").Eq(topupID)
+	err := r.store.UpdateMatching(topupID, query, func(record interface{}) error {
+		update, ok := record.(*domain.Topup)
+		if !ok {
+			return errors.New("record isn't the correct type! Need domain.Topup type")
+		}
+
+		update.SettledAt = time.Now()
+		update.Status = domain.Settled
+		// TODO txid ??
+
+		topupUpdated = update
+		return nil
+	})
+
+	return topupUpdated, err
+}
