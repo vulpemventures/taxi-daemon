@@ -9,6 +9,7 @@ import (
 
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/shopspring/decimal"
+	"github.com/tiero/ocean/pkg/explorer"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
@@ -34,7 +35,7 @@ type taxiService struct {
 	lockRepository   domain.LockRepository
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
-	eplorer          ExplorerService
+	eplorer          explorer.Explorer
 	wallet           wallet.Wallet
 	changePayment    *payment.Payment
 	changeAddress    string

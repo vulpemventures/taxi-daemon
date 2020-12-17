@@ -1,4 +1,4 @@
-package application
+package explorer
 
 import (
 	"encoding/hex"

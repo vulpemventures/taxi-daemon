@@ -1,4 +1,4 @@
-package application
+package explorer
 
 import (
 	"encoding/json"
@@ -11,8 +11,8 @@ import (
 	"github.com/vulpemventures/go-elements/transaction"
 )
 
-// ExplorerService provides a set of function used by the taxi service
-type ExplorerService interface {
+// Explorer provides a set of function used by the taxi service
+type Explorer interface {
 	GetUnspents(address string) ([]Utxo, error)
 	FetchTx(txID string) (string, error)
 	Broadcast(txHex string) (string, error)
@@ -25,7 +25,7 @@ type explorerService struct {
 }
 
 // NewEsplorerService returns an ExplorerService interface
-func NewEsplorerService(endpoint string) ExplorerService {
+func NewEsplorerService(endpoint string) Explorer {
 	return &explorerService{
 		endpoint: endpoint,
 		client:   newHTTPClient(),
@@ -40,7 +40,7 @@ func (explorer explorerService) FetchTx(txID string) (string, error) {
 	}
 
 	if status != http.StatusOK {
-		return "", errStatusIsNotOk{httpCode: status}
+		return "", ErrStatusIsNotOk{httpCode: status}
 	}
 
 	return response, nil
@@ -60,7 +60,7 @@ func (explorer explorerService) GetUnspents(address string) ([]Utxo, error) {
 	}
 
 	if status != http.StatusOK {
-		return nil, errStatusIsNotOk{httpCode: status}
+		return nil, ErrStatusIsNotOk{httpCode: status}
 	}
 
 	var utxos []Utxo
@@ -81,7 +81,7 @@ func (explorer explorerService) Broadcast(txHex string) (string, error) {
 	}
 
 	if status != http.StatusOK {
-		return "", errStatusIsNotOk{httpCode: status}
+		return "", ErrStatusIsNotOk{httpCode: status}
 	}
 
 	return response, nil

@@ -5,16 +5,6 @@ import (
 	"fmt"
 )
 
-type errStatusIsNotOk struct {
-	httpCode int
-}
-
-var _ error = (*errStatusIsNotOk)(nil)
-
-func (e errStatusIsNotOk) Error() string {
-	return "http status code != OK: " + fmt.Sprint(e.httpCode)
-}
-
 // ErrAssetNotSupported is returned as error if the taxi service does not handle the given assetHash
 type ErrAssetNotSupported struct {
 	AssetHash string
