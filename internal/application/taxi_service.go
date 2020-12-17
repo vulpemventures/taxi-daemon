@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/txscript"
-	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
@@ -58,6 +57,7 @@ type NewTaxiServiceArgs struct {
 
 // NewTaxiService returns a TaxiService interface
 func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
+
 	w, err := wallet.NewWallet(args.Mnemonic)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,6 @@ func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
 
 // TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
 func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error) {
-
 	ttlUtxo := 10 * time.Minute
 	emptyContext := context.Background()
 	totalFees := taxi.amountToConvert
@@ -137,8 +136,6 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 		return nil, err
 	}
 
-	expireAt := time.Now().Add(ttlUtxo)
-
 	// Lock utxo
 	utxoKey := utxo.Key()
 
@@ -155,6 +152,21 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 		time.Sleep(ttlUtxo)
 		taxi.utxosLocker.Remove(emptyContext, utxoKey)
 	}()
+
+	expireAt := time.Now().Add(ttlUtxo)
+
+	// request UTXO
+	priceToFloat, _ := price.Amount.Float64()
+	topup := domain.NewTopup(assetHash, totalFees, priceToFloat, expireAt)
+	err = taxi.topupRepository.AddTopup(emptyContext, topup)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = taxi.topupRepository.SetRequested(emptyContext, topup.Id)
+	if err != nil {
+		return nil, err
+	}
 
 	amountAsDecimal := decimal.NewFromInt(int64(taxi.amountToConvert))
 	assetAmount := uint64(price.Amount.Mul(amountAsDecimal).IntPart())
@@ -218,29 +230,12 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 		return nil, err
 	}
 
-	topup := domain.Topup{
-		Id:          uuid.New().String(),
-		Partial:     partialBase64,
-		AssetHash:   assetHash,
-		AssetPrice:  10,
-		AssetAmount: assetAmount,
-		FeeAmount:   totalFees,
-		// TODO remove basis point (useless)
-		BasisPoint: 0,
-		ExpireAt:   expireAt,
-	}
-
-	err = taxi.topupRepository.AddTopup(emptyContext, topup)
+	topupCompleted, err := taxi.topupRepository.SetCompleted(emptyContext, topup.Id, partialBase64, assetAmount)
 	if err != nil {
 		return nil, err
 	}
 
-	topupToReturn, err := taxi.topupRepository.SetRequested(emptyContext, topup.Id)
-	if err != nil {
-		return nil, err
-	}
-
-	return topupToReturn, nil
+	return topupCompleted, nil
 }
 
 // ListAssets return all the available assets of the taxi service
@@ -259,6 +254,7 @@ func (taxi *taxiService) ListAssets() []string {
 	return supportedAssets
 }
 
+// createPset is an util function used to generate taxi transaction
 func (taxi *taxiService) createPset(
 	utxo Utxo,
 	totalFees uint64,
