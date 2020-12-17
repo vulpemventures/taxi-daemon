@@ -47,7 +47,7 @@ func main() {
 		log.Fatal("taxi service creation error ", err)
 	}
 
-	adminSvc := application.NewAdminService(taxiSvc)
+	adminSvc := application.NewAdminService(topupRepository)
 
 	taxiHandler := grpc.NewTaxiHandler(taxiSvc)
 	adminHandler := grpc.NewAdminHandler(adminSvc)

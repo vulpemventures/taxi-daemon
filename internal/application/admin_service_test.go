@@ -48,7 +48,7 @@ func TestListTopups(t *testing.T) {
 		t.Error(err)
 	}
 
-	adminSvc := NewAdminService(taxiSvc)
+	adminSvc := NewAdminService(taxiSvc.topupRepository)
 	topups, err := adminSvc.ListTopups("")
 	assert.Nil(t, err)
 	assert.NotNil(t, topups)

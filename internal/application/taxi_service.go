@@ -28,7 +28,6 @@ const (
 type TaxiService interface {
 	TopupWithAsset(assetHash string) (*domain.Topup, error)
 	ListAssets() []string
-	getTopups() ([]domain.Topup, error)
 }
 
 type taxiService struct {
@@ -315,10 +314,6 @@ func (taxi *taxiService) getAddresses() (string, string, error) {
 	}
 
 	return rcvAddress, changeAddress, nil
-}
-
-func (taxi *taxiService) getTopups() ([]domain.Topup, error) {
-	return taxi.topupRepository.GetAllTopups(context.Background())
 }
 
 func (taxi *taxiService) fetchAvailableUtxos() ([]explorer.Utxo, error) {
