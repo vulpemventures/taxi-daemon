@@ -11,28 +11,29 @@ import (
 	"github.com/vulpemventures/go-elements/transaction"
 )
 
+// ExplorerService provides a set of function used by the taxi service
 type ExplorerService interface {
 	GetUnspents(address string) ([]Utxo, error)
-	FetchTx(txId string) (string, error)
+	FetchTx(txID string) (string, error)
 	Broadcast(txHex string) (string, error)
 	FetchPrevout(utxo Utxo) (*transaction.TxOutput, error)
 }
 
 type explorerService struct {
 	endpoint string
-	client   explorerHttpClient
+	client   explorerHTTPClient
 }
 
 // NewEsplorerService returns an ExplorerService interface
 func NewEsplorerService(endpoint string) ExplorerService {
 	return &explorerService{
 		endpoint: endpoint,
-		client:   newHttpClient(),
+		client:   newHTTPClient(),
 	}
 }
 
-func (explorer explorerService) FetchTx(txId string) (string, error) {
-	url := fmt.Sprintf("%s/tx/%s/hex", explorer.endpoint, txId)
+func (explorer explorerService) FetchTx(txID string) (string, error) {
+	url := fmt.Sprintf("%s/tx/%s/hex", explorer.endpoint, txID)
 	status, response, err := explorer.client.get(url)
 	if err != nil {
 		return "", err
@@ -87,7 +88,7 @@ func (explorer explorerService) Broadcast(txHex string) (string, error) {
 }
 
 func (explorer explorerService) FetchPrevout(utxo Utxo) (*transaction.TxOutput, error) {
-	hex, err := explorer.FetchTx(utxo.TxId)
+	hex, err := explorer.FetchTx(utxo.TxID)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +105,7 @@ func (explorer explorerService) FetchPrevout(utxo Utxo) (*transaction.TxOutput, 
 
 const httpClientTimeout = 3 * time.Second
 
-type explorerHttpClient interface {
+type explorerHTTPClient interface {
 	get(url string) (int, string, error)
 	post(url string, bodyString string) (int, string, error)
 }
@@ -113,7 +114,7 @@ type httpClient struct {
 	client *http.Client
 }
 
-func newHttpClient() explorerHttpClient {
+func newHTTPClient() explorerHTTPClient {
 	return &httpClient{
 		client: &http.Client{
 			Timeout: httpClientTimeout,

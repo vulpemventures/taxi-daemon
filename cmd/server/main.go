@@ -55,9 +55,9 @@ func main() {
 	pb.RegisterAdminServer(adminServer, adminHandler)
 	pb.RegisterTaxiServer(taxiServer, taxiHandler)
 
-	domainUrl := "localhost"
-	taxiAddress := fmt.Sprintf("%s:%+v", domainUrl, config.GetTaxiPort())
-	adminAddress := fmt.Sprintf("%s:%+v", domainUrl, config.GetAdminPort())
+	domainURL := "localhost"
+	taxiAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetTaxiPort())
+	adminAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetAdminPort())
 
 	// serve
 	lisTaxi, err := net.Listen("tcp", taxiAddress)

@@ -14,6 +14,7 @@ type inmemoryTopupRepository struct {
 	repositoryLocker sync.Locker
 }
 
+// NewInmemoryTopupRepository creates a new inmemory TopupRepository implementation
 func NewInmemoryTopupRepository() domain.TopupRepository {
 	return &inmemoryTopupRepository{
 		topups:           make(map[string]domain.Topup),
@@ -25,7 +26,7 @@ func (r *inmemoryTopupRepository) AddTopup(ctx context.Context, topup domain.Top
 	r.repositoryLocker.Lock()
 	defer r.repositoryLocker.Unlock()
 
-	r.topups[topup.Id] = topup
+	r.topups[topup.ID] = topup
 
 	return nil
 }
@@ -43,10 +44,10 @@ func (r *inmemoryTopupRepository) GetAllTopups(ctx context.Context) ([]domain.To
 	return topups, nil
 }
 
-func (r *inmemoryTopupRepository) SetRequested(ctx context.Context, topupId string) (*domain.Topup, error) {
+func (r *inmemoryTopupRepository) SetRequested(ctx context.Context, topupID string) (*domain.Topup, error) {
 	r.repositoryLocker.Lock()
 	defer r.repositoryLocker.Unlock()
-	topup, ok := r.topups[topupId]
+	topup, ok := r.topups[topupID]
 	if !ok {
 		return nil, errors.New("Topup does not exist")
 	}
@@ -54,15 +55,15 @@ func (r *inmemoryTopupRepository) SetRequested(ctx context.Context, topupId stri
 	topup.RequestedAt = time.Now()
 	topup.Status = domain.Requested
 
-	r.topups[topupId] = topup
+	r.topups[topupID] = topup
 
 	return &topup, nil
 }
 
-func (r *inmemoryTopupRepository) SetCompleted(ctx context.Context, topupId string, partial string, assetAmount uint64) (*domain.Topup, error) {
+func (r *inmemoryTopupRepository) SetCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
 	r.repositoryLocker.Lock()
 	defer r.repositoryLocker.Unlock()
-	topup, ok := r.topups[topupId]
+	topup, ok := r.topups[topupID]
 	if !ok {
 		return nil, errors.New("Topup does not exist")
 	}
@@ -72,15 +73,15 @@ func (r *inmemoryTopupRepository) SetCompleted(ctx context.Context, topupId stri
 	topup.Partial = partial
 	topup.AssetAmount = assetAmount
 
-	r.topups[topupId] = topup
+	r.topups[topupID] = topup
 
 	return &topup, nil
 }
 
-func (r *inmemoryTopupRepository) SetSettled(ctx context.Context, topupId string, txid string) (*domain.Topup, error) {
+func (r *inmemoryTopupRepository) SetSettled(ctx context.Context, topupID string, txid string) (*domain.Topup, error) {
 	r.repositoryLocker.Lock()
 	defer r.repositoryLocker.Unlock()
-	topup, ok := r.topups[topupId]
+	topup, ok := r.topups[topupID]
 	if !ok {
 		return nil, errors.New("Topup does not exist")
 	}
@@ -89,7 +90,7 @@ func (r *inmemoryTopupRepository) SetSettled(ctx context.Context, topupId string
 	topup.SettledAt = timestamp
 	topup.Status = domain.Settled
 
-	r.topups[topupId] = topup
+	r.topups[topupID] = topup
 
 	return &topup, nil
 }

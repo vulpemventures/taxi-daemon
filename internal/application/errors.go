@@ -3,8 +3,6 @@ package application
 import (
 	"errors"
 	"fmt"
-
-	"github.com/shopspring/decimal"
 )
 
 type errStatusIsNotOk struct {
@@ -17,6 +15,7 @@ func (e errStatusIsNotOk) Error() string {
 	return "http status code != OK: " + fmt.Sprint(e.httpCode)
 }
 
+// ErrAssetNotSupported is returned as error if the taxi service does not handle the given assetHash
 type ErrAssetNotSupported struct {
 	AssetHash string
 }
@@ -27,16 +26,7 @@ func (e ErrAssetNotSupported) Error() string {
 	return "Asset not supported by taxi: " + e.AssetHash
 }
 
-type ErrSatsPerByteIsInvalid struct {
-	SatsPerByte decimal.Decimal
-}
-
-var _ error = (*ErrSatsPerByteIsInvalid)(nil)
-
-func (e ErrSatsPerByteIsInvalid) Error() string {
-	return "Sats per byte value " + e.SatsPerByte.String() + " is lower than 0.1"
-}
-
+// ErrUtxoNotFound is returned as error if the Utxo with value = targetedAmount and asset = targetedAsset is not found
 type ErrUtxoNotFound struct {
 	TargetedAmount uint64
 	TargetedAsset  string
@@ -49,6 +39,8 @@ func (e ErrUtxoNotFound) Error() string {
 }
 
 var (
+	// ErrUtxoNotAvailable is returned if a selected utxo is already used (i.e locked by the taxi service)
 	ErrUtxoNotAvailable = errors.New("a selected utxo is not available")
+	// ErrInvalidSignature is returned if there is at least one invalid signature in a given PSET
 	ErrInvalidSignature = errors.New("at least one signature is invalid")
 )

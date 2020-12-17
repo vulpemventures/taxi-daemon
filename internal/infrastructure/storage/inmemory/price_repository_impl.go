@@ -13,6 +13,7 @@ type inmemoryPriceRepository struct {
 	locker           sync.Locker
 }
 
+// NewInmemoryPriceRepository creates a new inmemory PriceRepository implementation
 func NewInmemoryPriceRepository() domain.PriceRepository {
 	return &inmemoryPriceRepository{
 		assetToAmountMap: make(map[string]decimal.Decimal),

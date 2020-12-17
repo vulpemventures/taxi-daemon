@@ -8,8 +8,9 @@ import (
 )
 
 // Utxo = unspent
+// it is json decodable and encodable
 type Utxo struct {
-	TxId            string `json:"txid"`
+	TxID            string `json:"txid"`
 	Vout            uint32 `json:"vout"`
 	Value           uint64 `json:"value"`
 	Asset           string `json:"asset"`
@@ -18,18 +19,22 @@ type Utxo struct {
 	NonceCommitment string `json:"noncecommitment"`
 }
 
+// Key returns the unique identifier of the Utxo
+// it returns a Lock domain type
 func (u Utxo) Key() domain.Lock {
 	return domain.Lock{
-		TxId: u.TxId,
+		TxID: u.TxID,
 		Vout: u.Vout,
 	}
 }
 
+// Hash returns the TxID as bytes
 func (u Utxo) Hash() []byte {
-	buf, _ := hex.DecodeString(u.TxId)
+	buf, _ := hex.DecodeString(u.TxID)
 	return elementsutil.ReverseBytes(buf)
 }
 
+// IsConfidential equals true if the utxo references a confidential output, false otherwise
 func (u Utxo) IsConfidential() bool {
 	return u.ValueCommitment != "" &&
 		u.AssetCommitment != "" &&

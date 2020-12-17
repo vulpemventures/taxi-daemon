@@ -9,6 +9,7 @@ var (
 			"can optionally start with 'm/' for absolute paths",
 	)
 	// ErrNullDerivationPath ...
-	ErrNullDerivationPath    = errors.New("derivation path must not be null")
+	ErrNullDerivationPath = errors.New("derivation path must not be null")
+	// ErrInvalidDerivationPath is returned if the derivation path is invalid
 	ErrInvalidDerivationPath = errors.New("invalid derivation path")
 )

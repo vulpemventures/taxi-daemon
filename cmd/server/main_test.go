@@ -201,8 +201,8 @@ func TestTaxiServer(t *testing.T) {
 	// }
 }
 
-func mint(apiUrl string, address string, amount int) (string, string, error) {
-	url := fmt.Sprintf("%s/mint", apiUrl)
+func mint(apiURL string, address string, amount int) (string, string, error) {
+	url := fmt.Sprintf("%s/mint", apiURL)
 	payload := map[string]interface{}{"address": address, "quantity": amount}
 	body, _ := json.Marshal(payload)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))

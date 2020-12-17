@@ -12,6 +12,7 @@ type adminService struct {
 	taxiSvc TaxiService
 }
 
+// NewAdminService is a factory function for AdminService interface
 func NewAdminService(taxiSvc TaxiService) AdminService {
 	return &adminService{
 		taxiSvc: taxiSvc,

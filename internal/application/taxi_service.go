@@ -24,6 +24,7 @@ const (
 	changeDerivationPath  = "m/84/0/0/1/0"
 )
 
+// TaxiService provides interface for user UI
 type TaxiService interface {
 	TopupWithAsset(assetHash string) (*domain.Topup, error)
 	ListAssets() []string
@@ -46,6 +47,7 @@ type taxiService struct {
 	basisPointLocker sync.Locker
 }
 
+// NewTaxiServiceArgs is a wrapper type for NewTaxiService factory function
 type NewTaxiServiceArgs struct {
 	ExplorerEndpoint string
 	Mnemonic         []string
@@ -163,7 +165,7 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 		return nil, err
 	}
 
-	_, err = taxi.topupRepository.SetRequested(emptyContext, topup.Id)
+	_, err = taxi.topupRepository.SetRequested(emptyContext, topup.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +232,7 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 		return nil, err
 	}
 
-	topupCompleted, err := taxi.topupRepository.SetCompleted(emptyContext, topup.Id, partialBase64, assetAmount)
+	topupCompleted, err := taxi.topupRepository.SetCompleted(emptyContext, topup.ID, partialBase64, assetAmount)
 	if err != nil {
 		return nil, err
 	}
