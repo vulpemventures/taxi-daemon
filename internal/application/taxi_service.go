@@ -150,7 +150,7 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 	}
 
 	// add prevout to input
-	prevout, err := taxi.eplorer.FetchPrevout(utxo)
+	prevout, err := fetchPrevout(taxi.eplorer, utxo)
 	if err != nil {
 		return nil, err
 	}
@@ -370,4 +370,18 @@ func assetHashBytes(asset string) []byte {
 	buf, _ := hex.DecodeString(asset)
 	assetBuf := append([]byte{0x01}, elementsutil.ReverseBytes(buf)...)
 	return assetBuf
+}
+
+func fetchPrevout(explorer explorer.Explorer, utxo explorer.Utxo) (*transaction.TxOutput, error) {
+	hex, err := explorer.FetchTx(utxo.Key().TxID)
+	if err != nil {
+		return nil, err
+	}
+
+	prevTx, err := transaction.NewTxFromHex(hex)
+	if err != nil {
+		return nil, err
+	}
+
+	return prevTx.Outputs[int(utxo.Key().Vout)], nil
 }

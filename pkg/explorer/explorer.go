@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/vulpemventures/go-elements/transaction"
 )
 
 // Explorer provides a set of function used by the taxi service
@@ -16,7 +14,6 @@ type Explorer interface {
 	GetUnspents(address string) ([]Utxo, error)
 	FetchTx(txID string) (string, error)
 	Broadcast(txHex string) (string, error)
-	FetchPrevout(utxo Utxo) (*transaction.TxOutput, error)
 }
 
 type explorer struct {
@@ -90,20 +87,6 @@ func (explorer explorer) Broadcast(txHex string) (string, error) {
 	}
 
 	return response, nil
-}
-
-func (explorer explorer) FetchPrevout(utxo Utxo) (*transaction.TxOutput, error) {
-	hex, err := explorer.FetchTx(utxo.Key().TxID)
-	if err != nil {
-		return nil, err
-	}
-
-	prevTx, err := transaction.NewTxFromHex(hex)
-	if err != nil {
-		return nil, err
-	}
-
-	return prevTx.Outputs[int(utxo.Key().Vout)], nil
 }
 
 // http client designed for explorer

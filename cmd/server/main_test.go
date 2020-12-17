@@ -100,7 +100,7 @@ func TestTaxiServer(t *testing.T) {
 	for _, utxo := range utxos {
 		if utxo.Asset() == USDT && utxo.Value() >= totalToSend {
 			aliceInput := transaction.NewTxInput(utxo.Hash(), utxo.Key().Vout)
-			prevout, err := aliceExplorerSvc.FetchPrevout(utxo)
+			prevout, err := fetchPrevout(aliceExplorerSvc, utxo)
 			if err != nil {
 				t.Error(err)
 			}
@@ -221,4 +221,18 @@ func mint(apiURL string, address string, amount int) (string, string, error) {
 	}
 
 	return respBody["txId"].(string), respBody["asset"].(string), nil
+}
+
+func fetchPrevout(explorer explorer.Explorer, utxo explorer.Utxo) (*transaction.TxOutput, error) {
+	hex, err := explorer.FetchTx(utxo.Key().TxID)
+	if err != nil {
+		return nil, err
+	}
+
+	prevTx, err := transaction.NewTxFromHex(hex)
+	if err != nil {
+		return nil, err
+	}
+
+	return prevTx.Outputs[int(utxo.Key().Vout)], nil
 }
