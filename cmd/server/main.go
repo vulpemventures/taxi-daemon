@@ -36,7 +36,7 @@ func main() {
 		ExplorerEndpoint: config.GetExplorerEndpoint(),
 		Mnemonic:         strings.Split(config.GetMnemonic(), " "),
 		Network:          *config.GetNetwork(),
-		AmountToConvert:  uint64(config.GetFixedFeeAmount()),
+		FixedFeeAmount:   uint64(config.GetFixedFeeAmount()),
 		LockRepository:   lockRepository,
 		PriceRepository:  priceRepository,
 		TopupRepository:  topupRepository,

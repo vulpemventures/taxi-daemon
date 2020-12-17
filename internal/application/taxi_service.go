@@ -41,7 +41,7 @@ type taxiService struct {
 	receivePayment   *payment.Payment
 	receiveAddress   string
 	network          network.Network
-	amountToConvert  uint64
+	fixedFeeAmount   uint64
 	basisPointLocker sync.Locker
 }
 
@@ -50,7 +50,7 @@ type NewTaxiServiceArgs struct {
 	ExplorerEndpoint string
 	Mnemonic         []string
 	Network          network.Network
-	AmountToConvert  uint64
+	FixedFeeAmount   uint64
 	TopupRepository  domain.TopupRepository
 	LockRepository   domain.LockRepository
 	PriceRepository  domain.PriceRepository
@@ -97,7 +97,7 @@ func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 		changeAddress:    changeAddr,
 		receivePayment:   receivePayment,
 		receiveAddress:   receiveAddr,
-		amountToConvert:  args.AmountToConvert,
+		fixedFeeAmount:   args.FixedFeeAmount,
 		basisPointLocker: &sync.Mutex{},
 		network:          args.Network,
 	}, nil
@@ -107,7 +107,7 @@ func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error) {
 	ttlUtxo := 10 * time.Minute
 	emptyContext := context.Background()
-	totalFees := taxi.amountToConvert
+	totalFees := taxi.fixedFeeAmount
 
 	// check if asset is available
 	// price will be used later
@@ -163,7 +163,7 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 		return nil, err
 	}
 
-	amountAsDecimal := decimal.NewFromInt(int64(taxi.amountToConvert))
+	amountAsDecimal := decimal.NewFromInt(int64(taxi.fixedFeeAmount))
 	assetAmount := uint64(price.Amount.Mul(amountAsDecimal).IntPart())
 
 	// create transaction
