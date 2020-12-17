@@ -28,7 +28,6 @@ const (
 type TaxiService interface {
 	TopupWithAsset(assetHash string) (*domain.Topup, error)
 	ListAssets() []string
-	getAddresses() (string, string)
 	getTopups() ([]domain.Topup, error)
 }
 
@@ -59,7 +58,10 @@ type NewTaxiServiceArgs struct {
 
 // NewTaxiService returns a TaxiService interface
 func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
+	return newTaxiService(args)
+}
 
+func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 	w, err := wallet.NewWallet(args.Mnemonic)
 	if err != nil {
 		return nil, err

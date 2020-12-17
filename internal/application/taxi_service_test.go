@@ -30,7 +30,7 @@ func TestTopupWithAsset(t *testing.T) {
 		},
 	}
 
-	taxiSvc, err := NewTaxiService(newTaxiOpts)
+	taxiSvc, err := newTaxiService(newTaxiOpts)
 	if err != nil {
 		t.Error(nil)
 	}

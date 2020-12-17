@@ -1,6 +1,8 @@
 package application
 
-import "github.com/vulpemventures/liquid-taxi/internal/domain"
+import (
+	"github.com/vulpemventures/liquid-taxi/internal/domain"
+)
 
 // AdminService administrates a TaxiService
 type AdminService interface {

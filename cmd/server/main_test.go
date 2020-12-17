@@ -195,6 +195,7 @@ func TestTaxiServer(t *testing.T) {
 
 	log.Info(txHex)
 
+	// TODO uncomment when crawler is implemented
 	// _, err = aliceExplorerSvc.Broadcast(txHex)
 	// if err != nil {
 	// 	t.Error(err)
