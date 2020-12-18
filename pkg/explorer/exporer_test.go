@@ -25,7 +25,7 @@ func TestGetUnspents(t *testing.T) {
 	time.Sleep(3 * time.Second)
 
 	// test :
-	explorerSvc := NewEsplorerService(explorerEndpoint)
+	explorerSvc := NewExplorerService(explorerEndpoint)
 	unspents, err := explorerSvc.GetUnspents(unconfidentialAddress)
 
 	assert.Nil(t, err)

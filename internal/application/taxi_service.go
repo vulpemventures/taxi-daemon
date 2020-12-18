@@ -43,13 +43,13 @@ type taxiService struct {
 
 // NewTaxiServiceArgs is a wrapper type for NewTaxiService factory function
 type NewTaxiServiceArgs struct {
-	ExplorerEndpoint string
-	Mnemonic         []string
-	Network          network.Network
-	FixedFeeAmount   uint64
-	TopupRepository  domain.TopupRepository
-	LockRepository   domain.LockRepository
-	PriceRepository  domain.PriceRepository
+	Mnemonic        []string
+	Network         network.Network
+	FixedFeeAmount  uint64
+	TopupRepository domain.TopupRepository
+	LockRepository  domain.LockRepository
+	PriceRepository domain.PriceRepository
+	ExplorerSvc     explorer.Explorer
 }
 
 // NewTaxiService returns a TaxiService interface
@@ -67,7 +67,7 @@ func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 		lockRepository:   args.LockRepository,
 		topupRepository:  args.TopupRepository,
 		priceRepository:  args.PriceRepository,
-		eplorer:          explorer.NewEsplorerService(explorerEndpoint),
+		eplorer:          args.ExplorerSvc,
 		wallet:           w,
 		fixedFeeAmount:   args.FixedFeeAmount,
 		basisPointLocker: &sync.Mutex{},

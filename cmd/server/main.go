@@ -16,6 +16,7 @@ import (
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 	"github.com/vulpemventures/liquid-taxi/internal/interfaces/grpc"
+	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 	g "google.golang.org/grpc"
 )
@@ -33,13 +34,13 @@ func main() {
 	})
 
 	taxiSvcOptions := application.NewTaxiServiceArgs{
-		ExplorerEndpoint: config.GetExplorerEndpoint(),
-		Mnemonic:         strings.Split(config.GetMnemonic(), " "),
-		Network:          *config.GetNetwork(),
-		FixedFeeAmount:   uint64(config.GetFixedFeeAmount()),
-		LockRepository:   lockRepository,
-		PriceRepository:  priceRepository,
-		TopupRepository:  topupRepository,
+		Mnemonic:        strings.Split(config.GetMnemonic(), " "),
+		Network:         *config.GetNetwork(),
+		FixedFeeAmount:  uint64(config.GetFixedFeeAmount()),
+		LockRepository:  lockRepository,
+		PriceRepository: priceRepository,
+		TopupRepository: topupRepository,
+		ExplorerSvc:     explorer.NewExplorerService(config.GetExplorerEndpoint()),
 	}
 
 	taxiSvc, err := application.NewTaxiService(taxiSvcOptions)

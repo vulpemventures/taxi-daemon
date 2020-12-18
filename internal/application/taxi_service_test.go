@@ -11,18 +11,18 @@ import (
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
+	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 )
 
 func TestTopupWithAsset(t *testing.T) {
-
 	newTaxiOpts := NewTaxiServiceArgs{
-		ExplorerEndpoint: explorerEndpoint,
-		Mnemonic:         words,
-		Network:          regtest,
-		FixedFeeAmount:   100000000,
-		TopupRepository:  inmemory.NewInmemoryTopupRepository(),
-		LockRepository:   inmemory.NewInmemoryLockRepository(),
-		PriceRepository:  newMockedPriceRepository(t, []string{superToken}),
+		Mnemonic:        words,
+		Network:         regtest,
+		FixedFeeAmount:  100000000,
+		TopupRepository: inmemory.NewInmemoryTopupRepository(),
+		LockRepository:  inmemory.NewInmemoryLockRepository(),
+		PriceRepository: newMockedPriceRepository(t, []string{superToken}),
+		ExplorerSvc:     explorer.NewExplorerService(explorerEndpoint),
 	}
 
 	taxiSvc, err := newTaxiService(newTaxiOpts)
@@ -85,13 +85,13 @@ func TestListAssets(t *testing.T) {
 
 	for _, test := range tests {
 		newTaxiOpts := NewTaxiServiceArgs{
-			ExplorerEndpoint: explorerEndpoint,
-			Mnemonic:         words,
-			Network:          regtest,
-			FixedFeeAmount:   100000000,
-			TopupRepository:  inmemory.NewInmemoryTopupRepository(),
-			LockRepository:   inmemory.NewInmemoryLockRepository(),
-			PriceRepository:  newMockedPriceRepository(t, test.input),
+			Mnemonic:        words,
+			Network:         regtest,
+			FixedFeeAmount:  100000000,
+			TopupRepository: inmemory.NewInmemoryTopupRepository(),
+			LockRepository:  inmemory.NewInmemoryLockRepository(),
+			PriceRepository: newMockedPriceRepository(t, test.input),
+			ExplorerSvc:     explorer.NewExplorerService(explorerEndpoint),
 		}
 
 		taxiSvc, err := NewTaxiService(newTaxiOpts)

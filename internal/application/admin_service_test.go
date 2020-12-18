@@ -7,17 +7,18 @@ import (
 	"github.com/tj/assert"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
+	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 )
 
 func TestListTopups(t *testing.T) {
 	newTaxiOpts := NewTaxiServiceArgs{
-		ExplorerEndpoint: explorerEndpoint,
-		Mnemonic:         words,
-		Network:          regtest,
-		FixedFeeAmount:   100000000,
-		TopupRepository:  inmemory.NewInmemoryTopupRepository(),
-		LockRepository:   inmemory.NewInmemoryLockRepository(),
-		PriceRepository:  newMockedPriceRepository(t, []string{superToken, hyperToken}),
+		Mnemonic:        words,
+		Network:         regtest,
+		FixedFeeAmount:  100000000,
+		TopupRepository: inmemory.NewInmemoryTopupRepository(),
+		LockRepository:  inmemory.NewInmemoryLockRepository(),
+		PriceRepository: newMockedPriceRepository(t, []string{superToken, hyperToken}),
+		ExplorerSvc:     explorer.NewExplorerService(explorerEndpoint),
 	}
 
 	taxiSvc, err := newTaxiService(newTaxiOpts)

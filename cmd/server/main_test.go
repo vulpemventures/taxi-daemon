@@ -82,7 +82,7 @@ func TestTaxiServer(t *testing.T) {
 	// bobAddress, _ := bob.WitnessPubKeyHash()
 
 	// Now, alice adds his own inputs and outputs
-	aliceExplorerSvc := explorer.NewEsplorerService(config.GetExplorerEndpoint())
+	aliceExplorerSvc := explorer.NewExplorerService(config.GetExplorerEndpoint())
 	time.Sleep(3 * time.Second)
 	utxos, err := aliceExplorerSvc.GetUnspents(aliceAddress)
 

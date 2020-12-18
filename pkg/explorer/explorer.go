@@ -21,8 +21,8 @@ type explorer struct {
 	client   explorerHTTPClient
 }
 
-// NewEsplorerService returns an explorer interface
-func NewEsplorerService(endpoint string) Explorer {
+// NewExplorerService returns an explorer interface
+func NewExplorerService(endpoint string) Explorer {
 	return &explorer{
 		endpoint: endpoint,
 		client:   newHTTPClient(),
