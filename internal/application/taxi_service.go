@@ -106,10 +106,6 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 	// Lock utxo
 	utxoKey := utxo.Key()
 
-	if taxi.lockRepository.Contains(emptyContext, utxoKey) {
-		return nil, ErrUtxoNotAvailable
-	}
-
 	err = taxi.lockRepository.Add(emptyContext, []domain.Lock{utxoKey})
 	if err != nil {
 		return nil, err
