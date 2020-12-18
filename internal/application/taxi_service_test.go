@@ -3,12 +3,14 @@ package application
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"log"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
@@ -106,4 +108,10 @@ func TestListAssets(t *testing.T) {
 		assert.Equal(t, test.expected, assets)
 	}
 
+}
+
+func assetHashBytes(asset string) []byte {
+	buf, _ := hex.DecodeString(asset)
+	assetBuf := append([]byte{0x01}, elementsutil.ReverseBytes(buf)...)
+	return assetBuf
 }

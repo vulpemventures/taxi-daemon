@@ -3,13 +3,11 @@ package application
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"sync"
 	"time"
 
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/shopspring/decimal"
-	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/pset"
@@ -134,8 +132,26 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	amountAsDecimal := decimal.NewFromInt(int64(taxi.fixedFeeAmount))
 	assetAmount := uint64(price.Amount.Mul(amountAsDecimal).IntPart())
 
+	receivePayment, err := taxi.getReceivePayment()
+	if err != nil {
+		return nil, err
+	}
+
+	outputsOpts := []wallet.PsetOutputOpts{
+		wallet.PsetOutputOpts{
+			WitnessScript: receivePayment.WitnessScript,
+			Asset:         assetHash,
+			Amount:        assetAmount,
+		},
+		wallet.PsetOutputOpts{
+			WitnessScript: []byte{},
+			Asset:         taxi.network.AssetID,
+			Amount:        totalFees,
+		},
+	}
+
 	// create transaction
-	taxiPset, err := taxi.createPset(utxo, totalFees, assetHash, assetAmount)
+	taxiPset, err := taxi.wallet.CreatePset([]explorer.Utxo{utxo}, outputsOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -152,11 +168,6 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	}
 
 	if err := updater.AddInWitnessUtxo(prevout, 0); err != nil {
-		return nil, err
-	}
-
-	receivePayment, err := taxi.getReceivePayment()
-	if err != nil {
 		return nil, err
 	}
 
@@ -225,66 +236,6 @@ func (taxi *taxiService) ListAssets(ctx context.Context) []string {
 	}
 
 	return supportedAssets
-}
-
-// createPset is an util function used to generate taxi transaction
-func (taxi *taxiService) createPset(
-	utxo explorer.Utxo,
-	totalFees uint64,
-	assetHash string,
-	assetAmount uint64,
-) (*pset.Pset, error) {
-	// create taxi tx
-	inputs := make([]*transaction.TxInput, 1)
-	outputs := make([]*transaction.TxOutput, 2)
-
-	// inputs
-	input := transaction.NewTxInput(utxo.Hash(), utxo.Key().Vout)
-	inputs[0] = input
-
-	// outputs
-
-	// 1. payout output
-	payoutElementsValue, err := elementsutil.SatoshiToElementsValue(uint64(assetAmount))
-	if err != nil {
-		return nil, err
-	}
-
-	taxiPayment, err := taxi.getReceivePayment()
-	if err != nil {
-		return nil, err
-	}
-
-	payoutOutput := transaction.NewTxOutput(
-		assetHashBytes(assetHash),
-		payoutElementsValue,
-		taxiPayment.WitnessScript,
-	)
-
-	//	 /!\ payoutOutput MUST be output index 0 /!\
-	outputs[0] = payoutOutput
-
-	// 2. fees output
-	feesElementsValue, err := elementsutil.SatoshiToElementsValue(totalFees)
-	if err != nil {
-		return nil, err
-	}
-
-	LBTCbytes := assetHashBytes(taxi.network.AssetID)
-	feesOutput := transaction.NewTxOutput(
-		LBTCbytes,
-		feesElementsValue,
-		[]byte{},
-	)
-
-	outputs[1] = feesOutput
-
-	pset, err := pset.New(inputs, outputs, 2, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	return pset, nil
 }
 
 // utils function using to fund the service
@@ -360,12 +311,6 @@ func selectOneUtxo(utxos []explorer.Utxo, targetAmount uint64, targetAsset strin
 		TargetedAmount: targetAmount,
 		TargetedAsset:  targetAsset,
 	}
-}
-
-func assetHashBytes(asset string) []byte {
-	buf, _ := hex.DecodeString(asset)
-	assetBuf := append([]byte{0x01}, elementsutil.ReverseBytes(buf)...)
-	return assetBuf
 }
 
 func fetchPrevout(explorer explorer.Explorer, utxo explorer.Utxo) (*transaction.TxOutput, error) {

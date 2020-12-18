@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math"
 	"math/big"
@@ -12,10 +13,12 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/tyler-smith/go-bip39"
+	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
+	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 )
 
 // DerivationPath defines path to derive the master key of the wallet
@@ -33,6 +36,7 @@ var (
 type Wallet interface {
 	DerivePath(path string, network *network.Network) (*payment.Payment, error)
 	SignInput(args SignInputArgs) error
+	CreatePset(inputs []explorer.Utxo, outputs []PsetOutputOpts) (*pset.Pset, error)
 }
 
 type wallet struct {
@@ -166,6 +170,53 @@ func (w *wallet) deriveSigningKeyPair(path string) (
 	return privateKey, publicKey, nil
 }
 
+// PsetOutputOpts is using to create TxOutput
+type PsetOutputOpts struct {
+	WitnessScript []byte
+	Asset         string
+	Amount        uint64
+}
+
+// CreatePset is an util function used to generate taxi transaction
+func (w *wallet) CreatePset(
+	inputs []explorer.Utxo,
+	outputs []PsetOutputOpts,
+) (*pset.Pset, error) {
+	// create taxi tx
+	txInputs := make([]*transaction.TxInput, 0)
+	txOutputs := make([]*transaction.TxOutput, 0)
+
+	for _, utxo := range inputs {
+		// inputs
+		input := transaction.NewTxInput(utxo.Hash(), utxo.Key().Vout)
+		txInputs = append(txInputs, input)
+	}
+
+	// outputs
+	for _, outputOpts := range outputs {
+		// 1. payout output
+		elementsValue, err := elementsutil.SatoshiToElementsValue(outputOpts.Amount)
+		if err != nil {
+			return nil, err
+		}
+
+		out := transaction.NewTxOutput(
+			assetHashBytes(outputOpts.Asset),
+			elementsValue,
+			outputOpts.WitnessScript,
+		)
+
+		txOutputs = append(txOutputs, out)
+	}
+
+	pset, err := pset.New(txInputs, txOutputs, 2, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return pset, nil
+}
+
 // ParseDerivationPath converts a derivation path string to the
 // internal binary representation
 func parseDerivationPath(strPath string) (DerivationPath, error) {
@@ -228,4 +279,10 @@ func containsEmptyString(composedPath []string) bool {
 		}
 	}
 	return false
+}
+
+func assetHashBytes(asset string) []byte {
+	buf, _ := hex.DecodeString(asset)
+	assetBuf := append([]byte{0x01}, elementsutil.ReverseBytes(buf)...)
+	return assetBuf
 }
