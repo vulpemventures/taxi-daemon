@@ -124,11 +124,6 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	_, err = taxi.topupRepository.SetRequested(emptyContext, topup.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	amountAsDecimal := decimal.NewFromInt(int64(taxi.fixedFeeAmount))
 	assetAmount := uint64(price.Amount.Mul(amountAsDecimal).IntPart())
 

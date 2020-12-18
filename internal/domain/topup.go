@@ -59,12 +59,14 @@ func NewTopup(
 	expireAt time.Time,
 ) Topup {
 	return Topup{
-		ID:         uuid.New().String(),
-		Partial:    "",
-		AssetHash:  assetHash,
-		AssetPrice: assetPrice,
-		FeeAmount:  totalFee,
-		ExpireAt:   expireAt,
+		ID:          uuid.New().String(),
+		Status:      Requested,
+		Partial:     "",
+		AssetHash:   assetHash,
+		AssetPrice:  assetPrice,
+		FeeAmount:   totalFee,
+		ExpireAt:    expireAt,
+		RequestedAt: time.Now(),
 	}
 }
 
