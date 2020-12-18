@@ -11,12 +11,14 @@ import (
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
 
+// TopupStoreKey is the directory name of the db files
 const TopupStoreKey = "topup"
 
 type badgerTopupRepository struct {
 	store *badgerhold.Store
 }
 
+// NewBadgerTopupRepository is a factory function for TopupRepository (Badger type)
 func NewBadgerTopupRepository(baseDirPath string, logger badger.Logger) (domain.TopupRepository, error) {
 	topupStore, err := createDb(filepath.Join(baseDirPath, TopupStoreKey), logger)
 	if err != nil {
@@ -29,7 +31,7 @@ func NewBadgerTopupRepository(baseDirPath string, logger badger.Logger) (domain.
 }
 
 func (r *badgerTopupRepository) AddTopup(ctx context.Context, topup domain.Topup) error {
-	return r.store.Insert(topup.Id, topup)
+	return r.store.Insert(topup.ID, topup)
 }
 
 func (r *badgerTopupRepository) GetAllTopups(ctx context.Context) ([]domain.Topup, error) {
@@ -38,14 +40,14 @@ func (r *badgerTopupRepository) GetAllTopups(ctx context.Context) ([]domain.Topu
 	return topups, err
 }
 
-func (r *badgerTopupRepository) SetRequested(ctx context.Context, topupId string) (*domain.Topup, error) {
+func (r *badgerTopupRepository) SetRequested(ctx context.Context, topupID string) (*domain.Topup, error) {
 	var topupUpdated *domain.Topup
 
-	query := badgerhold.Where("Id").Eq(topupId)
-	err := r.store.UpdateMatching(topupId, query, func(record interface{}) error {
+	query := badgerhold.Where("Id").Eq(topupID)
+	err := r.store.UpdateMatching(topupID, query, func(record interface{}) error {
 		update, ok := record.(*domain.Topup)
 		if !ok {
-			return errors.New("Record isn't the correct type! Need domain.Topup type.")
+			return errors.New("record isn't the correct type! topup type is expected")
 		}
 
 		update.RequestedAt = time.Now()

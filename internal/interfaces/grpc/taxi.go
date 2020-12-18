@@ -13,6 +13,7 @@ type taxiServer struct {
 	taxiSvc application.TaxiService
 }
 
+// NewTaxiHandler returns a type implementing the pb.TaxiServer interface
 func NewTaxiHandler(taxiSvc application.TaxiService) pb.TaxiServer {
 	return &taxiServer{
 		taxiSvc: taxiSvc,

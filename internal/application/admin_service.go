@@ -1,6 +1,10 @@
 package application
 
-import "github.com/vulpemventures/liquid-taxi/internal/domain"
+import (
+	"context"
+
+	"github.com/vulpemventures/liquid-taxi/internal/domain"
+)
 
 // AdminService administrates a TaxiService
 type AdminService interface {
@@ -9,19 +13,20 @@ type AdminService interface {
 }
 
 type adminService struct {
-	taxiSvc TaxiService
+	topupRepository domain.TopupRepository
 }
 
-func NewAdminService(taxiSvc TaxiService) AdminService {
+// NewAdminService is a factory function for AdminService interface
+func NewAdminService(topupRepository domain.TopupRepository) AdminService {
 	return &adminService{
-		taxiSvc: taxiSvc,
+		topupRepository: topupRepository,
 	}
 }
 
 // ListTopups returns all the topups present in the taxi's topup repository
 // optionnaly filtered by assetHash
 func (adminSvc *adminService) ListTopups(assetHashFilter string) ([]domain.Topup, error) {
-	topups, err := adminSvc.taxiSvc.getTopups()
+	topups, err := adminSvc.topupRepository.GetAllTopups(context.Background())
 	if err != nil {
 		return nil, err
 	}

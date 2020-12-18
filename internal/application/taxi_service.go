@@ -15,94 +15,61 @@ import (
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
-	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
+	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
 const (
-	receiveDerivationPath = "m/84/0/0/0/0"
-	changeDerivationPath  = "m/84/0/0/1/0"
+	receiveDerivationPath = "m/84'/0'/0'/0/0"
+	changeDerivationPath  = "m/84'/0'/0'/1/0"
 )
 
+// TaxiService provides interface for user UI
 type TaxiService interface {
 	TopupWithAsset(assetHash string) (*domain.Topup, error)
 	ListAssets() []string
-	getAddresses() (string, string)
-	getTopups() ([]domain.Topup, error)
 }
 
 type taxiService struct {
-	utxosLocker      domain.LockRepository
+	lockRepository   domain.LockRepository
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
-	eplorer          ExplorerService
+	eplorer          explorer.Explorer
 	wallet           wallet.Wallet
-	changePayment    *payment.Payment
-	changeAddress    string
-	receivePayment   *payment.Payment
-	receiveAddress   string
 	network          network.Network
-	amountToConvert  uint64
+	fixedFeeAmount   uint64
 	basisPointLocker sync.Locker
 }
 
+// NewTaxiServiceArgs is a wrapper type for NewTaxiService factory function
 type NewTaxiServiceArgs struct {
 	ExplorerEndpoint string
 	Mnemonic         []string
 	Network          network.Network
-	AmountToConvert  uint64
-	InitialPrices    []domain.Price
+	FixedFeeAmount   uint64
 	TopupRepository  domain.TopupRepository
+	LockRepository   domain.LockRepository
+	PriceRepository  domain.PriceRepository
 }
 
 // NewTaxiService returns a TaxiService interface
 func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
+	return newTaxiService(args)
+}
 
+func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 	w, err := wallet.NewWallet(args.Mnemonic)
 	if err != nil {
 		return nil, err
 	}
 
-	receivePayment, err := w.DerivePath(receiveDerivationPath, &args.Network)
-	if err != nil {
-		return nil, err
-	}
-
-	receiveAddr, err := receivePayment.WitnessPubKeyHash()
-	if err != nil {
-		return nil, err
-	}
-
-	changePayment, err := w.DerivePath(changeDerivationPath, &args.Network)
-	if err != nil {
-		return nil, err
-	}
-
-	changeAddr, err := changePayment.WitnessPubKeyHash()
-	if err != nil {
-		return nil, err
-	}
-
-	priceRepo := inmemory.NewInmemoryPriceRepository()
-
-	for _, price := range args.InitialPrices {
-		err := priceRepo.UpdateOrCreatePrice(context.Background(), price)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return &taxiService{
-		utxosLocker:      inmemory.NewInmemoryLockRepository(),
+		lockRepository:   args.LockRepository,
 		topupRepository:  args.TopupRepository,
-		priceRepository:  priceRepo,
-		eplorer:          NewEsplorerService(explorerEndpoint),
+		priceRepository:  args.PriceRepository,
+		eplorer:          explorer.NewEsplorerService(explorerEndpoint),
 		wallet:           w,
-		changePayment:    changePayment,
-		changeAddress:    changeAddr,
-		receivePayment:   receivePayment,
-		receiveAddress:   receiveAddr,
-		amountToConvert:  args.AmountToConvert,
+		fixedFeeAmount:   args.FixedFeeAmount,
 		basisPointLocker: &sync.Mutex{},
 		network:          args.Network,
 	}, nil
@@ -112,7 +79,7 @@ func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
 func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error) {
 	ttlUtxo := 10 * time.Minute
 	emptyContext := context.Background()
-	totalFees := taxi.amountToConvert
+	totalFees := taxi.fixedFeeAmount
 
 	// check if asset is available
 	// price will be used later
@@ -139,18 +106,18 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 	// Lock utxo
 	utxoKey := utxo.Key()
 
-	if taxi.utxosLocker.Contains(emptyContext, utxoKey) {
+	if taxi.lockRepository.Contains(emptyContext, utxoKey) {
 		return nil, ErrUtxoNotAvailable
 	}
 
-	err = taxi.utxosLocker.Add(emptyContext, []domain.Lock{utxoKey})
+	err = taxi.lockRepository.Add(emptyContext, []domain.Lock{utxoKey})
 	if err != nil {
 		return nil, err
 	}
 
 	go func() {
 		time.Sleep(ttlUtxo)
-		taxi.utxosLocker.Remove(emptyContext, utxoKey)
+		taxi.lockRepository.Remove(emptyContext, utxoKey)
 	}()
 
 	expireAt := time.Now().Add(ttlUtxo)
@@ -163,16 +130,16 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 		return nil, err
 	}
 
-	_, err = taxi.topupRepository.SetRequested(emptyContext, topup.Id)
+	_, err = taxi.topupRepository.SetRequested(emptyContext, topup.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	amountAsDecimal := decimal.NewFromInt(int64(taxi.amountToConvert))
+	amountAsDecimal := decimal.NewFromInt(int64(taxi.fixedFeeAmount))
 	assetAmount := uint64(price.Amount.Mul(amountAsDecimal).IntPart())
 
 	// create transaction
-	taxiPset, err := taxi.createPset(*utxo, totalFees, assetHash, assetAmount)
+	taxiPset, err := taxi.createPset(utxo, totalFees, assetHash, assetAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +150,7 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 	}
 
 	// add prevout to input
-	prevout, err := taxi.eplorer.FetchPrevout(*utxo)
+	prevout, err := fetchPrevout(taxi.eplorer, utxo)
 	if err != nil {
 		return nil, err
 	}
@@ -192,13 +159,23 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 		return nil, err
 	}
 
+	receivePayment, err := taxi.getReceivePayment()
+	if err != nil {
+		return nil, err
+	}
+
+	changePayment, err := taxi.getChangePayment()
+	if err != nil {
+		return nil, err
+	}
+
 	// sign the input
 	path := receiveDerivationPath
-	script := taxi.receivePayment.Script
+	script := receivePayment.Script
 
-	if bytes.Equal(prevout.Script, taxi.changePayment.Script) {
+	if bytes.Equal(prevout.Script, changePayment.Script) {
 		path = changeDerivationPath
-		script = taxi.changePayment.Script
+		script = changePayment.Script
 	}
 
 	signOpts := wallet.SignInputArgs{
@@ -230,7 +207,7 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 		return nil, err
 	}
 
-	topupCompleted, err := taxi.topupRepository.SetCompleted(emptyContext, topup.Id, partialBase64, assetAmount)
+	topupCompleted, err := taxi.topupRepository.SetCompleted(emptyContext, topup.ID, partialBase64, assetAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +233,7 @@ func (taxi *taxiService) ListAssets() []string {
 
 // createPset is an util function used to generate taxi transaction
 func (taxi *taxiService) createPset(
-	utxo Utxo,
+	utxo explorer.Utxo,
 	totalFees uint64,
 	assetHash string,
 	assetAmount uint64,
@@ -266,7 +243,7 @@ func (taxi *taxiService) createPset(
 	outputs := make([]*transaction.TxOutput, 2)
 
 	// inputs
-	input := transaction.NewTxInput(utxo.Hash(), utxo.Vout)
+	input := transaction.NewTxInput(utxo.Hash(), utxo.Key().Vout)
 	inputs[0] = input
 
 	// outputs
@@ -277,10 +254,15 @@ func (taxi *taxiService) createPset(
 		return nil, err
 	}
 
+	taxiPayment, err := taxi.getReceivePayment()
+	if err != nil {
+		return nil, err
+	}
+
 	payoutOutput := transaction.NewTxOutput(
 		assetHashBytes(assetHash),
 		payoutElementsValue,
-		taxi.receivePayment.WitnessScript,
+		taxiPayment.WitnessScript,
 	)
 
 	//	 /!\ payoutOutput MUST be output index 0 /!\
@@ -310,38 +292,52 @@ func (taxi *taxiService) createPset(
 }
 
 // utils function using to fund the service
-func (taxi *taxiService) getAddresses() (string, string) {
-	return taxi.receiveAddress, taxi.changeAddress
+func (taxi *taxiService) getAddresses() (string, string, error) {
+	rcvPayment, err := taxi.getReceivePayment()
+	if err != nil {
+		return "", "", err
+	}
+
+	rcvAddress, err := rcvPayment.WitnessPubKeyHash()
+	if err != nil {
+		return "", "", err
+	}
+
+	changePayment, err := taxi.getChangePayment()
+	if err != nil {
+		return "", "", err
+	}
+
+	changeAddress, err := changePayment.WitnessPubKeyHash()
+	if err != nil {
+		return "", "", err
+	}
+
+	return rcvAddress, changeAddress, nil
 }
 
-// func (taxi *taxiService) updateBasisPoint(newBasisPoint uint32) {
-// 	taxi.basisPointLocker.Lock()
-// 	defer taxi.basisPointLocker.Unlock()
-
-// 	taxi.basisPoint = newBasisPoint
-// }
-
-func (taxi *taxiService) getTopups() ([]domain.Topup, error) {
-	return taxi.topupRepository.GetAllTopups(context.Background())
-}
-
-func (taxi *taxiService) fetchAvailableUtxos() ([]Utxo, error) {
-	utxosChange, err := taxi.eplorer.GetUnspents(taxi.changeAddress)
+func (taxi *taxiService) fetchAvailableUtxos() ([]explorer.Utxo, error) {
+	rcvAddress, changeAddress, err := taxi.getAddresses()
 	if err != nil {
 		return nil, err
 	}
 
-	utxosReceive, err := taxi.eplorer.GetUnspents(taxi.receiveAddress)
+	utxosChange, err := taxi.eplorer.GetUnspents(changeAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	utxosReceive, err := taxi.eplorer.GetUnspents(rcvAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	utxos := append(utxosChange, utxosReceive...)
 
-	availableUtxos := make([]Utxo, 0)
+	availableUtxos := make([]explorer.Utxo, 0)
 
 	for _, utxo := range utxos {
-		if !taxi.utxosLocker.Contains(context.Background(), utxo.Key()) {
+		if !taxi.lockRepository.Contains(context.Background(), utxo.Key()) {
 			availableUtxos = append(availableUtxos, utxo)
 		}
 	}
@@ -349,10 +345,18 @@ func (taxi *taxiService) fetchAvailableUtxos() ([]Utxo, error) {
 	return availableUtxos, nil
 }
 
-func selectOneUtxo(utxos []Utxo, targetAmount uint64, targetAsset string) (*Utxo, error) {
+func (taxi *taxiService) getReceivePayment() (*payment.Payment, error) {
+	return taxi.wallet.DerivePath(receiveDerivationPath, &taxi.network)
+}
+
+func (taxi *taxiService) getChangePayment() (*payment.Payment, error) {
+	return taxi.wallet.DerivePath(changeDerivationPath, &taxi.network)
+}
+
+func selectOneUtxo(utxos []explorer.Utxo, targetAmount uint64, targetAsset string) (explorer.Utxo, error) {
 	for _, utxo := range utxos {
-		if !utxo.IsConfidential() && utxo.Asset == targetAsset && utxo.Value == targetAmount {
-			return &utxo, nil
+		if !utxo.IsConfidential() && utxo.Asset() == targetAsset && utxo.Value() == targetAmount {
+			return utxo, nil
 		}
 	}
 
@@ -366,4 +370,18 @@ func assetHashBytes(asset string) []byte {
 	buf, _ := hex.DecodeString(asset)
 	assetBuf := append([]byte{0x01}, elementsutil.ReverseBytes(buf)...)
 	return assetBuf
+}
+
+func fetchPrevout(explorer explorer.Explorer, utxo explorer.Utxo) (*transaction.TxOutput, error) {
+	hex, err := explorer.FetchTx(utxo.Key().TxID)
+	if err != nil {
+		return nil, err
+	}
+
+	prevTx, err := transaction.NewTxFromHex(hex)
+	if err != nil {
+		return nil, err
+	}
+
+	return prevTx.Outputs[int(utxo.Key().Vout)], nil
 }

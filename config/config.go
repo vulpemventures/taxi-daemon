@@ -22,9 +22,9 @@ const (
 	NetworkKey = "NETWORK"
 	// MnemonicKey defines the private key used by the taxi
 	MnemonicKey = "MNEMONIC"
-	// FragmentAmountKey defines the amount provided by taxi for a topup
-	FragmentAmountKey = "FRAGMENT_AMOUNT"
-	// LogLevelKey ...
+	// FixedFeeAmountKey defines the amount provided by taxi for a topup
+	FixedFeeAmountKey = "FIXED_FEE_AMOUNT"
+	// LogLevelKey is the level used as logus' logger level
 	LogLevelKey = "LOG_LEVEL"
 	// AssetHashKey is a temporary var for test
 	AssetHashKey = "ASSET_HASH"
@@ -44,7 +44,7 @@ func init() {
 	vip.SetDefault(AdminPortKey, 8081)
 	vip.SetDefault(MnemonicKey, "")
 	vip.SetDefault(LogLevelKey, 4)
-	vip.SetDefault(FragmentAmountKey, 1000)
+	vip.SetDefault(FixedFeeAmountKey, 1000)
 
 	validate()
 
@@ -60,7 +60,7 @@ func validate() {
 		log.Fatal("network does not exist")
 	}
 
-	if GetFragmentAmount() < 1 {
+	if GetFixedFeeAmount() < 1 {
 		log.Fatal("fragment amount can't be lower than 1 satoshi")
 	}
 
@@ -94,34 +94,43 @@ func validatePort(port int) error {
 }
 
 // TODO refacto ASSETHASH key
+
+// GetAssetHash returns config's assetHash
 func GetAssetHash() string {
 	return vip.GetString(AssetHashKey)
 }
 
+// SetAssetHash sets hash as config's assetHash
 func SetAssetHash(hash string) {
 	vip.Set(AssetHashKey, hash)
 }
 
+// GetExplorerEndpoint returns the explorer endpoint as string
 func GetExplorerEndpoint() string {
 	return vip.GetString(ExplorerEndpointKey)
 }
 
+// GetMnemonic returns the Mnemonic of taxi as string
 func GetMnemonic() string {
 	return vip.GetString(MnemonicKey)
 }
 
-func GetFragmentAmount() int {
-	return vip.GetInt(FragmentAmountKey)
+// GetFixedFeeAmount returns the value of fragment amount as integer
+func GetFixedFeeAmount() int {
+	return vip.GetInt(FixedFeeAmountKey)
 }
 
+// GetTaxiPort returns the port of the taxi server
 func GetTaxiPort() int {
 	return vip.GetInt(TaxiPortKey)
 }
 
+// GetAdminPort returns the port of the admin server
 func GetAdminPort() int {
 	return vip.GetInt(AdminPortKey)
 }
 
+// GetNetwork returns a pointer to the configurated network
 func GetNetwork() *network.Network {
 	switch vip.GetString(NetworkKey) {
 	case "regtest":

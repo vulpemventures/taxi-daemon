@@ -21,7 +21,7 @@ import (
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/config"
-	"github.com/vulpemventures/liquid-taxi/internal/application"
+	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 	g "google.golang.org/grpc"
 )
@@ -82,7 +82,7 @@ func TestTaxiServer(t *testing.T) {
 	// bobAddress, _ := bob.WitnessPubKeyHash()
 
 	// Now, alice adds his own inputs and outputs
-	aliceExplorerSvc := application.NewEsplorerService(config.GetExplorerEndpoint())
+	aliceExplorerSvc := explorer.NewEsplorerService(config.GetExplorerEndpoint())
 	time.Sleep(3 * time.Second)
 	utxos, err := aliceExplorerSvc.GetUnspents(aliceAddress)
 
@@ -98,16 +98,16 @@ func TestTaxiServer(t *testing.T) {
 	var witnessUtxoValue []byte
 
 	for _, utxo := range utxos {
-		if utxo.Asset == USDT && utxo.Value >= totalToSend {
-			aliceInput := transaction.NewTxInput(utxo.Hash(), utxo.Vout)
-			prevout, err := aliceExplorerSvc.FetchPrevout(utxo)
+		if utxo.Asset() == USDT && utxo.Value() >= totalToSend {
+			aliceInput := transaction.NewTxInput(utxo.Hash(), utxo.Key().Vout)
+			prevout, err := fetchPrevout(aliceExplorerSvc, utxo)
 			if err != nil {
 				t.Error(err)
 			}
 
 			witnessUtxoValue = prevout.Value
 
-			change = utxo.Value - totalToSend
+			change = utxo.Value() - totalToSend
 
 			aliceUpdater.AddInput(aliceInput)
 			err = aliceUpdater.AddInWitnessUtxo(prevout, 1)
@@ -195,14 +195,15 @@ func TestTaxiServer(t *testing.T) {
 
 	log.Info(txHex)
 
+	// TODO uncomment when crawler is implemented
 	// _, err = aliceExplorerSvc.Broadcast(txHex)
 	// if err != nil {
 	// 	t.Error(err)
 	// }
 }
 
-func mint(apiUrl string, address string, amount int) (string, string, error) {
-	url := fmt.Sprintf("%s/mint", apiUrl)
+func mint(apiURL string, address string, amount int) (string, string, error) {
+	url := fmt.Sprintf("%s/mint", apiURL)
 	payload := map[string]interface{}{"address": address, "quantity": amount}
 	body, _ := json.Marshal(payload)
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
@@ -220,4 +221,18 @@ func mint(apiUrl string, address string, amount int) (string, string, error) {
 	}
 
 	return respBody["txId"].(string), respBody["asset"].(string), nil
+}
+
+func fetchPrevout(explorer explorer.Explorer, utxo explorer.Utxo) (*transaction.TxOutput, error) {
+	hex, err := explorer.FetchTx(utxo.Key().TxID)
+	if err != nil {
+		return nil, err
+	}
+
+	prevTx, err := transaction.NewTxFromHex(hex)
+	if err != nil {
+		return nil, err
+	}
+
+	return prevTx.Outputs[int(utxo.Key().Vout)], nil
 }

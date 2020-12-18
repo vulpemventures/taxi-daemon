@@ -13,6 +13,7 @@ type adminServer struct {
 	adminSvc application.AdminService
 }
 
+// NewAdminHandler returns a types implementing the pb.AdminServer grpc interface
 func NewAdminHandler(adminSvc application.AdminService) pb.AdminServer {
 	return &adminServer{
 		adminSvc: adminSvc,

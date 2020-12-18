@@ -1,4 +1,4 @@
-package application
+package explorer
 
 import (
 	"encoding/json"
@@ -7,46 +7,44 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/vulpemventures/go-elements/transaction"
 )
 
-type ExplorerService interface {
+// Explorer provides a set of function used by the taxi service
+type Explorer interface {
 	GetUnspents(address string) ([]Utxo, error)
-	FetchTx(txId string) (string, error)
+	FetchTx(txID string) (string, error)
 	Broadcast(txHex string) (string, error)
-	FetchPrevout(utxo Utxo) (*transaction.TxOutput, error)
 }
 
-type explorerService struct {
+type explorer struct {
 	endpoint string
-	client   explorerHttpClient
+	client   explorerHTTPClient
 }
 
-// NewEsplorerService returns an ExplorerService interface
-func NewEsplorerService(endpoint string) ExplorerService {
-	return &explorerService{
+// NewEsplorerService returns an explorer interface
+func NewEsplorerService(endpoint string) Explorer {
+	return &explorer{
 		endpoint: endpoint,
-		client:   newHttpClient(),
+		client:   newHTTPClient(),
 	}
 }
 
-func (explorer explorerService) FetchTx(txId string) (string, error) {
-	url := fmt.Sprintf("%s/tx/%s/hex", explorer.endpoint, txId)
+func (explorer explorer) FetchTx(txID string) (string, error) {
+	url := fmt.Sprintf("%s/tx/%s/hex", explorer.endpoint, txID)
 	status, response, err := explorer.client.get(url)
 	if err != nil {
 		return "", err
 	}
 
 	if status != http.StatusOK {
-		return "", errStatusIsNotOk{httpCode: status}
+		return "", ErrStatusIsNotOk{httpCode: status}
 	}
 
 	return response, nil
 }
 
 // GetUnspents returns utxos for a given addresses
-func (explorer explorerService) GetUnspents(address string) ([]Utxo, error) {
+func (explorer explorer) GetUnspents(address string) ([]Utxo, error) {
 	url := fmt.Sprintf(
 		"%s/address/%s/utxo",
 		explorer.endpoint,
@@ -59,20 +57,25 @@ func (explorer explorerService) GetUnspents(address string) ([]Utxo, error) {
 	}
 
 	if status != http.StatusOK {
-		return nil, errStatusIsNotOk{httpCode: status}
+		return nil, ErrStatusIsNotOk{httpCode: status}
 	}
 
-	var utxos []Utxo
+	var utxos []utxo
 	err = json.Unmarshal([]byte(response), &utxos)
 	if err != nil {
 		return nil, err
 	}
 
-	return utxos, nil
+	var results []Utxo
+	for _, u := range utxos {
+		results = append(results, &u)
+	}
+
+	return results, nil
 }
 
 // Broadcast spreads a transaction hex
-func (explorer explorerService) Broadcast(txHex string) (string, error) {
+func (explorer explorer) Broadcast(txHex string) (string, error) {
 	url := fmt.Sprintf("%s/tx", explorer.endpoint)
 	status, response, err := explorer.client.post(url, txHex)
 	if err != nil {
@@ -80,31 +83,17 @@ func (explorer explorerService) Broadcast(txHex string) (string, error) {
 	}
 
 	if status != http.StatusOK {
-		return "", errStatusIsNotOk{httpCode: status}
+		return "", ErrStatusIsNotOk{httpCode: status}
 	}
 
 	return response, nil
-}
-
-func (explorer explorerService) FetchPrevout(utxo Utxo) (*transaction.TxOutput, error) {
-	hex, err := explorer.FetchTx(utxo.TxId)
-	if err != nil {
-		return nil, err
-	}
-
-	prevTx, err := transaction.NewTxFromHex(hex)
-	if err != nil {
-		return nil, err
-	}
-
-	return prevTx.Outputs[utxo.Vout], nil
 }
 
 // http client designed for explorer
 
 const httpClientTimeout = 3 * time.Second
 
-type explorerHttpClient interface {
+type explorerHTTPClient interface {
 	get(url string) (int, string, error)
 	post(url string, bodyString string) (int, string, error)
 }
@@ -113,7 +102,7 @@ type httpClient struct {
 	client *http.Client
 }
 
-func newHttpClient() explorerHttpClient {
+func newHTTPClient() explorerHTTPClient {
 	return &httpClient{
 		client: &http.Client{
 			Timeout: httpClientTimeout,

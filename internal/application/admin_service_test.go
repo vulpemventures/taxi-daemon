@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shopspring/decimal"
 	"github.com/tj/assert"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
@@ -15,27 +14,23 @@ func TestListTopups(t *testing.T) {
 		ExplorerEndpoint: explorerEndpoint,
 		Mnemonic:         words,
 		Network:          regtest,
-		AmountToConvert:  100000000,
+		FixedFeeAmount:   100000000,
 		TopupRepository:  inmemory.NewInmemoryTopupRepository(),
-		InitialPrices: []domain.Price{
-			domain.Price{
-				AssetHash: superToken,
-				Amount:    decimal.NewFromFloat(8.0026),
-			},
-			domain.Price{
-				AssetHash: hyperToken,
-				Amount:    decimal.NewFromFloat(7.032),
-			},
-		},
+		LockRepository:   inmemory.NewInmemoryLockRepository(),
+		PriceRepository:  newMockedPriceRepository(t, []string{superToken, hyperToken}),
 	}
 
-	taxiSvc, err := NewTaxiService(newTaxiOpts)
+	taxiSvc, err := newTaxiService(newTaxiOpts)
 	if err != nil {
 		t.Error(err)
 	}
 
 	// found taxi with LBTC
-	addr, _ := taxiSvc.getAddresses()
+	addr, _, err := taxiSvc.getAddresses()
+	if err != nil {
+		t.Error(err)
+	}
+
 	_, err = faucet(addr, explorerEndpoint)
 	if err != nil {
 		t.Error(nil)
@@ -53,7 +48,7 @@ func TestListTopups(t *testing.T) {
 		t.Error(err)
 	}
 
-	adminSvc := NewAdminService(taxiSvc)
+	adminSvc := NewAdminService(taxiSvc.topupRepository)
 	topups, err := adminSvc.ListTopups("")
 	assert.Nil(t, err)
 	assert.NotNil(t, topups)
@@ -64,48 +59,3 @@ func TestListTopups(t *testing.T) {
 	assert.NotNil(t, filteredTopups)
 	assert.Equal(t, []domain.Topup{*topupHyperToken}, filteredTopups)
 }
-
-// func TestChangeSpread(t *testing.T) {
-// 	newTaxiOpts := NewTaxiServiceArgs{
-// 		ExplorerEndpoint: explorerEndpoint,
-// 		Mnemonic:         words,
-// 		Network:          regtest,
-// 		AmountToConvert:  100000000,
-// 		TopupRepository:  inmemory.NewInmemoryTopupRepository(),
-// 		InitialPrices: []domain.Price{
-// 			domain.Price{
-// 				AssetHash: superToken,
-// 				Amount:    decimal.NewFromFloat(8.0026),
-// 			},
-// 		},
-// 	}
-
-// 	taxiSvc, err := NewTaxiService(newTaxiOpts)
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-
-// 	// found taxi with LBTC
-// 	addr, _ := taxiSvc.getAddresses()
-// 	_, err = faucet(addr, explorerEndpoint)
-// 	if err != nil {
-// 		t.Error(nil)
-// 	}
-// 	time.Sleep(5 * time.Second)
-
-// 	topup0, err := taxiSvc.TopupWithAsset(superToken)
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-
-// 	adminSvc := NewAdminService(taxiSvc)
-// 	adminSvc.ChangeSpread(12)
-
-// 	topup1, err := taxiSvc.TopupWithAsset(superToken)
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-
-// 	assert.Equal(t, int32(10), topup0.BasisPoint)
-// 	assert.Equal(t, int32(12), topup1.BasisPoint)
-// }

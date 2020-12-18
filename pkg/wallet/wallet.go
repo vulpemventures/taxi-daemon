@@ -18,6 +18,7 @@ import (
 	"github.com/vulpemventures/go-elements/transaction"
 )
 
+// DerivationPath defines path to derive the master key of the wallet
 type DerivationPath []uint32
 
 var (
@@ -28,6 +29,7 @@ var (
 	}
 )
 
+// Wallet represents the user, it is able to derive new addresses and sign an input
 type Wallet interface {
 	DerivePath(path string, network *network.Network) (*payment.Payment, error)
 	SignInput(args SignInputArgs) error
@@ -38,6 +40,7 @@ type wallet struct {
 	masterKey []byte
 }
 
+// NewWallet is a factory function for Wallet interface
 func NewWallet(words []string) (Wallet, error) {
 	seed := generateSeedFromMnemonic(words)
 	masterKey, err := generateSigningMasterKey(seed)
@@ -70,6 +73,7 @@ func generateSigningMasterKey(seed []byte) ([]byte, error) {
 	return base58.Decode(hdNode.String()), nil
 }
 
+// SignInputArgs is a wrapper for SignInput method arguments
 type SignInputArgs struct {
 	Updater       *pset.Updater
 	UnsignedTx    *transaction.Transaction
@@ -80,6 +84,7 @@ type SignInputArgs struct {
 	HashType      txscript.SigHashType
 }
 
+// SignInput lets the user to sign a pset input
 func (w *wallet) SignInput(args SignInputArgs) error {
 	privKey, pubKey, err := w.deriveSigningKeyPair(args.Path)
 	if err != nil {
@@ -118,6 +123,7 @@ func (w *wallet) SignInput(args SignInputArgs) error {
 	return nil
 }
 
+// DerivePath gets a derivation path and return a payment.Payment pointer
 func (w *wallet) DerivePath(path string, network *network.Network) (*payment.Payment, error) {
 	_, pubkey, err := w.deriveSigningKeyPair(path)
 	if err != nil {

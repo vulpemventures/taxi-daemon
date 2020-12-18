@@ -12,6 +12,7 @@ type inmemoryLockRepository struct {
 	locker    sync.Locker
 }
 
+// NewInmemoryLockRepository creates a LockRepository implementation
 func NewInmemoryLockRepository() domain.LockRepository {
 	return &inmemoryLockRepository{
 		utxosKeys: make(map[domain.Lock]bool),
