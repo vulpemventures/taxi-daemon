@@ -34,7 +34,7 @@ type taxiService struct {
 	lockRepository   domain.LockRepository
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
-	explorer          explorer.Explorer
+	explorer         explorer.Explorer
 	wallet           wallet.Wallet
 	network          network.Network
 	fixedFeeAmount   uint64
@@ -67,7 +67,7 @@ func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 		lockRepository:   args.LockRepository,
 		topupRepository:  args.TopupRepository,
 		priceRepository:  args.PriceRepository,
-		eplorer:          args.ExplorerSvc,
+		explorer:         args.ExplorerSvc,
 		wallet:           w,
 		fixedFeeAmount:   args.FixedFeeAmount,
 		basisPointLocker: &sync.Mutex{},
@@ -146,7 +146,7 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 	}
 
 	// add prevout to input
-	prevout, err := fetchPrevout(taxi.eplorer, utxo)
+	prevout, err := fetchPrevout(taxi.explorer, utxo)
 	if err != nil {
 		return nil, err
 	}
@@ -318,12 +318,12 @@ func (taxi *taxiService) fetchAvailableUtxos() ([]explorer.Utxo, error) {
 		return nil, err
 	}
 
-	utxosChange, err := taxi.eplorer.GetUnspents(changeAddress)
+	utxosChange, err := taxi.explorer.GetUnspents(changeAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	utxosReceive, err := taxi.eplorer.GetUnspents(rcvAddress)
+	utxosReceive, err := taxi.explorer.GetUnspents(rcvAddress)
 	if err != nil {
 		return nil, err
 	}
