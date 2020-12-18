@@ -2,6 +2,7 @@ package application
 
 import (
 	"bytes"
+	"context"
 	"log"
 	"sort"
 	"testing"
@@ -42,7 +43,7 @@ func TestTopupWithAsset(t *testing.T) {
 
 	time.Sleep(5 * time.Second)
 
-	topup, err := taxiSvc.TopupWithAsset(superToken)
+	topup, err := taxiSvc.TopupWithAsset(context.Background(), superToken)
 	assert.Nil(t, err)
 	assert.NotNil(t, topup)
 
@@ -99,7 +100,7 @@ func TestListAssets(t *testing.T) {
 			t.Error(err)
 		}
 
-		assets := taxiSvc.ListAssets()
+		assets := taxiSvc.ListAssets(context.Background())
 		sort.Strings(assets)
 		sort.Strings(test.expected)
 		assert.Equal(t, test.expected, assets)

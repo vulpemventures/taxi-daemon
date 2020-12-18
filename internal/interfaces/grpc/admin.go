@@ -21,7 +21,7 @@ func NewAdminHandler(adminSvc application.AdminService) pb.AdminServer {
 }
 
 func (a *adminServer) ListTopups(ctx context.Context, req *pb.ListTopupsRequest) (*pb.ListTopupsReply, error) {
-	topups, err := a.adminSvc.ListTopups(req.GetAssetHash())
+	topups, err := a.adminSvc.ListTopups(ctx, req.GetAssetHash())
 	if err != nil {
 		return nil, err
 	}

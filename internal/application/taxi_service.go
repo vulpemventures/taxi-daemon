@@ -26,8 +26,8 @@ const (
 
 // TaxiService provides interface for user UI
 type TaxiService interface {
-	TopupWithAsset(assetHash string) (*domain.Topup, error)
-	ListAssets() []string
+	TopupWithAsset(ctx context.Context, assetHash string) (*domain.Topup, error)
+	ListAssets(ctx context.Context) []string
 }
 
 type taxiService struct {
@@ -76,7 +76,7 @@ func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 }
 
 // TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
-func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error) {
+func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (*domain.Topup, error) {
 	ttlUtxo := 10 * time.Minute
 	emptyContext := context.Background()
 	totalFees := taxi.fixedFeeAmount
@@ -212,8 +212,8 @@ func (taxi *taxiService) TopupWithAsset(assetHash string) (*domain.Topup, error)
 }
 
 // ListAssets return all the available assets of the taxi service
-func (taxi *taxiService) ListAssets() []string {
-	prices, err := taxi.priceRepository.GetAllPrices(context.Background())
+func (taxi *taxiService) ListAssets(ctx context.Context) []string {
+	prices, err := taxi.priceRepository.GetAllPrices(ctx)
 	if err != nil {
 		return nil
 	}

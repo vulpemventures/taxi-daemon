@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -39,23 +40,23 @@ func TestListTopups(t *testing.T) {
 	time.Sleep(5 * time.Second)
 
 	// do some topups
-	_, err = taxiSvc.TopupWithAsset(superToken)
+	_, err = taxiSvc.TopupWithAsset(context.Background(), superToken)
 	if err != nil {
 		t.Error(err)
 	}
 
-	topupHyperToken, err := taxiSvc.TopupWithAsset(hyperToken)
+	topupHyperToken, err := taxiSvc.TopupWithAsset(context.Background(), hyperToken)
 	if err != nil {
 		t.Error(err)
 	}
 
 	adminSvc := NewAdminService(taxiSvc.topupRepository)
-	topups, err := adminSvc.ListTopups("")
+	topups, err := adminSvc.ListTopups(context.Background(), "")
 	assert.Nil(t, err)
 	assert.NotNil(t, topups)
 	assert.Equal(t, 2, len(topups))
 
-	filteredTopups, err := adminSvc.ListTopups(hyperToken)
+	filteredTopups, err := adminSvc.ListTopups(context.Background(), hyperToken)
 	assert.Nil(t, err)
 	assert.NotNil(t, filteredTopups)
 	assert.Equal(t, []domain.Topup{*topupHyperToken}, filteredTopups)
