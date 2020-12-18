@@ -239,35 +239,38 @@ func (taxi *taxiService) ListAssets(ctx context.Context) []string {
 }
 
 // utils function using to fund the service
-func (taxi *taxiService) getAddresses() (string, string, error) {
+func (taxi *taxiService) getAddresses() ([]string, error) {
 	rcvPayment, err := taxi.getReceivePayment()
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	rcvAddress, err := rcvPayment.WitnessPubKeyHash()
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	changePayment, err := taxi.getChangePayment()
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	changeAddress, err := changePayment.WitnessPubKeyHash()
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	return rcvAddress, changeAddress, nil
+	// TODO now the taxi service has only two addresses. In the future taxi will generate a set of addresses for each topup
+	return []string{rcvAddress, changeAddress}, nil
 }
 
 func (taxi *taxiService) fetchAvailableUtxos() ([]explorer.Utxo, error) {
-	rcvAddress, changeAddress, err := taxi.getAddresses()
+	addresses, err := taxi.getAddresses()
 	if err != nil {
 		return nil, err
 	}
+
+	rcvAddress, changeAddress := addresses[0], addresses[1]
 
 	utxosChange, err := taxi.explorer.GetUnspents(changeAddress)
 	if err != nil {

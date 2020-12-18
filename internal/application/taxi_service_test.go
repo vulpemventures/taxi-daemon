@@ -34,7 +34,8 @@ func TestTopupWithAsset(t *testing.T) {
 	}
 
 	// found taxi with LBTC
-	addr, _, err := taxiSvc.getAddresses()
+	addresses, err := taxiSvc.getAddresses()
+	addr := addresses[0]
 	if err != nil {
 		t.Error(err)
 	}
