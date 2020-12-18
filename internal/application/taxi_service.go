@@ -34,7 +34,7 @@ type taxiService struct {
 	lockRepository   domain.LockRepository
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
-	eplorer          explorer.Explorer
+	explorer          explorer.Explorer
 	wallet           wallet.Wallet
 	network          network.Network
 	fixedFeeAmount   uint64
