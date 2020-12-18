@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	receiveDerivationPath = "m/84'/0'/0'/0/0"
-	changeDerivationPath  = "m/84'/0'/0'/1/0"
+	receiveDerivationPath = "0'/0/0"
+	changeDerivationPath  = "0'/1/0"
 )
 
 // TaxiService provides interface for user UI
