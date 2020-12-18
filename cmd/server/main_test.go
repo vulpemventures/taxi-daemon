@@ -40,7 +40,7 @@ func TestTaxiServer(t *testing.T) {
 	aliceAddress, _ := alice.WitnessPubKeyHash()
 
 	// Let's simulate alice's USDTs
-	_, USDT, err := mint(config.GetExplorerEndpoint(), aliceAddress, 100000)
+	_, USDT, err := mint(config.GetString(config.ExplorerEndpointKey), aliceAddress, 100000)
 	config.SetAssetHash(USDT)
 
 	// start taxi
@@ -82,7 +82,7 @@ func TestTaxiServer(t *testing.T) {
 	// bobAddress, _ := bob.WitnessPubKeyHash()
 
 	// Now, alice adds his own inputs and outputs
-	aliceExplorerSvc := explorer.NewExplorerService(config.GetExplorerEndpoint())
+	aliceExplorerSvc := explorer.NewExplorerService(config.GetString(config.ExplorerEndpointKey))
 	time.Sleep(3 * time.Second)
 	utxos, err := aliceExplorerSvc.GetUnspents(aliceAddress)
 

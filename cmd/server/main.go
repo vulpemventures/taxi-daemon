@@ -29,18 +29,18 @@ func main() {
 	priceRepository := inmemory.NewInmemoryPriceRepository()
 
 	priceRepository.UpdateOrCreatePrice(context.Background(), domain.Price{
-		AssetHash: config.GetAssetHash(),
+		AssetHash: config.GetString(config.AssetHashKey),
 		Amount:    decimal.NewFromFloat(10.154),
 	})
 
 	taxiSvcOptions := application.NewTaxiServiceArgs{
-		Mnemonic:        strings.Split(config.GetMnemonic(), " "),
+		Mnemonic:        strings.Split(config.GetString(config.MnemonicKey), " "),
 		Network:         *config.GetNetwork(),
-		FixedFeeAmount:  uint64(config.GetFixedFeeAmount()),
+		FixedFeeAmount:  uint64(config.GetInt(config.FixedFeeAmountKey)),
 		LockRepository:  lockRepository,
 		PriceRepository: priceRepository,
 		TopupRepository: topupRepository,
-		ExplorerSvc:     explorer.NewExplorerService(config.GetExplorerEndpoint()),
+		ExplorerSvc:     explorer.NewExplorerService(config.GetString(config.ExplorerEndpointKey)),
 	}
 
 	taxiSvc, err := application.NewTaxiService(taxiSvcOptions)
@@ -60,8 +60,8 @@ func main() {
 	pb.RegisterTaxiServer(taxiServer, taxiHandler)
 
 	domainURL := "localhost"
-	taxiAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetTaxiPort())
-	adminAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetAdminPort())
+	taxiAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetInt(config.TaxiPortKey))
+	adminAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetInt(config.AdminPortKey))
 
 	// serve
 	lisTaxi, err := net.Listen("tcp", taxiAddress)

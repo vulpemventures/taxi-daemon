@@ -52,7 +52,7 @@ func init() {
 }
 
 func validate() {
-	if GetMnemonic() == "" {
+	if GetString(MnemonicKey) == "" {
 		log.Fatal("mnemonic is an empty string")
 	}
 
@@ -60,12 +60,12 @@ func validate() {
 		log.Fatal("network does not exist")
 	}
 
-	if GetFixedFeeAmount() < 1 {
+	if GetInt(FixedFeeAmountKey) < 1 {
 		log.Fatal("fragment amount can't be lower than 1 satoshi")
 	}
 
-	p := GetTaxiPort()
-	pAdmin := GetAdminPort()
+	p := GetInt(TaxiPortKey)
+	pAdmin := GetInt(AdminPortKey)
 
 	if p == pAdmin {
 		log.Fatal("ports can't be equal")
@@ -93,41 +93,21 @@ func validatePort(port int) error {
 	return nil
 }
 
-// TODO refacto ASSETHASH key
-
-// GetAssetHash returns config's assetHash
-func GetAssetHash() string {
-	return vip.GetString(AssetHashKey)
-}
+// TODO refacto ASSETHASH key (SetAssetHash will be removed in the crawler PR)
 
 // SetAssetHash sets hash as config's assetHash
 func SetAssetHash(hash string) {
 	vip.Set(AssetHashKey, hash)
 }
 
-// GetExplorerEndpoint returns the explorer endpoint as string
-func GetExplorerEndpoint() string {
-	return vip.GetString(ExplorerEndpointKey)
+// GetString returns the value associated with the key as string
+func GetString(key string) string {
+	return vip.GetString(key)
 }
 
-// GetMnemonic returns the Mnemonic of taxi as string
-func GetMnemonic() string {
-	return vip.GetString(MnemonicKey)
-}
-
-// GetFixedFeeAmount returns the value of fragment amount as integer
-func GetFixedFeeAmount() int {
-	return vip.GetInt(FixedFeeAmountKey)
-}
-
-// GetTaxiPort returns the port of the taxi server
-func GetTaxiPort() int {
-	return vip.GetInt(TaxiPortKey)
-}
-
-// GetAdminPort returns the port of the admin server
-func GetAdminPort() int {
-	return vip.GetInt(AdminPortKey)
+// GetInt returns the value associated with the key as Int
+func GetInt(key string) int {
+	return vip.GetInt(key)
 }
 
 // GetNetwork returns a pointer to the configurated network
