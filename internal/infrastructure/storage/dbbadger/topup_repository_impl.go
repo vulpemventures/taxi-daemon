@@ -43,8 +43,8 @@ func (r *badgerTopupRepository) GetAllTopups(ctx context.Context) ([]domain.Topu
 func (r *badgerTopupRepository) SetRequested(ctx context.Context, topupID string) (*domain.Topup, error) {
 	var topupUpdated *domain.Topup
 
-	query := badgerhold.Where("Id").Eq(topupID)
-	err := r.store.UpdateMatching(topupID, query, func(record interface{}) error {
+	query := badgerhold.Where("ID").Eq(topupID)
+	err := r.store.UpdateMatching(&domain.Topup{}, query, func(record interface{}) error {
 		update, ok := record.(*domain.Topup)
 		if !ok {
 			return errors.New("record isn't the correct type! topup type is expected")
@@ -63,8 +63,8 @@ func (r *badgerTopupRepository) SetRequested(ctx context.Context, topupID string
 func (r *badgerTopupRepository) SetCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
 	var topupUpdated *domain.Topup
 
-	query := badgerhold.Where("Id").Eq(topupID)
-	err := r.store.UpdateMatching(topupID, query, func(record interface{}) error {
+	query := badgerhold.Where("ID").Eq(topupID)
+	err := r.store.UpdateMatching(&domain.Topup{}, query, func(record interface{}) error {
 		update, ok := record.(*domain.Topup)
 		if !ok {
 			return errors.New("record isn't the correct type! Need domain.Topup type")
@@ -85,8 +85,8 @@ func (r *badgerTopupRepository) SetCompleted(ctx context.Context, topupID string
 func (r *badgerTopupRepository) SetSettled(ctx context.Context, topupID string, txID string) (*domain.Topup, error) {
 	var topupUpdated *domain.Topup
 
-	query := badgerhold.Where("Id").Eq(topupID)
-	err := r.store.UpdateMatching(topupID, query, func(record interface{}) error {
+	query := badgerhold.Where("ID").Eq(topupID)
+	err := r.store.UpdateMatching(&domain.Topup{}, query, func(record interface{}) error {
 		update, ok := record.(*domain.Topup)
 		if !ok {
 			return errors.New("record isn't the correct type! Need domain.Topup type")
