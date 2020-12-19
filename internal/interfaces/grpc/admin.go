@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/shopspring/decimal"
 	"github.com/vulpemventures/liquid-taxi/internal/application"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 )
@@ -18,6 +19,16 @@ func NewAdminHandler(adminSvc application.AdminService) pb.AdminServer {
 	return &adminServer{
 		adminSvc: adminSvc,
 	}
+}
+
+func (a *adminServer) AddAsset(ctx context.Context, req *pb.AddAssetRequest) (*pb.AddAssetReply, error) {
+	priceAmountAsDecimal := decimal.NewFromFloat(float64(req.GetPrice()))
+
+	return &pb.AddAssetReply{}, a.adminSvc.AddAsset(
+		ctx,
+		req.GetAssetHash(),
+		priceAmountAsDecimal,
+	)
 }
 
 func (a *adminServer) ListTopups(ctx context.Context, req *pb.ListTopupsRequest) (*pb.ListTopupsReply, error) {
