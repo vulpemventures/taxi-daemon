@@ -13,9 +13,12 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.0 // indirect
+	github.com/neelance/astrewrite v0.0.0-20160511093645-99348263ae86 // indirect
+	github.com/neelance/sourcemap v0.0.0-20200213170602-2833bce08e4c // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
-	github.com/prometheus/common v0.4.0
+	github.com/prometheus/common v0.15.0
 	github.com/shopspring/decimal v1.2.0
+	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
 	github.com/sirupsen/logrus v1.7.0
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/spf13/afero v1.5.1 // indirect
@@ -28,10 +31,10 @@ require (
 	github.com/tj/assert v0.0.3
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/vulpemventures/go-elements v0.1.1
-	github.com/vulpemventures/taxi-protobuf v0.0.0-20201216103151-d82df4a3282f
-	golang.org/x/crypto v0.0.0-20201208171446-5f87f3452ae9 // indirect
+	github.com/vulpemventures/taxi-protobuf v0.0.0-20201218154011-8969831c2875
+	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620 // indirect
 	golang.org/x/net v0.0.0-20201216054612-986b41b23924 // indirect
-	golang.org/x/sys v0.0.0-20201214210602-f9fddec55a1e // indirect
+	golang.org/x/sys v0.0.0-20201218084310-7d0127a74742 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d // indirect
 	google.golang.org/grpc v1.34.0
