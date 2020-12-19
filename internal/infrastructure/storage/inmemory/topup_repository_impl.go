@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"sync"
-	"time"
 
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
@@ -52,11 +51,7 @@ func (r *inmemoryTopupRepository) SetCompleted(ctx context.Context, topupID stri
 		return nil, errors.New("Topup does not exist")
 	}
 
-	topup.CompletedAt = time.Now()
-	topup.Status = domain.Completed
-	topup.Partial = partial
-	topup.AssetAmount = assetAmount
-
+	topup.Complete(partial, assetAmount)
 	r.topups[topupID] = topup
 
 	return &topup, nil
@@ -70,10 +65,7 @@ func (r *inmemoryTopupRepository) SetSettled(ctx context.Context, topupID string
 		return nil, errors.New("Topup does not exist")
 	}
 
-	timestamp := time.Now()
-	topup.SettledAt = timestamp
-	topup.Status = domain.Settled
-
+	topup.Settle()
 	r.topups[topupID] = topup
 
 	return &topup, nil
