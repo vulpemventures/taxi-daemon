@@ -8,8 +8,8 @@ import (
 
 // AdminService administrates a TaxiService
 type AdminService interface {
-	ListTopups(assetHashFilter string) ([]domain.Topup, error)
-	ChangeSpread(basisPoint uint32)
+	ListTopups(ctx context.Context, assetHashFilter string) ([]domain.Topup, error)
+	ChangeSpread(ctx context.Context, basisPoint uint32)
 }
 
 type adminService struct {
@@ -25,8 +25,8 @@ func NewAdminService(topupRepository domain.TopupRepository) AdminService {
 
 // ListTopups returns all the topups present in the taxi's topup repository
 // optionnaly filtered by assetHash
-func (adminSvc *adminService) ListTopups(assetHashFilter string) ([]domain.Topup, error) {
-	topups, err := adminSvc.topupRepository.GetAllTopups(context.Background())
+func (adminSvc *adminService) ListTopups(ctx context.Context, assetHashFilter string) ([]domain.Topup, error) {
+	topups, err := adminSvc.topupRepository.GetAllTopups(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -49,6 +49,6 @@ func (adminSvc *adminService) ListTopups(assetHashFilter string) ([]domain.Topup
 }
 
 // ChangeSpread sets the basisPoint of the taxiService
-func (adminSvc *adminService) ChangeSpread(basisPoint uint32) {
+func (adminSvc *adminService) ChangeSpread(_ context.Context, basisPoint uint32) {
 	panic("not implemented")
 }

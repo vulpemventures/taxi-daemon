@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"sync"
-	"time"
 
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
@@ -44,22 +43,6 @@ func (r *inmemoryTopupRepository) GetAllTopups(ctx context.Context) ([]domain.To
 	return topups, nil
 }
 
-func (r *inmemoryTopupRepository) SetRequested(ctx context.Context, topupID string) (*domain.Topup, error) {
-	r.repositoryLocker.Lock()
-	defer r.repositoryLocker.Unlock()
-	topup, ok := r.topups[topupID]
-	if !ok {
-		return nil, errors.New("Topup does not exist")
-	}
-
-	topup.RequestedAt = time.Now()
-	topup.Status = domain.Requested
-
-	r.topups[topupID] = topup
-
-	return &topup, nil
-}
-
 func (r *inmemoryTopupRepository) SetCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
 	r.repositoryLocker.Lock()
 	defer r.repositoryLocker.Unlock()
@@ -68,11 +51,7 @@ func (r *inmemoryTopupRepository) SetCompleted(ctx context.Context, topupID stri
 		return nil, errors.New("Topup does not exist")
 	}
 
-	topup.CompletedAt = time.Now()
-	topup.Status = domain.Completed
-	topup.Partial = partial
-	topup.AssetAmount = assetAmount
-
+	topup.Complete(partial, assetAmount)
 	r.topups[topupID] = topup
 
 	return &topup, nil
@@ -86,10 +65,7 @@ func (r *inmemoryTopupRepository) SetSettled(ctx context.Context, topupID string
 		return nil, errors.New("Topup does not exist")
 	}
 
-	timestamp := time.Now()
-	topup.SettledAt = timestamp
-	topup.Status = domain.Settled
-
+	topup.Settle()
 	r.topups[topupID] = topup
 
 	return &topup, nil

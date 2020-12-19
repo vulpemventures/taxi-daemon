@@ -65,7 +65,7 @@ func newMockedPriceRepository(t *testing.T, assets []string) domain.PriceReposit
 	for _, price := range initialPrices {
 		err := repo.UpdateOrCreatePrice(context.Background(), price)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	}
 

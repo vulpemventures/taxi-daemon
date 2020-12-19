@@ -11,6 +11,7 @@ import (
 
 	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/application"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
@@ -28,18 +29,18 @@ func main() {
 	priceRepository := inmemory.NewInmemoryPriceRepository()
 
 	priceRepository.UpdateOrCreatePrice(context.Background(), domain.Price{
-		AssetHash: config.GetAssetHash(),
+		AssetHash: config.GetString(config.AssetHashKey),
 		Amount:    decimal.NewFromFloat(10.154),
 	})
 
 	taxiSvcOptions := application.NewTaxiServiceArgs{
-		ExplorerEndpoint: config.GetExplorerEndpoint(),
-		Mnemonic:         strings.Split(config.GetMnemonic(), " "),
-		Network:          *config.GetNetwork(),
-		FixedFeeAmount:   uint64(config.GetFixedFeeAmount()),
-		LockRepository:   lockRepository,
-		PriceRepository:  priceRepository,
-		TopupRepository:  topupRepository,
+		Mnemonic:        strings.Split(config.GetString(config.MnemonicKey), " "),
+		Network:         *config.GetNetwork(),
+		FixedFeeAmount:  uint64(config.GetInt(config.FixedFeeAmountKey)),
+		LockRepository:  lockRepository,
+		PriceRepository: priceRepository,
+		TopupRepository: topupRepository,
+		ExplorerSvc:     explorer.NewService(config.GetString(config.ExplorerEndpointKey)),
 	}
 
 	taxiSvc, err := application.NewTaxiService(taxiSvcOptions)
@@ -59,8 +60,8 @@ func main() {
 	pb.RegisterTaxiServer(taxiServer, taxiHandler)
 
 	domainURL := "localhost"
-	taxiAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetTaxiPort())
-	adminAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetAdminPort())
+	taxiAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetInt(config.TaxiPortKey))
+	adminAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetInt(config.AdminPortKey))
 
 	// serve
 	lisTaxi, err := net.Listen("tcp", taxiAddress)
