@@ -88,7 +88,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	}
 
 	// fetchUtxos + coin select
-	utxos, err := taxi.fetchAvailableUtxos()
+	utxos, err := taxi.fetchAvailableUtxos(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,6 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 
 	expireAt := time.Now().Add(ttlUtxo)
 
-	// request UTXO
 	priceToFloat, _ := price.Amount.Float64()
 	topup := domain.NewTopup(assetHash, totalFees, priceToFloat, expireAt)
 	err = taxi.topupRepository.AddTopup(ctx, topup)
@@ -227,7 +226,7 @@ func (taxi *taxiService) getAddresses() ([]string, error) {
 	return []string{rcvAddress, changeAddress}, nil
 }
 
-func (taxi *taxiService) fetchAvailableUtxos() ([]explorer.Utxo, error) {
+func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Utxo, error) {
 	addresses, err := taxi.getAddresses()
 	if err != nil {
 		return nil, err
@@ -243,7 +242,7 @@ func (taxi *taxiService) fetchAvailableUtxos() ([]explorer.Utxo, error) {
 	for _, utxo := range utxos {
 		utxoKey := domain.UtxoToLock(utxo)
 
-		if !taxi.lockRepository.Contains(context.Background(), utxoKey) {
+		if !taxi.lockRepository.Contains(ctx, utxoKey) {
 			availableUtxos = append(availableUtxos, utxo)
 		}
 	}
