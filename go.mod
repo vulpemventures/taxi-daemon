@@ -24,7 +24,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
-	github.com/tdex-network/tdex-daemon v0.1.2 // indirect
+	github.com/tdex-network/tdex-daemon v0.1.2
 	github.com/tj/assert v0.0.3
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/vulpemventures/go-elements v0.1.1

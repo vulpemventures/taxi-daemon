@@ -12,4 +12,6 @@ var (
 	ErrNullDerivationPath = errors.New("derivation path must not be null")
 	// ErrInvalidDerivationPath is returned if the derivation path is invalid
 	ErrInvalidDerivationPath = errors.New("invalid derivation path")
+	// ErrInvalidSignature is returned if there is at least one invalid signature in a given PSET
+	ErrInvalidSignature = errors.New("at least one signature is invalid")
 )

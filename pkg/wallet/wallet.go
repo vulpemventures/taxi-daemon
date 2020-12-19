@@ -35,17 +35,26 @@ var (
 // Wallet represents the user, it is able to derive new addresses and sign an input
 type Wallet interface {
 	DerivePath(path string, network *network.Network) (*payment.Payment, error)
-	SignInput(args SignInputArgs) error
+	SignInput(args SignInputArgs) (string, error)
 	CreatePSET(inputs []explorer.Utxo, outputs []PsetOutputOpts) (*pset.Pset, error)
+}
+
+// SignInputArgs is a wrapper for SignInput method arguments
+type SignInputArgs struct {
+	PsetBase64 string
+	Path       string
+	InputIndex int
+	HashType   txscript.SigHashType
 }
 
 type wallet struct {
 	mnemonic  []string
 	masterKey []byte
+	network   network.Network
 }
 
 // NewWallet is a factory function for Wallet interface
-func NewWallet(words []string) (Wallet, error) {
+func NewWallet(words []string, network network.Network) (Wallet, error) {
 	seed := generateSeedFromMnemonic(words)
 	masterKey, err := generateSigningMasterKey(seed)
 	if err != nil {
@@ -55,6 +64,7 @@ func NewWallet(words []string) (Wallet, error) {
 	return &wallet{
 		mnemonic:  words,
 		masterKey: masterKey,
+		network:   network,
 	}, nil
 }
 
@@ -77,56 +87,72 @@ func generateSigningMasterKey(seed []byte) ([]byte, error) {
 	return base58.Decode(hdNode.String()), nil
 }
 
-// SignInputArgs is a wrapper for SignInput method arguments
-type SignInputArgs struct {
-	Updater     *pset.Updater
-	UnsignedTx  *transaction.Transaction
-	Path        string
-	InputIndex  int
-	WitnessUtxo *transaction.TxOutput
-	HashType    txscript.SigHashType
-	Network     *network.Network
-}
-
 // SignInput lets the user to sign a pset input
-func (w *wallet) SignInput(args SignInputArgs) error {
+func (w *wallet) SignInput(args SignInputArgs) (string, error) {
 	privKey, pubKey, err := w.deriveSigningKeyPair(args.Path)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	payment := payment.FromPublicKey(pubKey, args.Network, nil)
+	script := payment.FromPublicKey(pubKey, &w.network, nil).Script
 
-	sigHash := args.UnsignedTx.HashForWitnessV0(
+	p, err := pset.NewPsetFromBase64(args.PsetBase64)
+	if err != nil {
+		return "", err
+	}
+
+	updater, err := pset.NewUpdater(p)
+	if err != nil {
+		return "", err
+	}
+
+	psetInput := p.Inputs[args.InputIndex]
+
+	sigHash := p.UnsignedTx.HashForWitnessV0(
 		args.InputIndex,
-		payment.Script,
-		args.WitnessUtxo.Value,
+		script,
+		psetInput.WitnessUtxo.Value,
 		args.HashType,
 	)
 
-	if err := args.Updater.AddInSighashType(args.HashType, args.InputIndex); err != nil {
-		return err
+	if err := updater.AddInSighashType(args.HashType, args.InputIndex); err != nil {
+		return "", err
 	}
 
 	signature, err := privKey.Sign(sigHash[:])
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	sigWithHashType := append(signature.Serialize(), byte(args.HashType))
 
 	// sign with the updater
-	if _, err := args.Updater.Sign(
+	if _, err := updater.Sign(
 		args.InputIndex,
 		sigWithHashType,
 		pubKey.SerializeCompressed(),
 		nil,
 		nil,
 	); err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	// check the signatures
+	valid, err := p.ValidateAllSignatures()
+	if err != nil {
+		return "", err
+	}
+
+	if !valid {
+		return "", ErrInvalidSignature
+	}
+
+	base64, err := p.ToBase64()
+	if err != nil {
+		return "", err
+	}
+
+	return base64, err
 }
 
 // DerivePath gets a derivation path and return a payment.Payment pointer

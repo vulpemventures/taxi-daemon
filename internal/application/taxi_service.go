@@ -11,7 +11,6 @@ import (
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
-	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
@@ -55,7 +54,7 @@ func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
 }
 
 func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
-	w, err := wallet.NewWallet(args.Mnemonic)
+	w, err := wallet.NewWallet(args.Mnemonic, args.Network)
 	if err != nil {
 		return nil, err
 	}
@@ -148,11 +147,6 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	updater, err := pset.NewUpdater(taxiPset)
-	if err != nil {
-		return nil, err
-	}
-
 	changePayment, err := taxi.getChangePayment()
 	if err != nil {
 		return nil, err
@@ -160,45 +154,30 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 
 	// sign the input
 
-	path := ""
-	if bytes.Equal(prevout.Script, receivePayment.WitnessScript) {
-		path = receiveDerivationPath
-	}
+	path := receiveDerivationPath
 
-	if bytes.Equal(prevout.Script, changePayment.WitnessScript) {
+	if bytes.Equal(taxiPset.Inputs[0].WitnessScript, changePayment.WitnessScript) {
 		path = changeDerivationPath
 	}
 
+	taxiPsetBase64, err := taxiPset.ToBase64()
+	if err != nil {
+		return nil, err
+	}
+
 	signOpts := wallet.SignInputArgs{
-		Updater:     updater,
-		UnsignedTx:  taxiPset.UnsignedTx,
-		Path:        path,
-		InputIndex:  0,
-		WitnessUtxo: prevout,
-		HashType:    txscript.SigHashSingle + txscript.SigHashAnyOneCanPay,
-		Network:     &taxi.network,
+		PsetBase64: taxiPsetBase64,
+		Path:       path,
+		InputIndex: 0,
+		HashType:   txscript.SigHashSingle + txscript.SigHashAnyOneCanPay,
 	}
 
-	if err := taxi.wallet.SignInput(signOpts); err != nil {
-		return nil, err
-	}
-
-	// check the signatures
-	valid, err := taxiPset.ValidateAllSignatures()
+	signedPsetBase64, err := taxi.wallet.SignInput(signOpts)
 	if err != nil {
 		return nil, err
 	}
 
-	if !valid {
-		return nil, ErrInvalidSignature
-	}
-
-	partialBase64, err := taxiPset.ToBase64()
-	if err != nil {
-		return nil, err
-	}
-
-	topupCompleted, err := taxi.topupRepository.SetCompleted(ctx, topup.ID, partialBase64, assetAmount)
+	topupCompleted, err := taxi.topupRepository.SetCompleted(ctx, topup.ID, signedPsetBase64, assetAmount)
 	if err != nil {
 		return nil, err
 	}
