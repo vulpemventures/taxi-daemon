@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/tj/assert"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
-	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 )
 
 func TestListTopups(t *testing.T) {
@@ -19,7 +19,7 @@ func TestListTopups(t *testing.T) {
 		TopupRepository: inmemory.NewInmemoryTopupRepository(),
 		LockRepository:  inmemory.NewInmemoryLockRepository(),
 		PriceRepository: newMockedPriceRepository(t, []string{superToken, hyperToken}),
-		ExplorerSvc:     explorer.NewExplorerService(explorerEndpoint),
+		ExplorerSvc:     explorer.NewService(explorerEndpoint),
 	}
 
 	taxiSvc, err := newTaxiService(newTaxiOpts)

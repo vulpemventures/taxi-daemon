@@ -14,6 +14,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/prometheus/common/log"
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/tj/assert"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
@@ -21,7 +22,6 @@ import (
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/config"
-	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 	g "google.golang.org/grpc"
 )
@@ -82,13 +82,13 @@ func TestTaxiServer(t *testing.T) {
 	// bobAddress, _ := bob.WitnessPubKeyHash()
 
 	// Now, alice adds his own inputs and outputs
-	aliceExplorerSvc := explorer.NewExplorerService(config.GetString(config.ExplorerEndpointKey))
+	aliceExplorerSvc := explorer.NewService(config.GetString(config.ExplorerEndpointKey))
 	time.Sleep(3 * time.Second)
-	utxos, err := aliceExplorerSvc.GetUnspents(aliceAddress)
+	utxos, err := aliceExplorerSvc.GetUnspents(aliceAddress, [][]byte{})
 
 	aliceUpdater, err := pset.NewUpdater(p)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	bobWant := uint64(100)
@@ -99,20 +99,18 @@ func TestTaxiServer(t *testing.T) {
 
 	for _, utxo := range utxos {
 		if utxo.Asset() == USDT && utxo.Value() >= totalToSend {
-			aliceInput := transaction.NewTxInput(utxo.Hash(), utxo.Key().Vout)
-			prevout, err := fetchPrevout(aliceExplorerSvc, utxo)
+			aliceInput, prevout, err := utxo.Parse()
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 
 			witnessUtxoValue = prevout.Value
-
 			change = utxo.Value() - totalToSend
 
 			aliceUpdater.AddInput(aliceInput)
 			err = aliceUpdater.AddInWitnessUtxo(prevout, 1)
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 
 			break
@@ -221,18 +219,4 @@ func mint(apiURL string, address string, amount int) (string, string, error) {
 	}
 
 	return respBody["txId"].(string), respBody["asset"].(string), nil
-}
-
-func fetchPrevout(explorer explorer.Explorer, utxo explorer.Utxo) (*transaction.TxOutput, error) {
-	hex, err := explorer.FetchTx(utxo.Key().TxID)
-	if err != nil {
-		return nil, err
-	}
-
-	prevTx, err := transaction.NewTxFromHex(hex)
-	if err != nil {
-		return nil, err
-	}
-
-	return prevTx.Outputs[int(utxo.Key().Vout)], nil
 }

@@ -11,12 +11,12 @@ import (
 
 	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/application"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 	"github.com/vulpemventures/liquid-taxi/internal/interfaces/grpc"
-	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 	g "google.golang.org/grpc"
 )
@@ -40,7 +40,7 @@ func main() {
 		LockRepository:  lockRepository,
 		PriceRepository: priceRepository,
 		TopupRepository: topupRepository,
-		ExplorerSvc:     explorer.NewExplorerService(config.GetString(config.ExplorerEndpointKey)),
+		ExplorerSvc:     explorer.NewService(config.GetString(config.ExplorerEndpointKey)),
 	}
 
 	taxiSvc, err := application.NewTaxiService(taxiSvcOptions)

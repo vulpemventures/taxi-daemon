@@ -8,12 +8,11 @@ import (
 
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/shopspring/decimal"
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/pset"
-	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
-	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
@@ -32,7 +31,7 @@ type taxiService struct {
 	lockRepository   domain.LockRepository
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
-	explorer         explorer.Explorer
+	explorer         explorer.Service
 	wallet           wallet.Wallet
 	network          network.Network
 	fixedFeeAmount   uint64
@@ -47,7 +46,7 @@ type NewTaxiServiceArgs struct {
 	TopupRepository domain.TopupRepository
 	LockRepository  domain.LockRepository
 	PriceRepository domain.PriceRepository
-	ExplorerSvc     explorer.Explorer
+	ExplorerSvc     explorer.Service
 }
 
 // NewTaxiService returns a TaxiService interface
@@ -101,8 +100,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	}
 
 	// Lock utxo
-	utxoKey := utxo.Key()
-
+	utxoKey := domain.UtxoToLock(utxo)
 	err = taxi.lockRepository.Add(ctx, []domain.Lock{utxoKey})
 	if err != nil {
 		return nil, err
@@ -145,7 +143,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	}
 
 	// create transaction
-	taxiPset, err := taxi.wallet.CreatePset([]explorer.Utxo{utxo}, outputsOpts)
+	taxiPset, err := taxi.wallet.CreatePSET([]explorer.Utxo{utxo}, outputsOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -155,22 +153,12 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	// add prevout to input
-	prevout, err := fetchPrevout(taxi.explorer, utxo)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := updater.AddInWitnessUtxo(prevout, 0); err != nil {
-		return nil, err
-	}
-
 	changePayment, err := taxi.getChangePayment()
 	if err != nil {
 		return nil, err
 	}
 
-	// sign the inpu
+	// sign the input
 
 	path := ""
 	if bytes.Equal(prevout.Script, receivePayment.WitnessScript) {
@@ -266,24 +254,17 @@ func (taxi *taxiService) fetchAvailableUtxos() ([]explorer.Utxo, error) {
 		return nil, err
 	}
 
-	rcvAddress, changeAddress := addresses[0], addresses[1]
-
-	utxosChange, err := taxi.explorer.GetUnspents(changeAddress)
+	utxos, err := taxi.explorer.GetUnspentsForAddresses(addresses, [][]byte{})
 	if err != nil {
 		return nil, err
 	}
-
-	utxosReceive, err := taxi.explorer.GetUnspents(rcvAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	utxos := append(utxosChange, utxosReceive...)
 
 	availableUtxos := make([]explorer.Utxo, 0)
 
 	for _, utxo := range utxos {
-		if !taxi.lockRepository.Contains(context.Background(), utxo.Key()) {
+		utxoKey := domain.UtxoToLock(utxo)
+
+		if !taxi.lockRepository.Contains(context.Background(), utxoKey) {
 			availableUtxos = append(availableUtxos, utxo)
 		}
 	}
@@ -310,18 +291,4 @@ func selectOneUtxo(utxos []explorer.Utxo, targetAmount uint64, targetAsset strin
 		TargetedAmount: targetAmount,
 		TargetedAsset:  targetAsset,
 	}
-}
-
-func fetchPrevout(explorer explorer.Explorer, utxo explorer.Utxo) (*transaction.TxOutput, error) {
-	hex, err := explorer.FetchTx(utxo.Key().TxID)
-	if err != nil {
-		return nil, err
-	}
-
-	prevTx, err := transaction.NewTxFromHex(hex)
-	if err != nil {
-		return nil, err
-	}
-
-	return prevTx.Outputs[int(utxo.Key().Vout)], nil
 }

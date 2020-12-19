@@ -12,13 +12,13 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/tyler-smith/go-bip39"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
-	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 )
 
 // DerivationPath defines path to derive the master key of the wallet
@@ -36,7 +36,7 @@ var (
 type Wallet interface {
 	DerivePath(path string, network *network.Network) (*payment.Payment, error)
 	SignInput(args SignInputArgs) error
-	CreatePset(inputs []explorer.Utxo, outputs []PsetOutputOpts) (*pset.Pset, error)
+	CreatePSET(inputs []explorer.Utxo, outputs []PsetOutputOpts) (*pset.Pset, error)
 }
 
 type wallet struct {
@@ -180,18 +180,33 @@ type PsetOutputOpts struct {
 }
 
 // CreatePset is an util function used to generate taxi transaction
-func (w *wallet) CreatePset(
+func (w *wallet) CreatePSET(
 	inputs []explorer.Utxo,
 	outputs []PsetOutputOpts,
 ) (*pset.Pset, error) {
 	// create taxi tx
-	txInputs := make([]*transaction.TxInput, 0)
-	txOutputs := make([]*transaction.TxOutput, 0)
+	partial, err := pset.New([]*transaction.TxInput{}, []*transaction.TxOutput{}, 2, 0)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, utxo := range inputs {
+	updater, err := pset.NewUpdater(partial)
+	if err != nil {
+		return nil, err
+	}
+
+	for inputIndex, utxo := range inputs {
 		// inputs
-		input := transaction.NewTxInput(utxo.Hash(), utxo.Key().Vout)
-		txInputs = append(txInputs, input)
+		input, prevout, err := utxo.Parse()
+		if err != nil {
+			return nil, err
+		}
+
+		updater.AddInput(input)
+		err = updater.AddInWitnessUtxo(prevout, inputIndex)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// outputs
@@ -208,15 +223,10 @@ func (w *wallet) CreatePset(
 			outputOpts.WitnessScript,
 		)
 
-		txOutputs = append(txOutputs, out)
+		updater.AddOutput(out)
 	}
 
-	pset, err := pset.New(txInputs, txOutputs, 2, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	return pset, nil
+	return partial, nil
 }
 
 // ParseDerivationPath converts a derivation path string to the

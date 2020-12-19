@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
-	"github.com/vulpemventures/liquid-taxi/pkg/explorer"
 )
 
 func TestTopupWithAsset(t *testing.T) {
@@ -25,7 +25,7 @@ func TestTopupWithAsset(t *testing.T) {
 		TopupRepository: inmemory.NewInmemoryTopupRepository(),
 		LockRepository:  inmemory.NewInmemoryLockRepository(),
 		PriceRepository: newMockedPriceRepository(t, []string{superToken}),
-		ExplorerSvc:     explorer.NewExplorerService(explorerEndpoint),
+		ExplorerSvc:     explorer.NewService(explorerEndpoint),
 	}
 
 	taxiSvc, err := newTaxiService(newTaxiOpts)
@@ -95,7 +95,7 @@ func TestListAssets(t *testing.T) {
 			TopupRepository: inmemory.NewInmemoryTopupRepository(),
 			LockRepository:  inmemory.NewInmemoryLockRepository(),
 			PriceRepository: newMockedPriceRepository(t, test.input),
-			ExplorerSvc:     explorer.NewExplorerService(explorerEndpoint),
+			ExplorerSvc:     explorer.NewService(explorerEndpoint),
 		}
 
 		taxiSvc, err := NewTaxiService(newTaxiOpts)
