@@ -68,35 +68,6 @@ func TestGetAllTopups(t *testing.T) {
 	assert.Equal(t, 3, len(topups))
 }
 
-func TestSetRequested(t *testing.T) {
-	dirManagementForTest(t)
-
-	repo, err := NewBadgerTopupRepository(testDataDir, nil)
-	if err != nil {
-		t.Error(err)
-	}
-
-	topupToCreate := domain.NewTopup("aa", 0, 1.54, time.Now())
-
-	err = repo.AddTopup(context.Background(), topupToCreate)
-	if err != nil {
-		t.Error(err)
-	}
-
-	topup, err := repo.SetRequested(context.Background(), topupToCreate.ID)
-	assert.Nil(t, err)
-
-	topups, err := repo.GetAllTopups(context.Background())
-	if err != nil {
-		t.Error(err)
-	}
-
-	assert.Equal(t, domain.Requested, topup.Status)
-	assert.Equal(t, false, topup.RequestedAt.IsZero())
-	assert.Equal(t, domain.Requested, topups[0].Status)
-	assert.Equal(t, false, topups[0].RequestedAt.IsZero())
-}
-
 func TestSetCompleted(t *testing.T) {
 	dirManagementForTest(t)
 

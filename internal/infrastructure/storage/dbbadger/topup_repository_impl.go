@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
-	"time"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/timshannon/badgerhold/v2"
@@ -40,26 +39,6 @@ func (r *badgerTopupRepository) GetAllTopups(ctx context.Context) ([]domain.Topu
 	return topups, err
 }
 
-func (r *badgerTopupRepository) SetRequested(ctx context.Context, topupID string) (*domain.Topup, error) {
-	var topupUpdated *domain.Topup
-
-	query := badgerhold.Where("ID").Eq(topupID)
-	err := r.store.UpdateMatching(&domain.Topup{}, query, func(record interface{}) error {
-		update, ok := record.(*domain.Topup)
-		if !ok {
-			return errors.New("record isn't the correct type! topup type is expected")
-		}
-
-		update.RequestedAt = time.Now()
-		update.Status = domain.Requested
-
-		topupUpdated = update
-		return nil
-	})
-
-	return topupUpdated, err
-}
-
 func (r *badgerTopupRepository) SetCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
 	var topupUpdated *domain.Topup
 
@@ -70,10 +49,7 @@ func (r *badgerTopupRepository) SetCompleted(ctx context.Context, topupID string
 			return errors.New("record isn't the correct type! Need domain.Topup type")
 		}
 
-		update.CompletedAt = time.Now()
-		update.Status = domain.Completed
-		update.Partial = partial
-		update.AssetAmount = assetAmount
+		update.Complete(partial, assetAmount)
 
 		topupUpdated = update
 		return nil
@@ -92,8 +68,7 @@ func (r *badgerTopupRepository) SetSettled(ctx context.Context, topupID string, 
 			return errors.New("record isn't the correct type! Need domain.Topup type")
 		}
 
-		update.SettledAt = time.Now()
-		update.Status = domain.Settled
+		update.Settle()
 		// TODO txid ??
 
 		topupUpdated = update
