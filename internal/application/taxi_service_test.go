@@ -30,18 +30,18 @@ func TestTopupWithAsset(t *testing.T) {
 
 	taxiSvc, err := newTaxiService(newTaxiOpts)
 	if err != nil {
-		t.Error(nil)
+		t.Fatal(nil)
 	}
 
 	// found taxi with LBTC
 	addresses, err := taxiSvc.getAddresses()
 	addr := addresses[0]
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	_, err = faucet(addr, explorerEndpoint)
 	if err != nil {
-		t.Error(nil)
+		t.Fatal(nil)
 	}
 
 	time.Sleep(5 * time.Second)
@@ -66,7 +66,7 @@ func TestTopupWithAsset(t *testing.T) {
 
 	hex, err := p.UnsignedTx.ToHex()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	log.Print(hex)
@@ -100,7 +100,7 @@ func TestListAssets(t *testing.T) {
 
 		taxiSvc, err := NewTaxiService(newTaxiOpts)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		assets := taxiSvc.ListAssets(context.Background())

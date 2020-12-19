@@ -24,31 +24,31 @@ func TestListTopups(t *testing.T) {
 
 	taxiSvc, err := newTaxiService(newTaxiOpts)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	// found taxi with LBTC
 	addresses, err := taxiSvc.getAddresses()
 	addr := addresses[0]
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	_, err = faucet(addr, explorerEndpoint)
 	if err != nil {
-		t.Error(nil)
+		t.Fatal(nil)
 	}
 	time.Sleep(5 * time.Second)
 
 	// do some topups
 	_, err = taxiSvc.TopupWithAsset(context.Background(), superToken)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	topupHyperToken, err := taxiSvc.TopupWithAsset(context.Background(), hyperToken)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	adminSvc := NewAdminService(taxiSvc.topupRepository)

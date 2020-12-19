@@ -51,7 +51,7 @@ func TestTaxiServer(t *testing.T) {
 	// Alice connect to server
 	conn, err := g.Dial("localhost:8080", g.WithInsecure())
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	defer conn.Close()
 
@@ -122,7 +122,7 @@ func TestTaxiServer(t *testing.T) {
 
 	value, err := elementsutil.SatoshiToElementsValue(bobWant)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	sendToBobOutput := transaction.NewTxOutput(USDTasset, value, bob.WitnessScript)
@@ -131,7 +131,7 @@ func TestTaxiServer(t *testing.T) {
 	if change > 0 {
 		value, err := elementsutil.SatoshiToElementsValue(change)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		changeOutput := transaction.NewTxOutput(USDTasset, value, alice.WitnessScript)
@@ -140,7 +140,7 @@ func TestTaxiServer(t *testing.T) {
 
 	// Now alice sign the input
 	if err := aliceUpdater.AddInSighashType(txscript.SigHashAll, 1); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	sigHash := p.UnsignedTx.HashForWitnessV0(
@@ -152,7 +152,7 @@ func TestTaxiServer(t *testing.T) {
 
 	sig, err := aliceKeyPair.Sign(sigHash[:])
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	sigWithHashType := append(sig.Serialize(), byte(txscript.SigHashAll))
@@ -164,19 +164,19 @@ func TestTaxiServer(t *testing.T) {
 		nil,
 		nil,
 	); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	valid, err := p.ValidateAllSignatures()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	assert.Equal(t, true, valid)
 
 	err = pset.FinalizeAll(p)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	// Extract the final signed transaction from the Pset wrapper.
@@ -196,7 +196,7 @@ func TestTaxiServer(t *testing.T) {
 	// TODO uncomment when crawler is implemented
 	// _, err = aliceExplorerSvc.Broadcast(txHex)
 	// if err != nil {
-	// 	t.Error(err)
+	// 	t.Fatal(err)
 	// }
 }
 
