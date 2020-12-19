@@ -76,12 +76,11 @@ func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 // TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
 func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (*domain.Topup, error) {
 	ttlUtxo := 10 * time.Minute
-	emptyContext := context.Background()
 	totalFees := taxi.fixedFeeAmount
 
 	// check if asset is available
 	// price will be used later
-	price, assetSupported, err := taxi.priceRepository.GetPrice(emptyContext, assetHash)
+	price, assetSupported, err := taxi.priceRepository.GetPrice(ctx, assetHash)
 	if err != nil {
 		return nil, err
 	}
@@ -104,14 +103,14 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	// Lock utxo
 	utxoKey := utxo.Key()
 
-	err = taxi.lockRepository.Add(emptyContext, []domain.Lock{utxoKey})
+	err = taxi.lockRepository.Add(ctx, []domain.Lock{utxoKey})
 	if err != nil {
 		return nil, err
 	}
 
 	go func() {
 		time.Sleep(ttlUtxo)
-		taxi.lockRepository.Remove(emptyContext, utxoKey)
+		taxi.lockRepository.Remove(ctx, utxoKey)
 	}()
 
 	expireAt := time.Now().Add(ttlUtxo)
@@ -119,7 +118,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	// request UTXO
 	priceToFloat, _ := price.Amount.Float64()
 	topup := domain.NewTopup(assetHash, totalFees, priceToFloat, expireAt)
-	err = taxi.topupRepository.AddTopup(emptyContext, topup)
+	err = taxi.topupRepository.AddTopup(ctx, topup)
 	if err != nil {
 		return nil, err
 	}
@@ -171,23 +170,25 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	// sign the input
-	path := receiveDerivationPath
-	script := receivePayment.Script
+	// sign the inpu
 
-	if bytes.Equal(prevout.Script, changePayment.Script) {
+	path := ""
+	if bytes.Equal(prevout.Script, receivePayment.WitnessScript) {
+		path = receiveDerivationPath
+	}
+
+	if bytes.Equal(prevout.Script, changePayment.WitnessScript) {
 		path = changeDerivationPath
-		script = changePayment.Script
 	}
 
 	signOpts := wallet.SignInputArgs{
-		Updater:       updater,
-		UnsignedTx:    taxiPset.UnsignedTx,
-		Path:          path,
-		InputIndex:    0,
-		WitnessUtxo:   prevout,
-		WitnessScript: script,
-		HashType:      txscript.SigHashSingle + txscript.SigHashAnyOneCanPay,
+		Updater:     updater,
+		UnsignedTx:  taxiPset.UnsignedTx,
+		Path:        path,
+		InputIndex:  0,
+		WitnessUtxo: prevout,
+		HashType:    txscript.SigHashSingle + txscript.SigHashAnyOneCanPay,
+		Network:     &taxi.network,
 	}
 
 	if err := taxi.wallet.SignInput(signOpts); err != nil {
@@ -209,7 +210,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	topupCompleted, err := taxi.topupRepository.SetCompleted(emptyContext, topup.ID, partialBase64, assetAmount)
+	topupCompleted, err := taxi.topupRepository.SetCompleted(ctx, topup.ID, partialBase64, assetAmount)
 	if err != nil {
 		return nil, err
 	}

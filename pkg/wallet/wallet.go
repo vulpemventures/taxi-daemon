@@ -79,13 +79,13 @@ func generateSigningMasterKey(seed []byte) ([]byte, error) {
 
 // SignInputArgs is a wrapper for SignInput method arguments
 type SignInputArgs struct {
-	Updater       *pset.Updater
-	UnsignedTx    *transaction.Transaction
-	Path          string
-	InputIndex    int
-	WitnessUtxo   *transaction.TxOutput
-	WitnessScript []byte
-	HashType      txscript.SigHashType
+	Updater     *pset.Updater
+	UnsignedTx  *transaction.Transaction
+	Path        string
+	InputIndex  int
+	WitnessUtxo *transaction.TxOutput
+	HashType    txscript.SigHashType
+	Network     *network.Network
 }
 
 // SignInput lets the user to sign a pset input
@@ -95,9 +95,11 @@ func (w *wallet) SignInput(args SignInputArgs) error {
 		return err
 	}
 
+	payment := payment.FromPublicKey(pubKey, args.Network, nil)
+
 	sigHash := args.UnsignedTx.HashForWitnessV0(
 		args.InputIndex,
-		args.WitnessScript,
+		payment.Script,
 		args.WitnessUtxo.Value,
 		args.HashType,
 	)
