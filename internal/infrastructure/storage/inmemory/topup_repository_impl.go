@@ -15,6 +15,10 @@ type inmemoryTopupRepository struct {
 
 // NewInmemoryTopupRepository creates a new inmemory TopupRepository implementation
 func NewInmemoryTopupRepository() domain.TopupRepository {
+	return newInmemoryTopupRepository()
+}
+
+func newInmemoryTopupRepository() *inmemoryTopupRepository {
 	return &inmemoryTopupRepository{
 		topups:           make(map[string]domain.Topup),
 		repositoryLocker: &sync.Mutex{},

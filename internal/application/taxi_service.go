@@ -76,12 +76,12 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 
 	// check if asset is available
 	// price will be used later
-	price, assetSupported, err := taxi.priceRepository.GetPrice(ctx, assetHash)
+	price, err := taxi.priceRepository.GetPrice(ctx, assetHash)
 	if err != nil {
 		return nil, err
 	}
 
-	if !assetSupported {
+	if price == nil {
 		return nil, ErrAssetNotSupported{AssetHash: assetHash}
 	}
 

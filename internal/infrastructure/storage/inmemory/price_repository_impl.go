@@ -8,15 +8,19 @@ import (
 )
 
 type inmemoryPriceRepository struct {
-	assetToAmountMap map[string]domain.Price
-	locker           sync.Locker
+	assetToPriceMap map[string]domain.Price
+	locker          sync.Locker
 }
 
 // NewInmemoryPriceRepository creates a new inmemory PriceRepository implementation
 func NewInmemoryPriceRepository() domain.PriceRepository {
+	return newInmemoryPriceRepository()
+}
+
+func newInmemoryPriceRepository() *inmemoryPriceRepository {
 	return &inmemoryPriceRepository{
-		assetToAmountMap: make(map[string]domain.Price),
-		locker:           &sync.Mutex{},
+		assetToPriceMap: make(map[string]domain.Price),
+		locker:          &sync.Mutex{},
 	}
 }
 
@@ -24,19 +28,19 @@ func (r *inmemoryPriceRepository) UpdateOrCreatePrice(_ context.Context, price d
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
-	r.assetToAmountMap[price.AssetHash] = price
+	r.assetToPriceMap[price.AssetHash] = price
 	return nil
 }
 
-func (r *inmemoryPriceRepository) GetPrice(_ context.Context, assetHash string) (*domain.Price, bool, error) {
+func (r *inmemoryPriceRepository) GetPrice(_ context.Context, assetHash string) (*domain.Price, error) {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
-	if price, ok := r.assetToAmountMap[assetHash]; ok {
-		return &price, true, nil
+	if price, ok := r.assetToPriceMap[assetHash]; ok {
+		return &price, nil
 	}
 
-	return nil, false, nil
+	return nil, nil
 }
 
 func (r *inmemoryPriceRepository) GetAllPrices(_ context.Context) ([]domain.Price, error) {
@@ -45,7 +49,7 @@ func (r *inmemoryPriceRepository) GetAllPrices(_ context.Context) ([]domain.Pric
 
 	prices := make([]domain.Price, 0)
 
-	for _, value := range r.assetToAmountMap {
+	for _, value := range r.assetToPriceMap {
 		prices = append(prices, value)
 	}
 
