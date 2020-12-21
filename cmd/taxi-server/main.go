@@ -24,7 +24,14 @@ func main() {
 
 	log.Info("loading datadir...")
 
-	topupRepository, err := dbbadger.NewBadgerTopupRepository("./.taxi", nil)
+	datadirPath := config.GetString(config.DatadirKey)
+
+	err := dbbadger.CreateDirIfNotExist(datadirPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	topupRepository, err := dbbadger.NewBadgerTopupRepository(datadirPath, nil)
 
 	lockRepository := inmemory.NewInmemoryLockRepository()
 	priceRepository := inmemory.NewInmemoryPriceRepository()
