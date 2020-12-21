@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"os"
@@ -9,12 +8,10 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/application"
-	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 	"github.com/vulpemventures/liquid-taxi/internal/interfaces/grpc"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
@@ -27,11 +24,6 @@ func main() {
 	topupRepository := inmemory.NewInmemoryTopupRepository()
 	lockRepository := inmemory.NewInmemoryLockRepository()
 	priceRepository := inmemory.NewInmemoryPriceRepository()
-
-	priceRepository.UpdateOrCreatePrice(context.Background(), domain.Price{
-		AssetHash: config.GetString(config.AssetHashKey),
-		Amount:    decimal.NewFromFloat(10.154),
-	})
 
 	taxiSvcOptions := application.NewTaxiServiceArgs{
 		Mnemonic:        strings.Split(config.GetString(config.MnemonicKey), " "),
