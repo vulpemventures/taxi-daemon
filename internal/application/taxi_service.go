@@ -86,7 +86,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, ErrAssetNotSupported{AssetHash: assetHash}
 	}
 
-	// fetchUtxos + coin select
+	// retrieve only the utxos that are not locked by other topups
 	utxos, err := taxi.fetchAvailableUtxos(ctx)
 	if err != nil {
 		return nil, err
@@ -96,18 +96,6 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	if err != nil {
 		return nil, err
 	}
-
-	// Lock utxo
-	utxoKey := domain.UtxoToLock(utxo)
-	err = taxi.lockRepository.Add(ctx, []domain.Lock{utxoKey})
-	if err != nil {
-		return nil, err
-	}
-
-	go func() {
-		time.Sleep(ttlUtxo)
-		taxi.lockRepository.Remove(ctx, utxoKey)
-	}()
 
 	expireAt := time.Now().Add(ttlUtxo)
 
@@ -178,6 +166,18 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	if err != nil {
 		return nil, err
 	}
+
+	// Lock the utxo used for this topup to avoid other ones to use it
+	utxoKey := domain.UtxoToLock(utxo)
+	err = taxi.lockRepository.Add(ctx, []domain.Lock{utxoKey})
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		time.Sleep(ttlUtxo)
+		taxi.lockRepository.Remove(ctx, utxoKey)
+	}()
 
 	return topupCompleted, nil
 }
