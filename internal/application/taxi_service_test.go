@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"log"
 	"sort"
 	"testing"
 	"time"
@@ -56,21 +55,27 @@ func TestTopupWithAsset(t *testing.T) {
 	assert.Equal(t, true, len(p.UnsignedTx.Outputs) >= 2)
 
 	var payoutOutput *transaction.TxOutput
+	var feeOutput *transaction.TxOutput
 
 	for _, out := range p.UnsignedTx.Outputs {
 		if bytes.Equal(assetHashBytes(superToken), out.Asset) {
 			payoutOutput = out
 		}
+
+		if bytes.Equal(out.Script, []byte{}) {
+			feeOutput = out
+		}
 	}
 
-	hex, err := p.UnsignedTx.ToHex()
-	if err != nil {
-		t.Fatal(err)
-	}
+	// hex, err := p.UnsignedTx.ToHex()
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
 
-	log.Print(hex)
+	// log.Print(hex)
 
 	assert.NotNil(t, payoutOutput)
+	assert.NotNil(t, feeOutput)
 }
 
 func TestListAssets(t *testing.T) {
