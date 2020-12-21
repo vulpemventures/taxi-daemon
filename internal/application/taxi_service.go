@@ -74,7 +74,6 @@ func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 // TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
 func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (*domain.Topup, error) {
 	ttlUtxo := 10 * time.Minute
-	totalFees := taxi.fixedFeeAmount
 
 	// check if asset is available
 	// price will be used later
@@ -93,7 +92,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	utxo, err := selectOneUtxo(utxos, totalFees, taxi.network.AssetID)
+	utxo, err := selectOneUtxo(utxos, taxi.fixedFeeAmount, taxi.network.AssetID)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +111,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 
 	expireAt := time.Now().Add(ttlUtxo)
 
-	topup := domain.NewTopup(assetHash, totalFees, price.Amount, expireAt)
+	topup := domain.NewTopup(assetHash, taxi.fixedFeeAmount, price.Amount, expireAt)
 	err = taxi.topupRepository.AddTopup(ctx, topup)
 	if err != nil {
 		return nil, err
@@ -135,7 +134,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		wallet.PsetOutputOpts{
 			WitnessScript: []byte{},
 			Asset:         taxi.network.AssetID,
-			Amount:        totalFees,
+			Amount:        taxi.fixedFeeAmount,
 		},
 	}
 
