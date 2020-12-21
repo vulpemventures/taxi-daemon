@@ -22,7 +22,7 @@ $ git clone https://github.com/vulpemventures/liquid-taxi
 ## Run
 
 ```sh
-$ make build # build binary
+$ make build # build binary server + admin cli
 $ make start # Run Nigiri
 $ make run
 $ make stop # Stop and delete the containers
@@ -32,7 +32,8 @@ $ make stop # Stop and delete the containers
 
 ```sh
 $ make start  # Run Nigiri
-$ make test
+$ make test # Run short unit tests
+* make integrationtest # Run integration tests
 $ make stop # Stop and delete the containers
 ```
 

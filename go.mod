@@ -3,8 +3,10 @@ module github.com/vulpemventures/liquid-taxi
 go 1.14
 
 require (
+	github.com/alecthomas/units v0.0.0-20201120081800-1786d5ef83d4 // indirect
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/btcsuite/btcutil v1.0.2
+	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.2
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
@@ -15,7 +17,8 @@ require (
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.0 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
-	github.com/prometheus/common v0.4.0
+	github.com/prometheus/common v0.15.0
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/smartystreets/assertions v1.2.0 // indirect
@@ -29,11 +32,12 @@ require (
 	github.com/timshannon/badgerhold/v2 v2.0.0-20201016201833-94bc303c76d4
 	github.com/tj/assert v0.0.3
 	github.com/tyler-smith/go-bip39 v1.1.0
+	github.com/urfave/cli/v2 v2.3.0
 	github.com/vulpemventures/go-elements v0.1.1
-	github.com/vulpemventures/taxi-protobuf v0.0.0-20201216103151-d82df4a3282f
-	golang.org/x/crypto v0.0.0-20201208171446-5f87f3452ae9 // indirect
+	github.com/vulpemventures/taxi-protobuf v0.0.0-20201218154011-8969831c2875
+	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620 // indirect
 	golang.org/x/net v0.0.0-20201216054612-986b41b23924 // indirect
-	golang.org/x/sys v0.0.0-20201214210602-f9fddec55a1e // indirect
+	golang.org/x/sys v0.0.0-20201218084310-7d0127a74742 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d // indirect
 	google.golang.org/grpc v1.34.0

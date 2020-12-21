@@ -26,8 +26,6 @@ const (
 	FixedFeeAmountKey = "FIXED_FEE_AMOUNT"
 	// LogLevelKey is the level used as logus' logger level
 	LogLevelKey = "LOG_LEVEL"
-	// AssetHashKey is a temporary var for test
-	AssetHashKey = "ASSET_HASH"
 )
 
 var vip *viper.Viper
@@ -91,13 +89,6 @@ func validatePort(port int) error {
 		log.Fatal("Can't close: ", err)
 	}
 	return nil
-}
-
-// TODO refacto ASSETHASH key (SetAssetHash will be removed in the crawler PR)
-
-// SetAssetHash sets hash as config's assetHash
-func SetAssetHash(hash string) {
-	vip.Set(AssetHashKey, hash)
 }
 
 // GetString returns the value associated with the key as string

@@ -41,15 +41,34 @@ func TestTaxiServer(t *testing.T) {
 
 	// Let's simulate alice's USDTs
 	_, USDT, err := mint(config.GetString(config.ExplorerEndpointKey), aliceAddress, 100000)
-	config.SetAssetHash(USDT)
 
 	// start taxi
 	go main()
 	// give time to server to serve
 	time.Sleep(10 * time.Second)
 
+	// SERVER SIDE --->
+	// The admin connects to admin interface
+	conn, err := g.Dial("localhost:8081", g.WithInsecure())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	adminClient := pb.NewAdminClient(conn)
+
+	// Init with USDT
+	_, err = adminClient.AddAsset(emptyContext, &pb.AddAssetRequest{
+		AssetHash: USDT,
+		Price:     20.36,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// CLIENT SIDE --->
 	// Alice connect to server
-	conn, err := g.Dial("localhost:8080", g.WithInsecure())
+	conn, err = g.Dial("localhost:8080", g.WithInsecure())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/tj/assert"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
@@ -12,13 +13,15 @@ import (
 )
 
 func TestListTopups(t *testing.T) {
+	priceRepo := newMockedPriceRepository(t, []string{superToken, hyperToken})
+
 	newTaxiOpts := NewTaxiServiceArgs{
 		Mnemonic:        words,
 		Network:         regtest,
 		FixedFeeAmount:  100000000,
 		TopupRepository: inmemory.NewInmemoryTopupRepository(),
 		LockRepository:  inmemory.NewInmemoryLockRepository(),
-		PriceRepository: newMockedPriceRepository(t, []string{superToken, hyperToken}),
+		PriceRepository: priceRepo,
 		ExplorerSvc:     explorer.NewService(explorerEndpoint),
 	}
 
@@ -51,7 +54,7 @@ func TestListTopups(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	adminSvc := NewAdminService(taxiSvc.topupRepository)
+	adminSvc := NewAdminService(taxiSvc.topupRepository, priceRepo)
 	topups, err := adminSvc.ListTopups(context.Background(), "")
 	assert.Nil(t, err)
 	assert.NotNil(t, topups)
@@ -61,4 +64,44 @@ func TestListTopups(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, filteredTopups)
 	assert.Equal(t, []domain.Topup{*topupHyperToken}, filteredTopups)
+}
+
+func TestAddAsset(t *testing.T) {
+	// init repo with 0 prices
+	priceRepo := newMockedPriceRepository(t, []string{})
+
+	adminSvc := NewAdminService(
+		inmemory.NewInmemoryTopupRepository(),
+		priceRepo,
+	)
+
+	price666 := decimal.NewFromFloat(666)
+
+	err := adminSvc.AddAsset(context.Background(), hyperToken, price666)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	all, err := priceRepo.GetAllPrices(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, 1, len(all))
+	assert.Equal(t, true, price666.Equal(all[0].Amount))
+
+	price777 := decimal.NewFromFloat(777)
+
+	err = adminSvc.AddAsset(context.Background(), hyperToken, price777)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	all, err = priceRepo.GetAllPrices(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, 1, len(all))
+	assert.Equal(t, true, price777.Equal(all[0].Amount))
 }

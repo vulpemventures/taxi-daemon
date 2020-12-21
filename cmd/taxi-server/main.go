@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"os"
@@ -9,12 +8,10 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/application"
-	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/dbbadger"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 	"github.com/vulpemventures/liquid-taxi/internal/interfaces/grpc"
@@ -27,17 +24,12 @@ func main() {
 
 	log.Info("loading datadir...")
 
-	topupRepository := dbbadger.NewBadgerTopupRepository()
+	topupRepository, err := dbbadger.NewBadgerTopupRepository("./.taxi", nil)
 
 	lockRepository := inmemory.NewInmemoryLockRepository()
 	priceRepository := inmemory.NewInmemoryPriceRepository()
 
 	log.Info("Taxi server is starting...")
-
-	priceRepository.UpdateOrCreatePrice(context.Background(), domain.Price{
-		AssetHash: config.GetString(config.AssetHashKey),
-		Amount:    decimal.NewFromFloat(10.154),
-	})
 
 	taxiSvcOptions := application.NewTaxiServiceArgs{
 		Mnemonic:        strings.Split(config.GetString(config.MnemonicKey), " "),
@@ -54,7 +46,10 @@ func main() {
 		log.Fatal("taxi service creation error ", err)
 	}
 
-	adminSvc := application.NewAdminService(topupRepository)
+	adminSvc := application.NewAdminService(
+		topupRepository,
+		priceRepository,
+	)
 
 	taxiHandler := grpc.NewTaxiHandler(taxiSvc)
 	adminHandler := grpc.NewAdminHandler(adminSvc)
