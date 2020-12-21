@@ -51,7 +51,11 @@ func (r *inmemoryTopupRepository) SetCompleted(ctx context.Context, topupID stri
 		return nil, errors.New("Topup does not exist")
 	}
 
-	topup.Complete(partial, assetAmount)
+	err := topup.Complete(partial, assetAmount)
+	if err != nil {
+		return nil, err
+	}
+
 	r.topups[topupID] = topup
 
 	return &topup, nil
@@ -65,7 +69,10 @@ func (r *inmemoryTopupRepository) SetSettled(ctx context.Context, topupID string
 		return nil, errors.New("Topup does not exist")
 	}
 
-	topup.Settle()
+	err := topup.Settle()
+	if err != nil {
+		return nil, err
+	}
 	r.topups[topupID] = topup
 
 	return &topup, nil
