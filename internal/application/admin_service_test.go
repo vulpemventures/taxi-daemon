@@ -31,8 +31,7 @@ func TestListTopups(t *testing.T) {
 	}
 
 	// found taxi with LBTC
-	addresses, err := taxiSvc.getAddresses()
-	addr := addresses[0]
+	addr, err := taxiSvc.getFundAddress()
 	if err != nil {
 		t.Fatal(err)
 	}

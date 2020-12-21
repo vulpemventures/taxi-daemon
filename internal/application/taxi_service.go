@@ -1,7 +1,6 @@
 package application
 
 import (
-	"bytes"
 	"context"
 	"sync"
 	"time"
@@ -16,8 +15,8 @@ import (
 )
 
 const (
-	receiveDerivationPath = "0'/0/0"
-	changeDerivationPath  = "0'/1/0"
+	derivationPathForAsset = "0'/0/0"
+	derivationPathForLBTC  = "0'/0/1"
 )
 
 // TaxiService provides interface for user UI
@@ -108,14 +107,14 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	amountAsDecimal := decimal.NewFromInt(int64(taxi.fixedFeeAmount))
 	assetAmount := uint64(price.Amount.Mul(amountAsDecimal).IntPart())
 
-	receivePayment, err := taxi.getReceivePayment()
+	payment, err := taxi.getPaymentForAsset()
 	if err != nil {
 		return nil, err
 	}
 
 	outputsOpts := []wallet.PsetOutputOpts{
 		wallet.PsetOutputOpts{
-			WitnessScript: receivePayment.WitnessScript,
+			WitnessScript: payment.WitnessScript,
 			Asset:         assetHash,
 			Amount:        assetAmount,
 		},
@@ -132,27 +131,9 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	changePayment, err := taxi.getChangePayment()
-	if err != nil {
-		return nil, err
-	}
-
-	// sign the input
-
-	path := receiveDerivationPath
-
-	if bytes.Equal(taxiPset.Inputs[0].WitnessScript, changePayment.WitnessScript) {
-		path = changeDerivationPath
-	}
-
-	taxiPsetBase64, err := taxiPset.ToBase64()
-	if err != nil {
-		return nil, err
-	}
-
 	signOpts := wallet.SignInputArgs{
-		PsetBase64: taxiPsetBase64,
-		Path:       path,
+		PsetBase64: taxiPset,
+		Path:       derivationPathForLBTC,
 		InputIndex: 0,
 		HashType:   txscript.SigHashSingle | txscript.SigHashAnyOneCanPay,
 	}
@@ -199,38 +180,28 @@ func (taxi *taxiService) ListAssets(ctx context.Context) []string {
 }
 
 // utils function using to fund the service
-func (taxi *taxiService) getAddresses() ([]string, error) {
-	rcvPayment, err := taxi.getReceivePayment()
+func (taxi *taxiService) getFundAddress() (string, error) {
+	paymentForLBTC, err := taxi.getPaymentForLBTC()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	rcvAddress, err := rcvPayment.WitnessPubKeyHash()
+	lbtcAddress, err := paymentForLBTC.WitnessPubKeyHash()
 	if err != nil {
-		return nil, err
-	}
-
-	changePayment, err := taxi.getChangePayment()
-	if err != nil {
-		return nil, err
-	}
-
-	changeAddress, err := changePayment.WitnessPubKeyHash()
-	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// TODO now the taxi service has only two addresses. In the future taxi will generate a set of addresses for each topup
-	return []string{rcvAddress, changeAddress}, nil
+	return lbtcAddress, nil
 }
 
 func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Utxo, error) {
-	addresses, err := taxi.getAddresses()
+	address, err := taxi.getFundAddress()
 	if err != nil {
 		return nil, err
 	}
 
-	utxos, err := taxi.explorer.GetUnspentsForAddresses(addresses, [][]byte{})
+	utxos, err := taxi.explorer.GetUnspents(address, [][]byte{})
 	if err != nil {
 		return nil, err
 	}
@@ -248,12 +219,12 @@ func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Ut
 	return availableUtxos, nil
 }
 
-func (taxi *taxiService) getReceivePayment() (*payment.Payment, error) {
-	return taxi.wallet.DerivePath(receiveDerivationPath, &taxi.network)
+func (taxi *taxiService) getPaymentForAsset() (*payment.Payment, error) {
+	return taxi.wallet.DerivePath(derivationPathForAsset, &taxi.network)
 }
 
-func (taxi *taxiService) getChangePayment() (*payment.Payment, error) {
-	return taxi.wallet.DerivePath(changeDerivationPath, &taxi.network)
+func (taxi *taxiService) getPaymentForLBTC() (*payment.Payment, error) {
+	return taxi.wallet.DerivePath(derivationPathForLBTC, &taxi.network)
 }
 
 func selectOneUtxo(utxos []explorer.Utxo, targetAmount uint64, targetAsset string) (explorer.Utxo, error) {
