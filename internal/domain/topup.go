@@ -50,7 +50,6 @@ type Topup struct {
 }
 
 // NewTopup is a factory function used to create an base topup
-// The returned topup is not REQUESTED, the status is empty
 func NewTopup(
 	assetHash string,
 	totalFee uint64,
