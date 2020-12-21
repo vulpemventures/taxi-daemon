@@ -2,11 +2,11 @@
 
 build-server: 
 	export GO111MODULE=on
-	env GOOS=linux go build -ldflags="-s -w" -o bin/taxi cmd/taxi-server/main.go
+	env GOOS=linux go build -ldflags="-s -w" -o bin/taxid cmd/taxid/main.go
 	
 build-cli:
 	export GO111MODULE=on
-	env GOOS=linux go build -ldflags="-s -w" -o bin/taxi-cli cmd/taxi-cli/*.go
+	env GOOS=linux go build -ldflags="-s -w" -o bin/taxi cmd/taxi/*.go
 
 build: clean build-server build-cli
 
