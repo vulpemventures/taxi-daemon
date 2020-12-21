@@ -46,7 +46,7 @@ type Topup struct {
 	CompletedAt time.Time
 	// SettledAt is the moment when topup status was SETTLED
 	SettledAt time.Time
-	// ExpireAt is the date where the utxo used in topup's transaction can be double-spent
+	// ExpireAt is the date where the utxo used in topup's transaction can be used for other topups
 	ExpireAt time.Time
 }
 
