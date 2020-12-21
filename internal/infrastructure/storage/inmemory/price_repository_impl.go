@@ -4,19 +4,18 @@ import (
 	"context"
 	"sync"
 
-	"github.com/shopspring/decimal"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
 
 type inmemoryPriceRepository struct {
-	assetToAmountMap map[string]decimal.Decimal
+	assetToAmountMap map[string]domain.Price
 	locker           sync.Locker
 }
 
 // NewInmemoryPriceRepository creates a new inmemory PriceRepository implementation
 func NewInmemoryPriceRepository() domain.PriceRepository {
 	return &inmemoryPriceRepository{
-		assetToAmountMap: make(map[string]decimal.Decimal),
+		assetToAmountMap: make(map[string]domain.Price),
 		locker:           &sync.Mutex{},
 	}
 }
@@ -25,7 +24,7 @@ func (r *inmemoryPriceRepository) UpdateOrCreatePrice(_ context.Context, price d
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
-	r.assetToAmountMap[price.AssetHash] = price.Amount
+	r.assetToAmountMap[price.AssetHash] = price
 	return nil
 }
 
@@ -33,11 +32,8 @@ func (r *inmemoryPriceRepository) GetPrice(_ context.Context, assetHash string) 
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
-	if amount, ok := r.assetToAmountMap[assetHash]; ok {
-		return &domain.Price{
-			AssetHash: assetHash,
-			Amount:    amount,
-		}, true, nil
+	if price, ok := r.assetToAmountMap[assetHash]; ok {
+		return &price, true, nil
 	}
 
 	return nil, false, nil
@@ -49,11 +45,8 @@ func (r *inmemoryPriceRepository) GetAllPrices(_ context.Context) ([]domain.Pric
 
 	prices := make([]domain.Price, 0)
 
-	for key, value := range r.assetToAmountMap {
-		prices = append(prices, domain.Price{
-			AssetHash: key,
-			Amount:    value,
-		})
+	for _, value := range r.assetToAmountMap {
+		prices = append(prices, value)
 	}
 
 	return prices, nil
