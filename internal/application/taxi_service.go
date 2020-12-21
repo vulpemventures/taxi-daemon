@@ -154,7 +154,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		PsetBase64: taxiPsetBase64,
 		Path:       path,
 		InputIndex: 0,
-		HashType:   txscript.SigHashSingle + txscript.SigHashAnyOneCanPay,
+		HashType:   txscript.SigHashSingle | txscript.SigHashAnyOneCanPay,
 	}
 
 	signedPsetBase64, err := taxi.wallet.SignInput(signOpts)
