@@ -59,13 +59,29 @@ func NewTopup(
 	expireAt time.Time,
 ) Topup {
 	return Topup{
-		ID:         uuid.New().String(),
-		Partial:    "",
-		AssetHash:  assetHash,
-		AssetPrice: assetPrice,
-		FeeAmount:  totalFee,
-		ExpireAt:   expireAt,
+		ID:          uuid.New().String(),
+		Status:      Requested,
+		Partial:     "",
+		AssetHash:   assetHash,
+		AssetPrice:  assetPrice,
+		FeeAmount:   totalFee,
+		ExpireAt:    expireAt,
+		RequestedAt: time.Now(),
 	}
+}
+
+// Complete sets partial and assetAmount field + timestamp the complete time + update the status
+func (t *Topup) Complete(partial string, assetAmount uint64) {
+	t.CompletedAt = time.Now()
+	t.Status = Completed
+	t.Partial = partial
+	t.AssetAmount = assetAmount
+}
+
+// Settle timestamp the settle time and update the topup status
+func (t *Topup) Settle() {
+	t.SettledAt = time.Now()
+	t.Status = Settled
 }
 
 // ToProtobufTopupMessage maps topup domain to pb.Topup message type

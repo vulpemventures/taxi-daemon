@@ -3,30 +3,44 @@ package application
 import (
 	"context"
 
+	"github.com/shopspring/decimal"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
 
 // AdminService administrates a TaxiService
 type AdminService interface {
-	ListTopups(assetHashFilter string) ([]domain.Topup, error)
-	ChangeSpread(basisPoint uint32)
+	ListTopups(ctx context.Context, assetHashFilter string) ([]domain.Topup, error)
+	AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error
+	ChangeSpread(ctx context.Context, basisPoint uint32)
 }
 
 type adminService struct {
 	topupRepository domain.TopupRepository
+	priceRepository domain.PriceRepository
 }
 
 // NewAdminService is a factory function for AdminService interface
-func NewAdminService(topupRepository domain.TopupRepository) AdminService {
+func NewAdminService(
+	topupRepository domain.TopupRepository,
+	priceRepository domain.PriceRepository,
+) AdminService {
 	return &adminService{
 		topupRepository: topupRepository,
+		priceRepository: priceRepository,
 	}
+}
+
+func (adminSvc *adminService) AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error {
+	return adminSvc.priceRepository.UpdateOrCreatePrice(ctx, domain.Price{
+		AssetHash: assetHash,
+		Amount:    price,
+	})
 }
 
 // ListTopups returns all the topups present in the taxi's topup repository
 // optionnaly filtered by assetHash
-func (adminSvc *adminService) ListTopups(assetHashFilter string) ([]domain.Topup, error) {
-	topups, err := adminSvc.topupRepository.GetAllTopups(context.Background())
+func (adminSvc *adminService) ListTopups(ctx context.Context, assetHashFilter string) ([]domain.Topup, error) {
+	topups, err := adminSvc.topupRepository.GetAllTopups(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -49,6 +63,6 @@ func (adminSvc *adminService) ListTopups(assetHashFilter string) ([]domain.Topup
 }
 
 // ChangeSpread sets the basisPoint of the taxiService
-func (adminSvc *adminService) ChangeSpread(basisPoint uint32) {
+func (adminSvc *adminService) ChangeSpread(_ context.Context, basisPoint uint32) {
 	panic("not implemented")
 }

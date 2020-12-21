@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"os"
@@ -9,11 +8,11 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/application"
-	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/dbbadger"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 	"github.com/vulpemventures/liquid-taxi/internal/interfaces/grpc"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
@@ -21,25 +20,32 @@ import (
 )
 
 func main() {
-	log.Info("Taxi server is starting...")
+	log.Info("---- Liquid Taxi ----")
 
-	topupRepository := inmemory.NewInmemoryTopupRepository()
+	log.Info("loading datadir...")
+
+	datadirPath := config.GetString(config.DatadirKey)
+
+	err := dbbadger.CreateDirIfNotExist(datadirPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	topupRepository, err := dbbadger.NewBadgerTopupRepository(datadirPath, nil)
+
 	lockRepository := inmemory.NewInmemoryLockRepository()
 	priceRepository := inmemory.NewInmemoryPriceRepository()
 
-	priceRepository.UpdateOrCreatePrice(context.Background(), domain.Price{
-		AssetHash: config.GetAssetHash(),
-		Amount:    decimal.NewFromFloat(10.154),
-	})
+	log.Info("Taxi server is starting...")
 
 	taxiSvcOptions := application.NewTaxiServiceArgs{
-		ExplorerEndpoint: config.GetExplorerEndpoint(),
-		Mnemonic:         strings.Split(config.GetMnemonic(), " "),
-		Network:          *config.GetNetwork(),
-		FixedFeeAmount:   uint64(config.GetFixedFeeAmount()),
-		LockRepository:   lockRepository,
-		PriceRepository:  priceRepository,
-		TopupRepository:  topupRepository,
+		Mnemonic:        strings.Split(config.GetString(config.MnemonicKey), " "),
+		Network:         *config.GetNetwork(),
+		FixedFeeAmount:  uint64(config.GetInt(config.FixedFeeAmountKey)),
+		LockRepository:  lockRepository,
+		PriceRepository: priceRepository,
+		TopupRepository: topupRepository,
+		ExplorerSvc:     explorer.NewService(config.GetString(config.ExplorerEndpointKey)),
 	}
 
 	taxiSvc, err := application.NewTaxiService(taxiSvcOptions)
@@ -47,7 +53,10 @@ func main() {
 		log.Fatal("taxi service creation error ", err)
 	}
 
-	adminSvc := application.NewAdminService(topupRepository)
+	adminSvc := application.NewAdminService(
+		topupRepository,
+		priceRepository,
+	)
 
 	taxiHandler := grpc.NewTaxiHandler(taxiSvc)
 	adminHandler := grpc.NewAdminHandler(adminSvc)
@@ -59,8 +68,8 @@ func main() {
 	pb.RegisterTaxiServer(taxiServer, taxiHandler)
 
 	domainURL := "localhost"
-	taxiAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetTaxiPort())
-	adminAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetAdminPort())
+	taxiAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetInt(config.TaxiPortKey))
+	adminAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetInt(config.AdminPortKey))
 
 	// serve
 	lisTaxi, err := net.Listen("tcp", taxiAddress)

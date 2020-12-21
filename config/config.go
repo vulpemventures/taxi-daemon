@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/btcsuite/btcutil"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/vulpemventures/go-elements/network"
@@ -26,8 +27,8 @@ const (
 	FixedFeeAmountKey = "FIXED_FEE_AMOUNT"
 	// LogLevelKey is the level used as logus' logger level
 	LogLevelKey = "LOG_LEVEL"
-	// AssetHashKey is a temporary var for test
-	AssetHashKey = "ASSET_HASH"
+	// DatadirKey is the path of the directory used to store the taxi's database files
+	DatadirKey = "DATADIR"
 )
 
 var vip *viper.Viper
@@ -45,6 +46,7 @@ func init() {
 	vip.SetDefault(MnemonicKey, "")
 	vip.SetDefault(LogLevelKey, 4)
 	vip.SetDefault(FixedFeeAmountKey, 1000)
+	vip.SetDefault(DatadirKey, btcutil.AppDataDir("taxi-datadir", false))
 
 	validate()
 
@@ -52,7 +54,7 @@ func init() {
 }
 
 func validate() {
-	if GetMnemonic() == "" {
+	if GetString(MnemonicKey) == "" {
 		log.Fatal("mnemonic is an empty string")
 	}
 
@@ -60,12 +62,12 @@ func validate() {
 		log.Fatal("network does not exist")
 	}
 
-	if GetFixedFeeAmount() < 1 {
+	if GetInt(FixedFeeAmountKey) < 1 {
 		log.Fatal("fragment amount can't be lower than 1 satoshi")
 	}
 
-	p := GetTaxiPort()
-	pAdmin := GetAdminPort()
+	p := GetInt(TaxiPortKey)
+	pAdmin := GetInt(AdminPortKey)
 
 	if p == pAdmin {
 		log.Fatal("ports can't be equal")
@@ -93,41 +95,14 @@ func validatePort(port int) error {
 	return nil
 }
 
-// TODO refacto ASSETHASH key
-
-// GetAssetHash returns config's assetHash
-func GetAssetHash() string {
-	return vip.GetString(AssetHashKey)
+// GetString returns the value associated with the key as string
+func GetString(key string) string {
+	return vip.GetString(key)
 }
 
-// SetAssetHash sets hash as config's assetHash
-func SetAssetHash(hash string) {
-	vip.Set(AssetHashKey, hash)
-}
-
-// GetExplorerEndpoint returns the explorer endpoint as string
-func GetExplorerEndpoint() string {
-	return vip.GetString(ExplorerEndpointKey)
-}
-
-// GetMnemonic returns the Mnemonic of taxi as string
-func GetMnemonic() string {
-	return vip.GetString(MnemonicKey)
-}
-
-// GetFixedFeeAmount returns the value of fragment amount as integer
-func GetFixedFeeAmount() int {
-	return vip.GetInt(FixedFeeAmountKey)
-}
-
-// GetTaxiPort returns the port of the taxi server
-func GetTaxiPort() int {
-	return vip.GetInt(TaxiPortKey)
-}
-
-// GetAdminPort returns the port of the admin server
-func GetAdminPort() int {
-	return vip.GetInt(AdminPortKey)
+// GetInt returns the value associated with the key as Int
+func GetInt(key string) int {
+	return vip.GetInt(key)
 }
 
 // GetNetwork returns a pointer to the configurated network

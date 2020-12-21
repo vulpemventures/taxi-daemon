@@ -2,47 +2,51 @@ package application
 
 import (
 	"bytes"
+	"context"
+	"encoding/hex"
 	"log"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
+	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 )
 
 func TestTopupWithAsset(t *testing.T) {
-
 	newTaxiOpts := NewTaxiServiceArgs{
-		ExplorerEndpoint: explorerEndpoint,
-		Mnemonic:         words,
-		Network:          regtest,
-		FixedFeeAmount:   100000000,
-		TopupRepository:  inmemory.NewInmemoryTopupRepository(),
-		LockRepository:   inmemory.NewInmemoryLockRepository(),
-		PriceRepository:  newMockedPriceRepository(t, []string{superToken}),
+		Mnemonic:        words,
+		Network:         regtest,
+		FixedFeeAmount:  100000000,
+		TopupRepository: inmemory.NewInmemoryTopupRepository(),
+		LockRepository:  inmemory.NewInmemoryLockRepository(),
+		PriceRepository: newMockedPriceRepository(t, []string{superToken}),
+		ExplorerSvc:     explorer.NewService(explorerEndpoint),
 	}
 
 	taxiSvc, err := newTaxiService(newTaxiOpts)
 	if err != nil {
-		t.Error(nil)
+		t.Fatal(nil)
 	}
 
 	// found taxi with LBTC
-	addr, _, err := taxiSvc.getAddresses()
+	addresses, err := taxiSvc.getAddresses()
+	addr := addresses[0]
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	_, err = faucet(addr, explorerEndpoint)
 	if err != nil {
-		t.Error(nil)
+		t.Fatal(nil)
 	}
 
 	time.Sleep(5 * time.Second)
 
-	topup, err := taxiSvc.TopupWithAsset(superToken)
+	topup, err := taxiSvc.TopupWithAsset(context.Background(), superToken)
 	assert.Nil(t, err)
 	assert.NotNil(t, topup)
 
@@ -62,7 +66,7 @@ func TestTopupWithAsset(t *testing.T) {
 
 	hex, err := p.UnsignedTx.ToHex()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	log.Print(hex)
@@ -85,24 +89,30 @@ func TestListAssets(t *testing.T) {
 
 	for _, test := range tests {
 		newTaxiOpts := NewTaxiServiceArgs{
-			ExplorerEndpoint: explorerEndpoint,
-			Mnemonic:         words,
-			Network:          regtest,
-			FixedFeeAmount:   100000000,
-			TopupRepository:  inmemory.NewInmemoryTopupRepository(),
-			LockRepository:   inmemory.NewInmemoryLockRepository(),
-			PriceRepository:  newMockedPriceRepository(t, test.input),
+			Mnemonic:        words,
+			Network:         regtest,
+			FixedFeeAmount:  100000000,
+			TopupRepository: inmemory.NewInmemoryTopupRepository(),
+			LockRepository:  inmemory.NewInmemoryLockRepository(),
+			PriceRepository: newMockedPriceRepository(t, test.input),
+			ExplorerSvc:     explorer.NewService(explorerEndpoint),
 		}
 
 		taxiSvc, err := NewTaxiService(newTaxiOpts)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
-		assets := taxiSvc.ListAssets()
+		assets := taxiSvc.ListAssets(context.Background())
 		sort.Strings(assets)
 		sort.Strings(test.expected)
 		assert.Equal(t, test.expected, assets)
 	}
 
+}
+
+func assetHashBytes(asset string) []byte {
+	buf, _ := hex.DecodeString(asset)
+	assetBuf := append([]byte{0x01}, elementsutil.ReverseBytes(buf)...)
+	return assetBuf
 }

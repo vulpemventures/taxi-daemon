@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math"
 	"math/big"
@@ -11,7 +12,9 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/tyler-smith/go-bip39"
+	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/pset"
@@ -32,16 +35,26 @@ var (
 // Wallet represents the user, it is able to derive new addresses and sign an input
 type Wallet interface {
 	DerivePath(path string, network *network.Network) (*payment.Payment, error)
-	SignInput(args SignInputArgs) error
+	SignInput(args SignInputArgs) (string, error)
+	CreatePSET(inputs []explorer.Utxo, outputs []PsetOutputOpts) (*pset.Pset, error)
+}
+
+// SignInputArgs is a wrapper for SignInput method arguments
+type SignInputArgs struct {
+	PsetBase64 string
+	Path       string
+	InputIndex int
+	HashType   txscript.SigHashType
 }
 
 type wallet struct {
 	mnemonic  []string
 	masterKey []byte
+	network   network.Network
 }
 
 // NewWallet is a factory function for Wallet interface
-func NewWallet(words []string) (Wallet, error) {
+func NewWallet(words []string, network network.Network) (Wallet, error) {
 	seed := generateSeedFromMnemonic(words)
 	masterKey, err := generateSigningMasterKey(seed)
 	if err != nil {
@@ -51,6 +64,7 @@ func NewWallet(words []string) (Wallet, error) {
 	return &wallet{
 		mnemonic:  words,
 		masterKey: masterKey,
+		network:   network,
 	}, nil
 }
 
@@ -73,54 +87,72 @@ func generateSigningMasterKey(seed []byte) ([]byte, error) {
 	return base58.Decode(hdNode.String()), nil
 }
 
-// SignInputArgs is a wrapper for SignInput method arguments
-type SignInputArgs struct {
-	Updater       *pset.Updater
-	UnsignedTx    *transaction.Transaction
-	Path          string
-	InputIndex    int
-	WitnessUtxo   *transaction.TxOutput
-	WitnessScript []byte
-	HashType      txscript.SigHashType
-}
-
 // SignInput lets the user to sign a pset input
-func (w *wallet) SignInput(args SignInputArgs) error {
+func (w *wallet) SignInput(args SignInputArgs) (string, error) {
 	privKey, pubKey, err := w.deriveSigningKeyPair(args.Path)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	sigHash := args.UnsignedTx.HashForWitnessV0(
+	script := payment.FromPublicKey(pubKey, &w.network, nil).Script
+
+	p, err := pset.NewPsetFromBase64(args.PsetBase64)
+	if err != nil {
+		return "", err
+	}
+
+	updater, err := pset.NewUpdater(p)
+	if err != nil {
+		return "", err
+	}
+
+	psetInput := p.Inputs[args.InputIndex]
+
+	sigHash := p.UnsignedTx.HashForWitnessV0(
 		args.InputIndex,
-		args.WitnessScript,
-		args.WitnessUtxo.Value,
+		script,
+		psetInput.WitnessUtxo.Value,
 		args.HashType,
 	)
 
-	if err := args.Updater.AddInSighashType(args.HashType, args.InputIndex); err != nil {
-		return err
+	if err := updater.AddInSighashType(args.HashType, args.InputIndex); err != nil {
+		return "", err
 	}
 
 	signature, err := privKey.Sign(sigHash[:])
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	sigWithHashType := append(signature.Serialize(), byte(args.HashType))
 
 	// sign with the updater
-	if _, err := args.Updater.Sign(
+	if _, err := updater.Sign(
 		args.InputIndex,
 		sigWithHashType,
 		pubKey.SerializeCompressed(),
 		nil,
 		nil,
 	); err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	// check the signatures
+	valid, err := p.ValidateAllSignatures()
+	if err != nil {
+		return "", err
+	}
+
+	if !valid {
+		return "", ErrInvalidSignature
+	}
+
+	base64, err := p.ToBase64()
+	if err != nil {
+		return "", err
+	}
+
+	return base64, err
 }
 
 // DerivePath gets a derivation path and return a payment.Payment pointer
@@ -164,6 +196,63 @@ func (w *wallet) deriveSigningKeyPair(path string) (
 	}
 
 	return privateKey, publicKey, nil
+}
+
+// PsetOutputOpts is using to create TxOutput
+type PsetOutputOpts struct {
+	WitnessScript []byte
+	Asset         string
+	Amount        uint64
+}
+
+// CreatePset is an util function used to generate taxi transaction
+func (w *wallet) CreatePSET(
+	inputs []explorer.Utxo,
+	outputs []PsetOutputOpts,
+) (*pset.Pset, error) {
+	// create taxi tx
+	partial, err := pset.New([]*transaction.TxInput{}, []*transaction.TxOutput{}, 2, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	updater, err := pset.NewUpdater(partial)
+	if err != nil {
+		return nil, err
+	}
+
+	for inputIndex, utxo := range inputs {
+		// inputs
+		input, prevout, err := utxo.Parse()
+		if err != nil {
+			return nil, err
+		}
+
+		updater.AddInput(input)
+		err = updater.AddInWitnessUtxo(prevout, inputIndex)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// outputs
+	for _, outputOpts := range outputs {
+		// 1. payout output
+		elementsValue, err := elementsutil.SatoshiToElementsValue(outputOpts.Amount)
+		if err != nil {
+			return nil, err
+		}
+
+		out := transaction.NewTxOutput(
+			assetHashBytes(outputOpts.Asset),
+			elementsValue,
+			outputOpts.WitnessScript,
+		)
+
+		updater.AddOutput(out)
+	}
+
+	return partial, nil
 }
 
 // ParseDerivationPath converts a derivation path string to the
@@ -228,4 +317,10 @@ func containsEmptyString(composedPath []string) bool {
 		}
 	}
 	return false
+}
+
+func assetHashBytes(asset string) []byte {
+	buf, _ := hex.DecodeString(asset)
+	assetBuf := append([]byte{0x01}, elementsutil.ReverseBytes(buf)...)
+	return assetBuf
 }

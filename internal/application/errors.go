@@ -31,6 +31,4 @@ func (e ErrUtxoNotFound) Error() string {
 var (
 	// ErrUtxoNotAvailable is returned if a selected utxo is already used (i.e locked by the taxi service)
 	ErrUtxoNotAvailable = errors.New("a selected utxo is not available")
-	// ErrInvalidSignature is returned if there is at least one invalid signature in a given PSET
-	ErrInvalidSignature = errors.New("at least one signature is invalid")
 )

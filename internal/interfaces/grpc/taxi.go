@@ -20,15 +20,15 @@ func NewTaxiHandler(taxiSvc application.TaxiService) pb.TaxiServer {
 	}
 }
 
-func (t *taxiServer) ListAssets(_ context.Context, _ *pb.ListAssetsRequest) (*pb.ListAssetsReply, error) {
-	assets := t.taxiSvc.ListAssets()
+func (t *taxiServer) ListAssets(ctx context.Context, _ *pb.ListAssetsRequest) (*pb.ListAssetsReply, error) {
+	assets := t.taxiSvc.ListAssets(ctx)
 	return &pb.ListAssetsReply{
 		AssetHash: assets,
 	}, nil
 }
 
-func (t *taxiServer) TopupWithAsset(_ context.Context, req *pb.TopupWithAssetRequest) (*pb.TopupWithAssetReply, error) {
-	topup, err := t.taxiSvc.TopupWithAsset(req.GetAssetHash())
+func (t *taxiServer) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetRequest) (*pb.TopupWithAssetReply, error) {
+	topup, err := t.taxiSvc.TopupWithAsset(ctx, req.GetAssetHash())
 	if err != nil {
 		return nil, err
 	}
