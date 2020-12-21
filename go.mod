@@ -3,8 +3,10 @@ module github.com/vulpemventures/liquid-taxi
 go 1.14
 
 require (
+	github.com/alecthomas/units v0.0.0-20201120081800-1786d5ef83d4 // indirect
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/btcsuite/btcutil v1.0.2
+	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
@@ -13,12 +15,10 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.0 // indirect
-	github.com/neelance/astrewrite v0.0.0-20160511093645-99348263ae86 // indirect
-	github.com/neelance/sourcemap v0.0.0-20200213170602-2833bce08e4c // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/prometheus/common v0.15.0
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shopspring/decimal v1.2.0
-	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
 	github.com/sirupsen/logrus v1.7.0
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/spf13/afero v1.5.1 // indirect
@@ -30,6 +30,8 @@ require (
 	github.com/tdex-network/tdex-daemon v0.1.2
 	github.com/tj/assert v0.0.3
 	github.com/tyler-smith/go-bip39 v1.1.0
+	github.com/urfave/cli v1.22.5
+	github.com/urfave/cli/v2 v2.3.0
 	github.com/vulpemventures/go-elements v0.1.1
 	github.com/vulpemventures/taxi-protobuf v0.0.0-20201218154011-8969831c2875
 	golang.org/x/crypto v0.0.0-20201217014255-9d1352758620 // indirect

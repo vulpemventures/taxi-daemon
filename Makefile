@@ -1,9 +1,15 @@
 .PHONY: build clean deploy-dev deploy-prod run test
 
-build: 
+build-server: 
 	export GO111MODULE=on
-	env GOOS=linux go build -ldflags="-s -w" -o bin/taxi cmd/server/main.go
+	env GOOS=linux go build -ldflags="-s -w" -o bin/taxi cmd/taxi-server/main.go
 	
+build-cli:
+	export GO111MODULE=on
+	env GOOS=linux go build -ldflags="-s -w" -o bin/taxi-cli cmd/taxi-cli/*.go
+
+build: build-server build-cli
+
 clean: 
 	@echo "Clean..."
 	@rm -rf ./bin
