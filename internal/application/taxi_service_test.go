@@ -76,6 +76,7 @@ func TestTopupWithAsset(t *testing.T) {
 
 	assert.NotNil(t, payoutOutput)
 	assert.NotNil(t, feeOutput)
+	assert.Equal(t, 1, len(p.UnsignedTx.Inputs))
 }
 
 func TestListAssets(t *testing.T) {
