@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/tj/assert"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
@@ -70,4 +71,41 @@ func TestUnlock(t *testing.T) {
 	}
 
 	assert.Equal(t, false, repo.IsLocked(context.Background(), lock))
+}
+
+func TestConcurrency(t *testing.T) {
+	repo := newInmemoryLockRepository()
+
+	lock := domain.Lock{
+		TxID: txID,
+		Vout: 1,
+	}
+
+	lockBis := domain.Lock{
+		TxID: txID,
+		Vout: 2,
+	}
+
+	emptyCtx := context.Background()
+
+	go func() {
+		err := repo.Lock(emptyCtx, []domain.Lock{lock, lockBis})
+		assert.Nil(t, err)
+		time.Sleep(2 * time.Second)
+		err = repo.Unlock(emptyCtx, lockBis)
+		assert.Nil(t, err)
+		time.Sleep(1 * time.Second)
+		err = repo.Lock(emptyCtx, []domain.Lock{lock})
+		assert.Nil(t, err)
+	}()
+
+	go func() {
+		err := repo.Lock(emptyCtx, []domain.Lock{lock})
+		assert.Nil(t, err)
+		time.Sleep(1 * time.Second)
+		repo.IsLocked(emptyCtx, lockBis)
+		err = repo.Unlock(emptyCtx, lock)
+		assert.Nil(t, err)
+	}()
+
 }
