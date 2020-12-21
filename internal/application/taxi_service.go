@@ -143,7 +143,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	topupCompleted, err := taxi.topupRepository.SetCompleted(ctx, topup.ID, signedPsetBase64, assetAmount)
+	topupCompleted, err := taxi.topupRepository.MarkAsCompleted(ctx, topup.ID, signedPsetBase64, assetAmount)
 	if err != nil {
 		return nil, err
 	}
