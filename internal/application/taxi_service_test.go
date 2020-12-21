@@ -43,7 +43,7 @@ func TestTopupWithAsset(t *testing.T) {
 		t.Fatal(nil)
 	}
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	topup, err := taxiSvc.TopupWithAsset(context.Background(), superToken)
 	assert.Nil(t, err)

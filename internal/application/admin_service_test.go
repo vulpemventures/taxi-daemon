@@ -40,7 +40,7 @@ func TestListTopups(t *testing.T) {
 	if err != nil {
 		t.Fatal(nil)
 	}
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	// do some topups
 	_, err = taxiSvc.TopupWithAsset(context.Background(), superToken)
