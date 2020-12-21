@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
-	"github.com/vulpemventures/liquid-taxi/pkg/utils"
+	"github.com/vulpemventures/liquid-taxi/pkg/timestamp"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 )
 
@@ -110,9 +110,9 @@ func (t *Topup) ToProtobufTopupMessage() *pb.Topup {
 // ToProtobufTimestampsMessage maps topup domain to pb.Timestamps message type
 func (t *Topup) ToProtobufTimestampsMessage() *pb.Timestamps {
 	return &pb.Timestamps{
-		RequestedAt: utils.MakeMillisecondTimestamp(t.RequestedAt),
-		CompletedAt: utils.MakeMillisecondTimestamp(t.CompletedAt),
-		SettledAt:   utils.MakeMillisecondTimestamp(t.SettledAt),
+		RequestedAt: timestamp.MakeMillisecondTimestamp(t.RequestedAt),
+		CompletedAt: timestamp.MakeMillisecondTimestamp(t.CompletedAt),
+		SettledAt:   timestamp.MakeMillisecondTimestamp(t.SettledAt),
 	}
 }
 

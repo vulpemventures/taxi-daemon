@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/vulpemventures/liquid-taxi/internal/application"
-	"github.com/vulpemventures/liquid-taxi/pkg/utils"
+	"github.com/vulpemventures/liquid-taxi/pkg/timestamp"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 )
 
@@ -35,6 +35,6 @@ func (t *taxiServer) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetR
 
 	return &pb.TopupWithAssetReply{
 		Topup:  topup.ToProtobufTopupMessage(),
-		Expiry: utils.MakeMillisecondTimestamp(topup.ExpireAt),
+		Expiry: timestamp.MakeMillisecondTimestamp(topup.ExpireAt),
 	}, nil
 }
