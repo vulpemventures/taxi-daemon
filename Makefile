@@ -8,7 +8,7 @@ build-cli:
 	export GO111MODULE=on
 	env GOOS=linux go build -ldflags="-s -w" -o bin/taxi-cli cmd/taxi-cli/*.go
 
-build: build-server build-cli
+build: clean build-server build-cli
 
 clean: 
 	@echo "Clean..."
@@ -28,7 +28,7 @@ start:
 stop: 
 	nigiri stop --delete
 
-run: clean build 
+run:
 	export TAXI_FIXED_FEE_AMOUNT=100000000; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
