@@ -71,17 +71,27 @@ func NewTopup(
 }
 
 // Complete sets partial and assetAmount field + timestamp the complete time + update the status
-func (t *Topup) Complete(partial string, assetAmount uint64) {
-	t.CompletedAt = time.Now()
-	t.Status = Completed
-	t.Partial = partial
-	t.AssetAmount = assetAmount
+func (t *Topup) Complete(partial string, assetAmount uint64) error {
+	if t.Status == Requested {
+		t.CompletedAt = time.Now()
+		t.Status = Completed
+		t.Partial = partial
+		t.AssetAmount = assetAmount
+		return nil
+	}
+
+	return ErrTopupNeedToBeRequested
 }
 
 // Settle timestamp the settle time and update the topup status
-func (t *Topup) Settle() {
-	t.SettledAt = time.Now()
-	t.Status = Settled
+func (t *Topup) Settle() error {
+	if t.Status == Completed {
+		t.SettledAt = time.Now()
+		t.Status = Settled
+		return nil
+	}
+
+	return ErrTopupNeedToBeCompleted
 }
 
 // ToProtobufTopupMessage maps topup domain to pb.Topup message type
