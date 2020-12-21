@@ -112,8 +112,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 
 	expireAt := time.Now().Add(ttlUtxo)
 
-	priceToFloat, _ := price.Amount.Float64()
-	topup := domain.NewTopup(assetHash, totalFees, priceToFloat, expireAt)
+	topup := domain.NewTopup(assetHash, totalFees, price.Amount, expireAt)
 	err = taxi.topupRepository.AddTopup(ctx, topup)
 	if err != nil {
 		return nil, err

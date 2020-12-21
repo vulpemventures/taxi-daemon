@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 	"github.com/vulpemventures/liquid-taxi/pkg/utils"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 )
@@ -35,9 +36,8 @@ type Topup struct {
 	AssetHash string
 	// AssetAmount is the total amount of AssetHash to provide for the topup
 	AssetAmount uint64
-	// AssetPrice is the price used for the topup
-	// price = number of satoshis of AssetHash to reach 1LBTC
-	AssetPrice float64
+	// AssetPrice is the price AssetHash/LBTC used for the topup
+	AssetPrice decimal.Decimal
 	// FeeAmount is the total amount of bitcoin fee in the topup transaction
 	FeeAmount uint64
 	// RequestedAt is the moment when topup status was REQUESTED
@@ -55,7 +55,7 @@ type Topup struct {
 func NewTopup(
 	assetHash string,
 	totalFee uint64,
-	assetPrice float64,
+	assetPrice decimal.Decimal,
 	expireAt time.Time,
 ) Topup {
 	return Topup{
@@ -86,12 +86,14 @@ func (t *Topup) Settle() {
 
 // ToProtobufTopupMessage maps topup domain to pb.Topup message type
 func (t *Topup) ToProtobufTopupMessage() *pb.Topup {
+	price, _ := t.AssetPrice.Float64()
+
 	return &pb.Topup{
 		TopupId:     t.ID,
 		Partial:     t.Partial,
 		AssetHash:   t.AssetHash,
 		AssetAmount: t.AssetAmount,
-		AssetPrice:  float32(t.AssetPrice),
+		AssetPrice:  float32(price),
 	}
 }
 
