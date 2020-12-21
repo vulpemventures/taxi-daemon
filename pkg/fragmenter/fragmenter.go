@@ -2,11 +2,13 @@ package fragmenter
 
 import (
 	"encoding/hex"
+	"errors"
 	"sync"
 	"time"
 
 	"github.com/tdex-network/tdex-daemon/pkg/crawler"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
+	"github.com/vulpemventures/go-elements/address"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
@@ -24,14 +26,14 @@ type Service interface {
 	Stop()
 	AddAddress(address string)
 	RemoveAddress(address string)
+	GetFragmentPSETChan() chan string
 }
 
 // Fragment is the return type of the fragmenter
 type Fragment struct {
-	Pset                string
-	Amount              uint64
-	Change              uint64
-	InputIndexToAddress map[int]string
+	Inputs   []*transaction.TxInput
+	Prevouts []*transaction.TxOutput
+	Change   uint64
 }
 
 type utxoFragmenter struct {
@@ -39,13 +41,15 @@ type utxoFragmenter struct {
 	explorerSvc         explorer.Service
 	errChan             chan error
 	quitChan            chan int
-	fragmentChan        chan Fragment
 	ticker              *time.Ticker
 	fragmentSize        uint64
 	fragmentAsset       string
 	utxosMap            map[string][]explorer.Utxo
 	locker              sync.Locker
 	alreadyUsedUtxosMap map[explorer.Utxo]bool
+	fragmentPSETChan    chan string
+	receiveAddress      string
+	changeAddress       string
 }
 
 // Opts defines the parameter needed to init an utxo fragmenter
@@ -55,6 +59,8 @@ type Opts struct {
 	ErrorHandler           func(err error)
 	FragmentSize           uint64
 	FragmentAsset          string
+	ReceiveAddress         string
+	ChangeAddress          string
 }
 
 // NewService is a factory function for fragmenter.Service interface
@@ -67,15 +73,24 @@ func NewService(opts Opts) Service {
 	})
 
 	return &utxoFragmenter{
-		crawlerSvc:    crawlerSvc,
-		explorerSvc:   opts.ExplorerSvc,
-		errChan:       make(chan error, errorQueueMaxSize),
-		quitChan:      make(chan int),
-		fragmentChan:  make(chan Fragment, psetQueueMaxSize),
-		ticker:        time.NewTicker(time.Duration(3*opts.IntervalInMilliseconds) * time.Millisecond),
-		fragmentSize:  opts.FragmentSize,
-		fragmentAsset: opts.FragmentAsset,
+		crawlerSvc:          crawlerSvc,
+		explorerSvc:         opts.ExplorerSvc,
+		errChan:             make(chan error, errorQueueMaxSize),
+		quitChan:            make(chan int),
+		ticker:              time.NewTicker(3 * time.Minute),
+		fragmentSize:        opts.FragmentSize,
+		fragmentAsset:       opts.FragmentAsset,
+		fragmentPSETChan:    make(chan string, psetQueueMaxSize),
+		utxosMap:            make(map[string][]explorer.Utxo),
+		locker:              &sync.Mutex{},
+		alreadyUsedUtxosMap: make(map[explorer.Utxo]bool),
+		receiveAddress:      opts.ReceiveAddress,
+		changeAddress:       opts.ChangeAddress,
 	}
+}
+
+func (f *utxoFragmenter) GetFragmentPSETChan() chan string {
+	return f.fragmentPSETChan
 }
 
 func (f *utxoFragmenter) Start() {
@@ -87,7 +102,10 @@ func (f *utxoFragmenter) Start() {
 		case event := <-crawlerEventChan:
 			go f.handleEvent(event)
 		case <-f.ticker.C:
-			fragmentUtxos()
+			fragments := f.createFragments()
+			if len(fragments) > 0 {
+				f.createTxFromFragments(fragments)
+			}
 		}
 	}
 }
@@ -133,12 +151,13 @@ type utxoWithAddress struct {
 	address string
 }
 
-func (f *utxoFragmenter) craftMergeTx(utxos []explorer.Utxo) []Fragment {
+func (f *utxoFragmenter) createFragments() []Fragment {
 	f.locker.Lock()
 	defer f.locker.Unlock()
 
 	utxosWithAddresses := make([]utxoWithAddress, 0)
 
+	// filter utxos
 	for k, value := range f.utxosMap {
 		for _, utxo := range value {
 			if utxo.IsConfidential() {
@@ -167,18 +186,38 @@ func (f *utxoFragmenter) craftMergeTx(utxos []explorer.Utxo) []Fragment {
 
 	fragments := make([]Fragment, 0)
 
-	amountNeeded := f.fragmentSize + defaultFeeValue
-	for _, utxoWithAddress := range utxosWithAddresses {
+	toCumulate := make([]utxoWithAddress, 0)
+	var sumValuesToCumulate uint64
+
+	for _, utxoWithAddr := range utxosWithAddresses {
 		// first case, utxo's value is greater than fragmentSize
-		if utxoWithAddress.utxo.Value() > f.fragmentSize {
-			fragment, err := f.createFragment([]explorer.Utxo{utxoWithAddress.utxo})
+		diff := utxoWithAddr.utxo.Value() - f.fragmentSize
+		if diff >= 0 {
+			fragment, err := f.createFragment([]explorer.Utxo{utxoWithAddr.utxo}, diff)
 			if err != nil {
 				continue
 			}
 
+			fragments = append(fragments, *fragment)
+			continue
 		}
+
+		// else: the utxo value < fragmentSize
+		// cumulate before
+		if sumValuesToCumulate >= f.fragmentSize {
+			fragment, err := f.cumulate(toCumulate)
+			if err == nil {
+				fragments = append(fragments, *fragment)
+				toCumulate = make([]utxoWithAddress, 0)
+			}
+		}
+
+		// append to toCumulate array
+		toCumulate = append(toCumulate, utxoWithAddr)
+		sumValuesToCumulate += utxoWithAddr.utxo.Value()
 	}
 
+	return fragments
 }
 
 func (f *utxoFragmenter) lockUtxoFor5Minutes(utxo explorer.Utxo) {
@@ -192,53 +231,131 @@ func (f *utxoFragmenter) lockUtxoFor5Minutes(utxo explorer.Utxo) {
 	}()
 }
 
+func (f *utxoFragmenter) cumulate(utxosWithAddresses []utxoWithAddress) (*Fragment, error) {
+	var sum uint64
+
+	utxos := make([]explorer.Utxo, 0)
+
+	for _, utxoWithAddr := range utxosWithAddresses {
+		sum += utxoWithAddr.utxo.Value()
+		utxos = append(utxos, utxoWithAddr.utxo)
+	}
+
+	change := sum - f.fragmentSize
+	return f.createFragment(utxos, change)
+}
+
 func (f *utxoFragmenter) createFragment(utxos []explorer.Utxo, changeAmount uint64) (*Fragment, error) {
+	inputs := make([]*transaction.TxInput, 0)
+	prevouts := make([]*transaction.TxOutput, 0)
+
+	for _, utxo := range utxos {
+		txInput, TxOutput, err := utxo.Parse()
+		if err != nil {
+			return nil, err
+		}
+		inputs = append(inputs, txInput)
+		prevouts = append(prevouts, TxOutput)
+	}
+
+	return &Fragment{
+		Inputs:   inputs,
+		Prevouts: prevouts,
+		Change:   changeAmount,
+	}, nil
+}
+
+func (f *utxoFragmenter) createTxFromFragments(fragments []Fragment) (string, error) {
+	fragmentSizeElementsValue, err := elementsutil.SatoshiToElementsValue(f.fragmentSize)
+	if err != nil {
+		return "", err
+	}
+
+	fragmentAssetBytes, err := assetHashBytes(f.fragmentAsset)
+	if err != nil {
+		return "", err
+	}
+
+	outputScript, err := address.ToOutputScript(f.receiveAddress)
+	if err != nil {
+		return "", err
+	}
+
 	fragmentTx, err := pset.New([]*transaction.TxInput{}, []*transaction.TxOutput{}, 2, 0)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	updater, err := pset.NewUpdater(fragmentTx)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	for index, utxo := range utxos {
-		buf, err := hex.DecodeString(utxo.Hash())
-		if err != nil {
-			return nil, err
-		}
-		hashBytes := elementsutil.ReverseBytes(buf)
+	inputIndex := 0
+	var changeAmount uint64
 
-		txInput := transaction.NewTxInput(hashBytes, utxo.Index())
-		updater.AddInput(txInput)
-
-		hex, err := f.explorerSvc.GetTransactionHex(utxo.Hash())
-		if err != nil {
-			return nil, err
-		}
-
-		tx, err := transaction.NewTxFromHex(hex)
-		if err != nil {
-			return nil, err
+	for _, fragment := range fragments {
+		// add the inputs
+		for i, input := range fragment.Inputs {
+			updater.AddInput(input)
+			err = updater.AddInWitnessUtxo(fragment.Prevouts[i], inputIndex)
+			if err != nil {
+				return "", err
+			}
+			inputIndex++
 		}
 
-		prevout := tx.Outputs[int(utxo.Index())]
-
-		err = updater.AddInWitnessUtxo(prevout, index)
-		if err != nil {
-			return nil, err
-		}
+		// add a fragment output
+		fragmentOutput := transaction.NewTxOutput(fragmentAssetBytes, fragmentSizeElementsValue, outputScript)
+		updater.AddOutput(fragmentOutput)
+		// increase the change total amount
+		changeAmount += fragment.Change
 	}
 
-	base64, err := fragmentTx.ToBase64()
+	// TODO estimate the fee
+	feeValue := uint64(5000)
+	changeAmount -= feeValue
+
+	if changeAmount < 0 {
+		return "", errors.New("not enough fund to pay the fees")
+	}
+
+	feeElementsValue, err := elementsutil.SatoshiToElementsValue(feeValue)
+	if err != nil {
+		return "", err
+	}
+
+	feeOutput := transaction.NewTxOutput(fragmentAssetBytes, feeElementsValue, []byte{})
+	updater.AddOutput(feeOutput)
+
+	if changeAmount > 0 {
+		changeScript, err := address.ToOutputScript(f.changeAddress)
+		if err != nil {
+			return "", err
+		}
+
+		changeElementsValue, err := elementsutil.SatoshiToElementsValue(changeAmount)
+		if err != nil {
+			return "", err
+		}
+
+		changeOutput := transaction.NewTxOutput(fragmentAssetBytes, changeElementsValue, changeScript)
+		updater.AddOutput(changeOutput)
+	}
+
+	fragmentTxBase64, err := fragmentTx.ToBase64()
+	if err != nil {
+		return "", err
+	}
+
+	return fragmentTxBase64, nil
+}
+
+func assetHashBytes(asset string) ([]byte, error) {
+	buf, err := hex.DecodeString(asset)
 	if err != nil {
 		return nil, err
 	}
-
-	return &Fragment{
-		Pset:   base64,
-		Amount: f.fragmentSize,
-		Change: changeAmount,
-	}, nil
+	assetBuf := append([]byte{0x01}, elementsutil.ReverseBytes(buf)...)
+	return assetBuf, nil
 }
