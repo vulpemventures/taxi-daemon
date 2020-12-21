@@ -20,7 +20,7 @@ func NewInmemoryLockRepository() domain.LockRepository {
 	}
 }
 
-func (r *inmemoryLockRepository) Add(ctx context.Context, keys []domain.Lock) error {
+func (r *inmemoryLockRepository) Lock(ctx context.Context, keys []domain.Lock) error {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
@@ -31,7 +31,7 @@ func (r *inmemoryLockRepository) Add(ctx context.Context, keys []domain.Lock) er
 	return nil
 }
 
-func (r *inmemoryLockRepository) Contains(ctx context.Context, key domain.Lock) bool {
+func (r *inmemoryLockRepository) IsLocked(ctx context.Context, key domain.Lock) bool {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
@@ -39,7 +39,7 @@ func (r *inmemoryLockRepository) Contains(ctx context.Context, key domain.Lock) 
 	return ok
 }
 
-func (r *inmemoryLockRepository) Remove(ctx context.Context, key domain.Lock) error {
+func (r *inmemoryLockRepository) Unlock(ctx context.Context, key domain.Lock) error {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 

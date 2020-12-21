@@ -150,14 +150,14 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 
 	// Lock the utxo used for this topup to avoid other ones to use it
 	utxoKey := domain.UtxoToLock(utxo)
-	err = taxi.lockRepository.Add(ctx, []domain.Lock{utxoKey})
+	err = taxi.lockRepository.Lock(ctx, []domain.Lock{utxoKey})
 	if err != nil {
 		return nil, err
 	}
 
 	go func() {
 		time.Sleep(ttlUtxo)
-		taxi.lockRepository.Remove(ctx, utxoKey)
+		taxi.lockRepository.Unlock(ctx, utxoKey)
 	}()
 
 	return topupCompleted, nil
@@ -211,7 +211,7 @@ func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Ut
 	for _, utxo := range utxos {
 		utxoKey := domain.UtxoToLock(utxo)
 
-		if !taxi.lockRepository.Contains(ctx, utxoKey) {
+		if !taxi.lockRepository.IsLocked(ctx, utxoKey) {
 			availableUtxos = append(availableUtxos, utxo)
 		}
 	}
