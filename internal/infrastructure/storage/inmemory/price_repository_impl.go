@@ -49,8 +49,10 @@ func (r *inmemoryPriceRepository) GetAllPrices(_ context.Context) ([]domain.Pric
 
 	prices := make([]domain.Price, len(r.assetToPriceMap), len(r.assetToPriceMap))
 
-	for _, value := range r.assetToPriceMap {
-		prices = append(prices, value)
+        i := 0
+	for _, p := range r.assetToPriceMap {
+		prices[i] = p
+		i++
 	}
 
 	return prices, nil
