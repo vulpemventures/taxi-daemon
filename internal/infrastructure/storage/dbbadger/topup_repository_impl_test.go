@@ -2,17 +2,12 @@ package dbbadger
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
-)
-
-const (
-	testDataDir = "./test-datadir"
 )
 
 const (
@@ -144,18 +139,4 @@ func TestSetSettled(t *testing.T) {
 
 	assert.Equal(t, domain.Settled, topups[0].Status)
 	assert.Equal(t, false, topups[0].SettledAt.IsZero())
-}
-
-func dirManagementForTest(t *testing.T) {
-	err := CreateDirIfNotExist(testDataDir)
-	if err != nil {
-		t.Error(err)
-	}
-
-	t.Cleanup(func() {
-		err := os.RemoveAll(testDataDir)
-		if err != nil {
-			t.Error(err)
-		}
-	})
 }
