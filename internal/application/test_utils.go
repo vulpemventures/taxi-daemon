@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/vulpemventures/go-elements/network"
@@ -48,6 +49,7 @@ func faucet(address string, baseURL string) (string, error) {
 		return "", err
 	}
 
+	time.Sleep(5 * time.Second)
 	return respBody["txId"], nil
 }
 

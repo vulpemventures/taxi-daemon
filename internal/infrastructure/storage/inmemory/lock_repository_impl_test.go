@@ -2,7 +2,6 @@ package inmemory
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/tj/assert"
@@ -60,9 +59,7 @@ func TestUnlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !repo.IsLocked(context.Background(), lock) {
-		t.Fatal(errors.New("lock should be locked"))
-	}
+	assert.Equal(t, true, repo.IsLocked(context.Background(), lock))
 
 	err = repo.Unlock(context.Background(), lock)
 	if err != nil {
