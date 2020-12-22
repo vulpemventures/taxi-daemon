@@ -2,7 +2,6 @@ package inmemory
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/tj/assert"
