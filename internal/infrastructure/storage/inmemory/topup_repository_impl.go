@@ -15,6 +15,10 @@ type inmemoryTopupRepository struct {
 
 // NewInmemoryTopupRepository creates a new inmemory TopupRepository implementation
 func NewInmemoryTopupRepository() domain.TopupRepository {
+	return newInmemoryTopupRepository()
+}
+
+func newInmemoryTopupRepository() *inmemoryTopupRepository {
 	return &inmemoryTopupRepository{
 		topups:           make(map[string]domain.Topup),
 		repositoryLocker: &sync.Mutex{},
@@ -43,7 +47,7 @@ func (r *inmemoryTopupRepository) GetAllTopups(ctx context.Context) ([]domain.To
 	return topups, nil
 }
 
-func (r *inmemoryTopupRepository) SetCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
+func (r *inmemoryTopupRepository) MarkAsCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
 	r.repositoryLocker.Lock()
 	defer r.repositoryLocker.Unlock()
 	topup, ok := r.topups[topupID]
@@ -51,13 +55,17 @@ func (r *inmemoryTopupRepository) SetCompleted(ctx context.Context, topupID stri
 		return nil, errors.New("Topup does not exist")
 	}
 
-	topup.Complete(partial, assetAmount)
+	err := topup.Complete(partial, assetAmount)
+	if err != nil {
+		return nil, err
+	}
+
 	r.topups[topupID] = topup
 
 	return &topup, nil
 }
 
-func (r *inmemoryTopupRepository) SetSettled(ctx context.Context, topupID string, txid string) (*domain.Topup, error) {
+func (r *inmemoryTopupRepository) MarkAsSettled(ctx context.Context, topupID string, txid string) (*domain.Topup, error) {
 	r.repositoryLocker.Lock()
 	defer r.repositoryLocker.Unlock()
 	topup, ok := r.topups[topupID]
@@ -65,7 +73,10 @@ func (r *inmemoryTopupRepository) SetSettled(ctx context.Context, topupID string
 		return nil, errors.New("Topup does not exist")
 	}
 
-	topup.Settle()
+	err := topup.Settle()
+	if err != nil {
+		return nil, err
+	}
 	r.topups[topupID] = topup
 
 	return &topup, nil

@@ -36,7 +36,7 @@ var (
 type Wallet interface {
 	DerivePath(path string, network *network.Network) (*payment.Payment, error)
 	SignInput(args SignInputArgs) (string, error)
-	CreatePSET(inputs []explorer.Utxo, outputs []PsetOutputOpts) (*pset.Pset, error)
+	CreatePSET(inputs []explorer.Utxo, outputs []PsetOutputOpts) (string, error)
 }
 
 // SignInputArgs is a wrapper for SignInput method arguments
@@ -209,29 +209,29 @@ type PsetOutputOpts struct {
 func (w *wallet) CreatePSET(
 	inputs []explorer.Utxo,
 	outputs []PsetOutputOpts,
-) (*pset.Pset, error) {
+) (string, error) {
 	// create taxi tx
 	partial, err := pset.New([]*transaction.TxInput{}, []*transaction.TxOutput{}, 2, 0)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	updater, err := pset.NewUpdater(partial)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	for inputIndex, utxo := range inputs {
 		// inputs
 		input, prevout, err := utxo.Parse()
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 
 		updater.AddInput(input)
 		err = updater.AddInWitnessUtxo(prevout, inputIndex)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 	}
 
@@ -240,7 +240,7 @@ func (w *wallet) CreatePSET(
 		// 1. payout output
 		elementsValue, err := elementsutil.SatoshiToElementsValue(outputOpts.Amount)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 
 		out := transaction.NewTxOutput(
@@ -252,7 +252,12 @@ func (w *wallet) CreatePSET(
 		updater.AddOutput(out)
 	}
 
-	return partial, nil
+	base64encoded, err := partial.ToBase64()
+	if err != nil {
+		return "", nil
+	}
+
+	return base64encoded, nil
 }
 
 // ParseDerivationPath converts a derivation path string to the

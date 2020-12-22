@@ -39,7 +39,7 @@ func (r *badgerTopupRepository) GetAllTopups(ctx context.Context) ([]domain.Topu
 	return topups, err
 }
 
-func (r *badgerTopupRepository) SetCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
+func (r *badgerTopupRepository) MarkAsCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
 	var topupUpdated *domain.Topup
 
 	query := badgerhold.Where("ID").Eq(topupID)
@@ -58,7 +58,7 @@ func (r *badgerTopupRepository) SetCompleted(ctx context.Context, topupID string
 	return topupUpdated, err
 }
 
-func (r *badgerTopupRepository) SetSettled(ctx context.Context, topupID string, txID string) (*domain.Topup, error) {
+func (r *badgerTopupRepository) MarkAsSettled(ctx context.Context, topupID string, txID string) (*domain.Topup, error) {
 	var topupUpdated *domain.Topup
 
 	query := badgerhold.Where("ID").Eq(topupID)

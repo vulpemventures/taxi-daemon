@@ -6,12 +6,26 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
 
 const (
 	testDataDir = "./test-datadir"
+)
+
+const (
+	assetHash    = "youaretryingtoreadthisstringconstant"
+	assetHashBis = "zizouzizouzizouzizouzizouzizouziz"
+)
+
+var (
+	price                    = decimal.NewFromFloat(1.54)
+	topupWithCompletedStatus = domain.Topup{
+		ID:     "test",
+		Status: domain.Completed,
+	}
 )
 
 func TestAddTopup(t *testing.T) {
@@ -27,7 +41,7 @@ func TestAddTopup(t *testing.T) {
 		t.Error(err)
 	}
 
-	err = repo.AddTopup(context.Background(), domain.NewTopup("aa", 0, 1.54, time.Now()))
+	err = repo.AddTopup(context.Background(), domain.NewTopup("aa", 0, price, time.Now()))
 
 	assert.Nil(t, err)
 
@@ -47,15 +61,15 @@ func TestGetAllTopups(t *testing.T) {
 		t.Error(err)
 	}
 
-	err = repo.AddTopup(context.Background(), domain.NewTopup("aa", 0, 1.54, time.Now()))
+	err = repo.AddTopup(context.Background(), domain.NewTopup("aa", 0, price, time.Now()))
 	if err != nil {
 		t.Error(err)
 	}
-	err = repo.AddTopup(context.Background(), domain.NewTopup("aa", 0, 1.54, time.Now()))
+	err = repo.AddTopup(context.Background(), domain.NewTopup("aa", 0, price, time.Now()))
 	if err != nil {
 		t.Error(err)
 	}
-	err = repo.AddTopup(context.Background(), domain.NewTopup("aa", 0, 1.54, time.Now()))
+	err = repo.AddTopup(context.Background(), domain.NewTopup("aa", 0, price, time.Now()))
 	if err != nil {
 		t.Error(err)
 	}
@@ -68,7 +82,7 @@ func TestGetAllTopups(t *testing.T) {
 	assert.Equal(t, 3, len(topups))
 }
 
-func TestSetCompleted(t *testing.T) {
+func TestMarkAsCompleted(t *testing.T) {
 	dirManagementForTest(t)
 
 	repo, err := NewBadgerTopupRepository(testDataDir, nil)
@@ -76,7 +90,7 @@ func TestSetCompleted(t *testing.T) {
 		t.Error(err)
 	}
 
-	topupToCreate := domain.NewTopup("aa", 0, 1.54, time.Now())
+	topupToCreate := domain.NewTopup("aa", 0, price, time.Now())
 
 	err = repo.AddTopup(context.Background(), topupToCreate)
 	if err != nil {
@@ -85,7 +99,7 @@ func TestSetCompleted(t *testing.T) {
 
 	fakeAssetAmount := uint64(100)
 	fakePset := "fakepartialbase64"
-	topup, err := repo.SetCompleted(context.Background(), topupToCreate.ID, fakePset, fakeAssetAmount)
+	topup, err := repo.MarkAsCompleted(context.Background(), topupToCreate.ID, fakePset, fakeAssetAmount)
 	assert.Nil(t, err)
 
 	topups, err := repo.GetAllTopups(context.Background())
@@ -112,14 +126,12 @@ func TestSetSettled(t *testing.T) {
 		t.Error(err)
 	}
 
-	topupToCreate := domain.NewTopup("aa", 0, 1.54, time.Now())
-
-	err = repo.AddTopup(context.Background(), topupToCreate)
+	err = repo.AddTopup(context.Background(), topupWithCompletedStatus)
 	if err != nil {
 		t.Error(err)
 	}
 
-	topup, err := repo.SetSettled(context.Background(), topupToCreate.ID, "useless")
+	topup, err := repo.MarkAsSettled(context.Background(), topupWithCompletedStatus.ID, "useless")
 	assert.Nil(t, err)
 
 	topups, err := repo.GetAllTopups(context.Background())

@@ -34,7 +34,7 @@ func faucet(address string, baseURL string) (string, error) {
 	url := baseURL + "/faucet"
 	payload := map[string]string{"address": address}
 	body, _ := json.Marshal(payload)
-	resp, err := http.Post(url, "appliation/json", bytes.NewBuffer(body))
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		return "", err
 	}
