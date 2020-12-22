@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"sort"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
@@ -41,8 +40,6 @@ func TestTopupWithAsset(t *testing.T) {
 	if err != nil {
 		t.Fatal(nil)
 	}
-
-	time.Sleep(10 * time.Second)
 
 	topup, err := taxiSvc.TopupWithAsset(context.Background(), superToken)
 	assert.Nil(t, err)

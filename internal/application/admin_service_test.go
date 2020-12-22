@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
@@ -40,7 +39,11 @@ func TestListTopups(t *testing.T) {
 	if err != nil {
 		t.Fatal(nil)
 	}
-	time.Sleep(10 * time.Second)
+
+	_, err = faucet(addr, explorerEndpoint)
+	if err != nil {
+		t.Fatal(nil)
+	}
 
 	// do some topups
 	_, err = taxiSvc.TopupWithAsset(context.Background(), superToken)
