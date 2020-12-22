@@ -1,7 +1,6 @@
 package application
 
 import (
-	"bytes"
 	"context"
 	"sync"
 	"time"
@@ -16,8 +15,8 @@ import (
 )
 
 const (
-	receiveDerivationPath = "0'/0/0"
-	changeDerivationPath  = "0'/1/0"
+	derivationPathForAsset = "0'/0/0"
+	derivationPathForLBTC  = "0'/0/1"
 )
 
 // TaxiService provides interface for user UI
@@ -74,46 +73,32 @@ func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 // TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
 func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (*domain.Topup, error) {
 	ttlUtxo := 10 * time.Minute
-	totalFees := taxi.fixedFeeAmount
 
 	// check if asset is available
 	// price will be used later
-	price, assetSupported, err := taxi.priceRepository.GetPrice(ctx, assetHash)
+	price, err := taxi.priceRepository.GetPrice(ctx, assetHash)
 	if err != nil {
 		return nil, err
 	}
 
-	if !assetSupported {
+	if price == nil {
 		return nil, ErrAssetNotSupported{AssetHash: assetHash}
 	}
 
-	// fetchUtxos + coin select
+	// retrieve only the utxos that are not locked by other topups
 	utxos, err := taxi.fetchAvailableUtxos(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	utxo, err := selectOneUtxo(utxos, totalFees, taxi.network.AssetID)
+	utxo, err := selectOneUtxo(utxos, taxi.fixedFeeAmount, taxi.network.AssetID)
 	if err != nil {
 		return nil, err
 	}
-
-	// Lock utxo
-	utxoKey := domain.UtxoToLock(utxo)
-	err = taxi.lockRepository.Add(ctx, []domain.Lock{utxoKey})
-	if err != nil {
-		return nil, err
-	}
-
-	go func() {
-		time.Sleep(ttlUtxo)
-		taxi.lockRepository.Remove(ctx, utxoKey)
-	}()
 
 	expireAt := time.Now().Add(ttlUtxo)
 
-	priceToFloat, _ := price.Amount.Float64()
-	topup := domain.NewTopup(assetHash, totalFees, priceToFloat, expireAt)
+	topup := domain.NewTopup(assetHash, taxi.fixedFeeAmount, price.Amount, expireAt)
 	err = taxi.topupRepository.AddTopup(ctx, topup)
 	if err != nil {
 		return nil, err
@@ -122,21 +107,21 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	amountAsDecimal := decimal.NewFromInt(int64(taxi.fixedFeeAmount))
 	assetAmount := uint64(price.Amount.Mul(amountAsDecimal).IntPart())
 
-	receivePayment, err := taxi.getReceivePayment()
+	payment, err := taxi.getPaymentForAsset()
 	if err != nil {
 		return nil, err
 	}
 
 	outputsOpts := []wallet.PsetOutputOpts{
 		wallet.PsetOutputOpts{
-			WitnessScript: receivePayment.WitnessScript,
+			WitnessScript: payment.WitnessScript,
 			Asset:         assetHash,
 			Amount:        assetAmount,
 		},
 		wallet.PsetOutputOpts{
 			WitnessScript: []byte{},
 			Asset:         taxi.network.AssetID,
-			Amount:        totalFees,
+			Amount:        taxi.fixedFeeAmount,
 		},
 	}
 
@@ -146,29 +131,11 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	changePayment, err := taxi.getChangePayment()
-	if err != nil {
-		return nil, err
-	}
-
-	// sign the input
-
-	path := receiveDerivationPath
-
-	if bytes.Equal(taxiPset.Inputs[0].WitnessScript, changePayment.WitnessScript) {
-		path = changeDerivationPath
-	}
-
-	taxiPsetBase64, err := taxiPset.ToBase64()
-	if err != nil {
-		return nil, err
-	}
-
 	signOpts := wallet.SignInputArgs{
-		PsetBase64: taxiPsetBase64,
-		Path:       path,
+		PsetBase64: taxiPset,
+		Path:       derivationPathForLBTC,
 		InputIndex: 0,
-		HashType:   txscript.SigHashSingle + txscript.SigHashAnyOneCanPay,
+		HashType:   txscript.SigHashSingle | txscript.SigHashAnyOneCanPay,
 	}
 
 	signedPsetBase64, err := taxi.wallet.SignInput(signOpts)
@@ -176,10 +143,22 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	topupCompleted, err := taxi.topupRepository.SetCompleted(ctx, topup.ID, signedPsetBase64, assetAmount)
+	topupCompleted, err := taxi.topupRepository.MarkAsCompleted(ctx, topup.ID, signedPsetBase64, assetAmount)
 	if err != nil {
 		return nil, err
 	}
+
+	// Lock the utxo used for this topup to avoid other ones to use it
+	utxoKey := domain.UtxoToLock(utxo)
+	err = taxi.lockRepository.Lock(ctx, []domain.Lock{utxoKey})
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		time.Sleep(ttlUtxo)
+		taxi.lockRepository.Unlock(ctx, utxoKey)
+	}()
 
 	return topupCompleted, nil
 }
@@ -201,38 +180,28 @@ func (taxi *taxiService) ListAssets(ctx context.Context) []string {
 }
 
 // utils function using to fund the service
-func (taxi *taxiService) getAddresses() ([]string, error) {
-	rcvPayment, err := taxi.getReceivePayment()
+func (taxi *taxiService) getFundAddress() (string, error) {
+	paymentForLBTC, err := taxi.getPaymentForLBTC()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	rcvAddress, err := rcvPayment.WitnessPubKeyHash()
+	lbtcAddress, err := paymentForLBTC.WitnessPubKeyHash()
 	if err != nil {
-		return nil, err
-	}
-
-	changePayment, err := taxi.getChangePayment()
-	if err != nil {
-		return nil, err
-	}
-
-	changeAddress, err := changePayment.WitnessPubKeyHash()
-	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// TODO now the taxi service has only two addresses. In the future taxi will generate a set of addresses for each topup
-	return []string{rcvAddress, changeAddress}, nil
+	return lbtcAddress, nil
 }
 
 func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Utxo, error) {
-	addresses, err := taxi.getAddresses()
+	address, err := taxi.getFundAddress()
 	if err != nil {
 		return nil, err
 	}
 
-	utxos, err := taxi.explorer.GetUnspentsForAddresses(addresses, [][]byte{})
+	utxos, err := taxi.explorer.GetUnspents(address, [][]byte{})
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +211,7 @@ func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Ut
 	for _, utxo := range utxos {
 		utxoKey := domain.UtxoToLock(utxo)
 
-		if !taxi.lockRepository.Contains(ctx, utxoKey) {
+		if !taxi.lockRepository.IsLocked(ctx, utxoKey) {
 			availableUtxos = append(availableUtxos, utxo)
 		}
 	}
@@ -250,12 +219,12 @@ func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Ut
 	return availableUtxos, nil
 }
 
-func (taxi *taxiService) getReceivePayment() (*payment.Payment, error) {
-	return taxi.wallet.DerivePath(receiveDerivationPath, &taxi.network)
+func (taxi *taxiService) getPaymentForAsset() (*payment.Payment, error) {
+	return taxi.wallet.DerivePath(derivationPathForAsset, &taxi.network)
 }
 
-func (taxi *taxiService) getChangePayment() (*payment.Payment, error) {
-	return taxi.wallet.DerivePath(changeDerivationPath, &taxi.network)
+func (taxi *taxiService) getPaymentForLBTC() (*payment.Payment, error) {
+	return taxi.wallet.DerivePath(derivationPathForLBTC, &taxi.network)
 }
 
 func selectOneUtxo(utxos []explorer.Utxo, targetAmount uint64, targetAsset string) (explorer.Utxo, error) {

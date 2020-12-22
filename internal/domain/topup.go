@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/vulpemventures/liquid-taxi/pkg/utils"
+	"github.com/shopspring/decimal"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 )
 
@@ -35,9 +35,8 @@ type Topup struct {
 	AssetHash string
 	// AssetAmount is the total amount of AssetHash to provide for the topup
 	AssetAmount uint64
-	// AssetPrice is the price used for the topup
-	// price = number of satoshis of AssetHash to reach 1LBTC
-	AssetPrice float64
+	// AssetPrice is the price AssetHash/LBTC used for the topup
+	AssetPrice decimal.Decimal
 	// FeeAmount is the total amount of bitcoin fee in the topup transaction
 	FeeAmount uint64
 	// RequestedAt is the moment when topup status was REQUESTED
@@ -46,16 +45,15 @@ type Topup struct {
 	CompletedAt time.Time
 	// SettledAt is the moment when topup status was SETTLED
 	SettledAt time.Time
-	// ExpireAt is the date where the utxo used in topup's transaction can be double-spent
+	// ExpireAt is the date where the utxo used in topup's transaction can be used for other topups
 	ExpireAt time.Time
 }
 
 // NewTopup is a factory function used to create an base topup
-// The returned topup is not REQUESTED, the status is empty
 func NewTopup(
 	assetHash string,
 	totalFee uint64,
-	assetPrice float64,
+	assetPrice decimal.Decimal,
 	expireAt time.Time,
 ) Topup {
 	return Topup{
@@ -71,36 +69,48 @@ func NewTopup(
 }
 
 // Complete sets partial and assetAmount field + timestamp the complete time + update the status
-func (t *Topup) Complete(partial string, assetAmount uint64) {
-	t.CompletedAt = time.Now()
-	t.Status = Completed
-	t.Partial = partial
-	t.AssetAmount = assetAmount
+func (t *Topup) Complete(partial string, assetAmount uint64) error {
+	if t.Status == Requested {
+		t.CompletedAt = time.Now()
+		t.Status = Completed
+		t.Partial = partial
+		t.AssetAmount = assetAmount
+		return nil
+	}
+
+	return ErrTopupNeedToBeRequested
 }
 
 // Settle timestamp the settle time and update the topup status
-func (t *Topup) Settle() {
-	t.SettledAt = time.Now()
-	t.Status = Settled
+func (t *Topup) Settle() error {
+	if t.Status == Completed {
+		t.SettledAt = time.Now()
+		t.Status = Settled
+		return nil
+	}
+
+	return ErrTopupNeedToBeCompleted
 }
 
 // ToProtobufTopupMessage maps topup domain to pb.Topup message type
 func (t *Topup) ToProtobufTopupMessage() *pb.Topup {
+	price, _ := t.AssetPrice.Float64()
+
 	return &pb.Topup{
 		TopupId:     t.ID,
 		Partial:     t.Partial,
 		AssetHash:   t.AssetHash,
 		AssetAmount: t.AssetAmount,
-		AssetPrice:  float32(t.AssetPrice),
+		AssetPrice:  float32(price),
 	}
 }
 
 // ToProtobufTimestampsMessage maps topup domain to pb.Timestamps message type
 func (t *Topup) ToProtobufTimestampsMessage() *pb.Timestamps {
 	return &pb.Timestamps{
-		RequestedAt: utils.MakeMillisecondTimestamp(t.RequestedAt),
-		CompletedAt: utils.MakeMillisecondTimestamp(t.CompletedAt),
-		SettledAt:   utils.MakeMillisecondTimestamp(t.SettledAt),
+		RequestedAt: uint64(t.RequestedAt.Unix()),
+		CompletedAt: uint64(t.CompletedAt.Unix()),
+		SettledAt:   uint64(t.SettledAt.Unix()),
 	}
 }
 

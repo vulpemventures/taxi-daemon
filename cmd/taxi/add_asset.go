@@ -18,7 +18,7 @@ var addAsset = cli.Command{
 		},
 		&cli.StringFlag{
 			Name:  "price",
-			Usage: "the number of assets (in satoshis) needed to get 1 LBTC (float)",
+			Usage: "the number of assets needed to get 1 satoshi of LBTC (float)",
 		},
 	},
 	Action: addAssetAction,

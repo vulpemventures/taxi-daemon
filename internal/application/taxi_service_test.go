@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"log"
 	"sort"
 	"testing"
 	"time"
@@ -34,8 +33,7 @@ func TestTopupWithAsset(t *testing.T) {
 	}
 
 	// found taxi with LBTC
-	addresses, err := taxiSvc.getAddresses()
-	addr := addresses[0]
+	addr, err := taxiSvc.getFundAddress()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +42,7 @@ func TestTopupWithAsset(t *testing.T) {
 		t.Fatal(nil)
 	}
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	topup, err := taxiSvc.TopupWithAsset(context.Background(), superToken)
 	assert.Nil(t, err)
@@ -57,21 +55,28 @@ func TestTopupWithAsset(t *testing.T) {
 	assert.Equal(t, true, len(p.UnsignedTx.Outputs) >= 2)
 
 	var payoutOutput *transaction.TxOutput
+	var feeOutput *transaction.TxOutput
 
 	for _, out := range p.UnsignedTx.Outputs {
 		if bytes.Equal(assetHashBytes(superToken), out.Asset) {
 			payoutOutput = out
 		}
+
+		if bytes.Equal(out.Script, []byte{}) {
+			feeOutput = out
+		}
 	}
 
-	hex, err := p.UnsignedTx.ToHex()
-	if err != nil {
-		t.Fatal(err)
-	}
+	// hex, err := p.UnsignedTx.ToHex()
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
 
-	log.Print(hex)
+	// log.Print(hex)
 
 	assert.NotNil(t, payoutOutput)
+	assert.NotNil(t, feeOutput)
+	assert.Equal(t, 1, len(p.UnsignedTx.Inputs))
 }
 
 func TestListAssets(t *testing.T) {
