@@ -34,7 +34,7 @@ var (
 
 // Wallet represents the user, it is able to derive new addresses and sign an input
 type Wallet interface {
-	DerivePath(path string, network *network.Network) (*payment.Payment, error)
+	DerivePath(path string) (*payment.Payment, error)
 	SignInput(args SignInputArgs) (string, error)
 	CreatePSET(inputs []explorer.Utxo, outputs []PsetOutputOpts) (string, error)
 }
@@ -156,13 +156,13 @@ func (w *wallet) SignInput(args SignInputArgs) (string, error) {
 }
 
 // DerivePath gets a derivation path and return a payment.Payment pointer
-func (w *wallet) DerivePath(path string, network *network.Network) (*payment.Payment, error) {
+func (w *wallet) DerivePath(path string) (*payment.Payment, error) {
 	_, pubkey, err := w.deriveSigningKeyPair(path)
 	if err != nil {
 		return nil, err
 	}
 
-	p2wpkh := payment.FromPublicKey(pubkey, network, nil)
+	p2wpkh := payment.FromPublicKey(pubkey, &w.network, nil)
 	return p2wpkh, nil
 }
 
