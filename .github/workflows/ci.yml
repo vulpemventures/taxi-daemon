@@ -26,9 +26,6 @@ jobs:
           curl https://travis.nigiri.network | bash; cd ..
           docker-compose -f  tmp/docker-compose.yml up -d
 
-      - name: Run Nigiri
-        run: make start
-
       - name: Get dependencies
         run: go get -v -t -d ./...
 
