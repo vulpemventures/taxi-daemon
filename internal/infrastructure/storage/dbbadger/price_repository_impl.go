@@ -1,6 +1,7 @@
 package dbbadger
 
 import (
+	"context"
 	"path/filepath"
 
 	"github.com/dgraph-io/badger/v2"
@@ -25,4 +26,16 @@ func NewBadgerPriceRepository(baseDirPath string, logger badger.Logger) (domain.
 	return &badgerPriceRepository{
 		store: lockStore,
 	}, nil
+}
+
+func (r *badgerPriceRepository) UpdateOrCreatePrice(ctx context.Context, price domain.Price) error {
+
+}
+
+func (r *badgerPriceRepository) GetPrice(ctx context.Context, assetHash string) (*domain.Price, error) {
+
+}
+
+func (r *badgerPriceRepository) GetAllPrices(ctx context.Context) ([]domain.Price, error) {
+
 }
