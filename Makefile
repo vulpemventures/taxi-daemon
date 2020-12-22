@@ -1,9 +1,15 @@
 .PHONY: build clean deploy-dev deploy-prod run test
 
-build: 
+build-server: 
 	export GO111MODULE=on
-	env GOOS=linux go build -ldflags="-s -w" -o bin/taxi cmd/server/main.go
+	env go build -ldflags="-s -w" -o bin/taxid cmd/taxid/main.go
 	
+build-cli:
+	export GO111MODULE=on
+	env go build -ldflags="-s -w" -o bin/taxi cmd/taxi/*.go
+
+build: clean build-server build-cli
+
 clean: 
 	@echo "Clean..."
 	@rm -rf ./bin
@@ -16,29 +22,26 @@ fmt:
 deploy: clean build
 	sls deploy --verbose --stage ${STAGE} --region eu-west-1
 
-
-faucet:
-	curl -X POST -d '{"address": "ert1qlg343tpldc4wvjxn3jdq2qs35r8j5yd5kjfrrt"}' http://localhost:3001/faucet
-
 start: 
 	nigiri start --liquid
-	docker run -d --network host --name mongo-box mongo
 
 stop: 
 	nigiri stop --delete
-	docker stop mongo-box 
-	docker rm mongo-box
 
-run: clean build faucet
-	export TAXI_LAMBDA_CONTEXT=false; \
-	export TAXI_MONGO_ENDPOINT=mongodb://127.0.0.1:27017/test; \
+run: build
+	export TAXI_FIXED_FEE_AMOUNT=100000000; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
-	export TAXI_PRIVATE_KEY=1cc080a4cd371eafcad489a29664af6a7276b362fe783443ce036552482b971d; \
-	./bin/taxi
+	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
+	./bin/taxid
 
-test: fmt clean build faucet
-	export TAXI_LAMBDA_CONTEXT=false; \
-	export TAXI_MONGO_ENDPOINT=mongodb://127.0.0.1:27017/test; \
+test: fmt 
+	export TAXI_FIXED_FEE_AMOUNT=100000000; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
-	export TAXI_PRIVATE_KEY=1cc080a4cd371eafcad489a29664af6a7276b362fe783443ce036552482b971d; \
-	go test -v -race ./...
+	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
+	go test -v -short -race ./...
+
+integrationtest: fmt
+	export TAXI_FIXED_FEE_AMOUNT=100000000; \
+	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
+	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
+	go test -v -count=1 ./cmd/taxid

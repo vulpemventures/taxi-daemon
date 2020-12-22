@@ -10,6 +10,7 @@
 * Go
 * Docker
 * Docker Compose
+* Nigiri
 
 
 ### Clone
@@ -21,7 +22,8 @@ $ git clone https://github.com/vulpemventures/liquid-taxi
 ## Run
 
 ```sh
-$ make start # Run Nigiri and Mongo
+$ make build # build binary server + admin cli
+$ make start # Run Nigiri
 $ make run
 $ make stop # Stop and delete the containers
 ```
@@ -29,8 +31,9 @@ $ make stop # Stop and delete the containers
 ### Run test 
 
 ```sh
-$ make start  # Run Nigiri and Mongo
-$ make test
+$ make start  # Run Nigiri
+$ make test # Run short unit tests
+* make integrationtest # Run integration tests
 $ make stop # Stop and delete the containers
 ```
 
@@ -39,20 +42,8 @@ $ make stop # Stop and delete the containers
 ### Requirements
 
 * Go
-* Serverless CLI
-* AWS CLI
 
-### Staging
 
-```sh
-$ make KEY=<private> MONGO=<uri> STAGE=dev deploy
-```
-
-### Production
-
-```sh
-$ make KEY=<private> MONGO=<uri> STAGE=production deploy
-```
 
 
 

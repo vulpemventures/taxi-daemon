@@ -1,0 +1,68 @@
+package application
+
+import (
+	"context"
+
+	"github.com/shopspring/decimal"
+	"github.com/vulpemventures/liquid-taxi/internal/domain"
+)
+
+// AdminService administrates a TaxiService
+type AdminService interface {
+	ListTopups(ctx context.Context, assetHashFilter string) ([]domain.Topup, error)
+	AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error
+	ChangeSpread(ctx context.Context, basisPoint uint32)
+}
+
+type adminService struct {
+	topupRepository domain.TopupRepository
+	priceRepository domain.PriceRepository
+}
+
+// NewAdminService is a factory function for AdminService interface
+func NewAdminService(
+	topupRepository domain.TopupRepository,
+	priceRepository domain.PriceRepository,
+) AdminService {
+	return &adminService{
+		topupRepository: topupRepository,
+		priceRepository: priceRepository,
+	}
+}
+
+func (adminSvc *adminService) AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error {
+	return adminSvc.priceRepository.UpdateOrCreatePrice(ctx, domain.Price{
+		AssetHash: assetHash,
+		Amount:    price,
+	})
+}
+
+// ListTopups returns all the topups present in the taxi's topup repository
+// optionnaly filtered by assetHash
+func (adminSvc *adminService) ListTopups(ctx context.Context, assetHashFilter string) ([]domain.Topup, error) {
+	topups, err := adminSvc.topupRepository.GetAllTopups(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// if no filter: return all the topups
+	if assetHashFilter == "" {
+		return topups, nil
+	}
+
+	// else : filter by assetHash
+	filteredTopups := make([]domain.Topup, 0)
+
+	for _, topup := range topups {
+		if topup.AssetHash == assetHashFilter {
+			filteredTopups = append(filteredTopups, topup)
+		}
+	}
+
+	return filteredTopups, nil
+}
+
+// ChangeSpread sets the basisPoint of the taxiService
+func (adminSvc *adminService) ChangeSpread(_ context.Context, basisPoint uint32) {
+	panic("not implemented")
+}
