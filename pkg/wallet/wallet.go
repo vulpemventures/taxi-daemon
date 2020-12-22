@@ -137,8 +137,8 @@ func (w *wallet) SignInput(args SignInputArgs) (string, error) {
 		return "", err
 	}
 
-	// check the signatures
-	valid, err := p.ValidateAllSignatures()
+	// check the signature
+	valid, err := p.ValidateInputSignatures(args.InputIndex)
 	if err != nil {
 		return "", err
 	}

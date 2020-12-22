@@ -47,6 +47,7 @@ type utxoFragmenter struct {
 	utxosMap            map[string][]explorer.Utxo
 	locker              sync.Locker
 	alreadyUsedUtxosMap map[explorer.Utxo]bool
+	errorHandler        func(err error)
 	fragmentPSETChan    chan string
 	receiveAddress      string
 	changeAddress       string
@@ -94,7 +95,7 @@ func (f *utxoFragmenter) GetFragmentPSETChan() chan string {
 }
 
 func (f *utxoFragmenter) Start() {
-	f.crawlerSvc.Start()
+	go f.crawlerSvc.Start()
 	crawlerEventChan := f.crawlerSvc.GetEventChannel()
 
 	for {
@@ -104,22 +105,23 @@ func (f *utxoFragmenter) Start() {
 		case <-f.ticker.C:
 			fragments := f.createFragments()
 			if len(fragments) > 0 {
-				f.createTxFromFragments(fragments)
+				psetBase64, err := f.createTxFromFragments(fragments)
+				if err != nil {
+					f.errorHandler(err)
+					continue
+				}
+				f.fragmentPSETChan <- psetBase64
 			}
+		case <-f.quitChan:
+			return
 		}
-	}
-}
-
-func (f *utxoFragmenter) handleEvent(crawlerEvent crawler.Event) {
-	addressEvent, isAddressEvent := crawlerEvent.(crawler.AddressEvent)
-	if isAddressEvent {
-		// addressEvent.
-		f.safeSetUtxos(addressEvent.Address, addressEvent.Utxos)
 	}
 }
 
 func (f *utxoFragmenter) Stop() {
 	f.crawlerSvc.Stop()
+	f.quitChan <- 1
+	close(f.fragmentPSETChan)
 }
 
 func (f *utxoFragmenter) AddAddress(address string) {
@@ -137,6 +139,14 @@ func (f *utxoFragmenter) RemoveAddress(address string) {
 		AccountIndex: -1,
 		BlindingKey:  []byte{},
 	})
+}
+
+func (f *utxoFragmenter) handleEvent(crawlerEvent crawler.Event) {
+	addressEvent, isAddressEvent := crawlerEvent.(crawler.AddressEvent)
+	if isAddressEvent {
+		// addressEvent.
+		f.safeSetUtxos(addressEvent.Address, addressEvent.Utxos)
+	}
 }
 
 func (f *utxoFragmenter) safeSetUtxos(address string, utxos []explorer.Utxo) {
