@@ -49,7 +49,7 @@ func TestTaxiServer(t *testing.T) {
 
 	// SERVER SIDE --->
 	// The admin connects to admin interface
-	conn, err := g.Dial("localhost:8081", g.WithInsecure())
+	conn, err := g.Dial("localhost:8000", g.WithInsecure())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestTaxiServer(t *testing.T) {
 
 	// CLIENT SIDE --->
 	// Alice connect to server
-	conn, err = g.Dial("localhost:8080", g.WithInsecure())
+	conn, err = g.Dial("localhost:7000", g.WithInsecure())
 	if err != nil {
 		t.Fatal(err)
 	}
