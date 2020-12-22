@@ -23,10 +23,10 @@ type AdminClient interface {
 	ListTopups(ctx context.Context, in *ListTopupsRequest, opts ...grpc.CallOption) (*ListTopupsReply, error)
 	// ListAddresses returns a list of addresses of the taxi wallet with their derivation path
 	ListAddresses(ctx context.Context, in *ListAddressesRequest, opts ...grpc.CallOption) (*ListAddressesReply, error)
-	// WalletBalance returns total unspent outputs (confirmed and unconfirmed), all
+	// Balance returns total unspent outputs (confirmed and unconfirmed), all
 	// confirmed unspent outputs and all unconfirmed unspent outputs under control
 	// of the wallet.
-	WalletBalance(ctx context.Context, in *WalletBalanceRequest, opts ...grpc.CallOption) (*WalletBalanceReply, error)
+	Balance(ctx context.Context, in *BalanceRequest, opts ...grpc.CallOption) (*BalanceReply, error)
 	// SendToMany sends funds to many outputs out of taxi wallet
 	SendToMany(ctx context.Context, in *SendToManyRequest, opts ...grpc.CallOption) (*SendToManyReply, error)
 }
@@ -66,9 +66,9 @@ func (c *adminClient) ListAddresses(ctx context.Context, in *ListAddressesReques
 	return out, nil
 }
 
-func (c *adminClient) WalletBalance(ctx context.Context, in *WalletBalanceRequest, opts ...grpc.CallOption) (*WalletBalanceReply, error) {
-	out := new(WalletBalanceReply)
-	err := c.cc.Invoke(ctx, "/Admin/WalletBalance", in, out, opts...)
+func (c *adminClient) Balance(ctx context.Context, in *BalanceRequest, opts ...grpc.CallOption) (*BalanceReply, error) {
+	out := new(BalanceReply)
+	err := c.cc.Invoke(ctx, "/Admin/Balance", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -94,10 +94,10 @@ type AdminServer interface {
 	ListTopups(context.Context, *ListTopupsRequest) (*ListTopupsReply, error)
 	// ListAddresses returns a list of addresses of the taxi wallet with their derivation path
 	ListAddresses(context.Context, *ListAddressesRequest) (*ListAddressesReply, error)
-	// WalletBalance returns total unspent outputs (confirmed and unconfirmed), all
+	// Balance returns total unspent outputs (confirmed and unconfirmed), all
 	// confirmed unspent outputs and all unconfirmed unspent outputs under control
 	// of the wallet.
-	WalletBalance(context.Context, *WalletBalanceRequest) (*WalletBalanceReply, error)
+	Balance(context.Context, *BalanceRequest) (*BalanceReply, error)
 	// SendToMany sends funds to many outputs out of taxi wallet
 	SendToMany(context.Context, *SendToManyRequest) (*SendToManyReply, error)
 	mustEmbedUnimplementedAdminServer()
@@ -116,8 +116,8 @@ func (*UnimplementedAdminServer) ListTopups(context.Context, *ListTopupsRequest)
 func (*UnimplementedAdminServer) ListAddresses(context.Context, *ListAddressesRequest) (*ListAddressesReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListAddresses not implemented")
 }
-func (*UnimplementedAdminServer) WalletBalance(context.Context, *WalletBalanceRequest) (*WalletBalanceReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method WalletBalance not implemented")
+func (*UnimplementedAdminServer) Balance(context.Context, *BalanceRequest) (*BalanceReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Balance not implemented")
 }
 func (*UnimplementedAdminServer) SendToMany(context.Context, *SendToManyRequest) (*SendToManyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendToMany not implemented")
@@ -182,20 +182,20 @@ func _Admin_ListAddresses_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Admin_WalletBalance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WalletBalanceRequest)
+func _Admin_Balance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BalanceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServer).WalletBalance(ctx, in)
+		return srv.(AdminServer).Balance(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Admin/WalletBalance",
+		FullMethod: "/Admin/Balance",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServer).WalletBalance(ctx, req.(*WalletBalanceRequest))
+		return srv.(AdminServer).Balance(ctx, req.(*BalanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -235,8 +235,8 @@ var _Admin_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Admin_ListAddresses_Handler,
 		},
 		{
-			MethodName: "WalletBalance",
-			Handler:    _Admin_WalletBalance_Handler,
+			MethodName: "Balance",
+			Handler:    _Admin_Balance_Handler,
 		},
 		{
 			MethodName: "SendToMany",

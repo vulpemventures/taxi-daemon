@@ -13,7 +13,7 @@ service Admin {
   // of the wallet.
   rpc Balance(BalanceRequest) returns (BalanceReply);
   // SendToMany sends funds to many outputs out of taxi wallet
-   rpc SendToMany(SendToManyRequest) returns (SendToManyReply);
+  rpc SendToMany(SendToManyRequest) returns (SendToManyReply);
 }
 
 message AddAssetRequest {
