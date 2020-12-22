@@ -75,7 +75,6 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	ttlUtxo := 10 * time.Minute
 
 	// check if asset is available
-	// price will be used later
 	price, err := taxi.priceRepository.GetPrice(ctx, assetHash)
 	if err != nil {
 		return nil, err
