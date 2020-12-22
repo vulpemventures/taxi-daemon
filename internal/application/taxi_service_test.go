@@ -67,13 +67,6 @@ func TestTopupWithAsset(t *testing.T) {
 		}
 	}
 
-	// hex, err := p.UnsignedTx.ToHex()
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
-
-	// log.Print(hex)
-
 	assert.NotNil(t, payoutOutput)
 	assert.NotNil(t, feeOutput)
 	assert.Equal(t, 1, len(p.UnsignedTx.Inputs))
