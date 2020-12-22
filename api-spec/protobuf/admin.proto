@@ -8,10 +8,10 @@ service Admin {
   rpc ListTopups(ListTopupsRequest) returns (ListTopupsReply);
   // ListAddresses returns a list of addresses of the taxi wallet with their derivation path
   rpc ListAddresses(ListAddressesRequest) returns (ListAddressesReply);
-  // WalletBalance returns total unspent outputs (confirmed and unconfirmed), all
+  // Balance returns total unspent outputs (confirmed and unconfirmed), all
   // confirmed unspent outputs and all unconfirmed unspent outputs under control
   // of the wallet.
-  rpc WalletBalance(WalletBalanceRequest) returns (WalletBalanceReply);
+  rpc Balance(BalanceRequest) returns (BalanceReply);
   // SendToMany sends funds to many outputs out of taxi wallet
    rpc SendToMany(SendToManyRequest) returns (SendToManyReply);
 }
@@ -41,8 +41,8 @@ message ListAddressesReply{
   repeated AddressInfo addresses = 1;
 }
 
-message WalletBalanceRequest {}
-message WalletBalanceReply {
+message BalanceRequest {}
+message BalanceReply {
   // The balance info (total, confirmed, unconfirmed) of the wallet grouped by
   // asset
   map<string, BalanceInfo> balance = 1;
