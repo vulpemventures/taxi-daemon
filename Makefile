@@ -13,6 +13,12 @@ build: clean build-server build-cli
 clean: 
 	@echo "Clean..."
 	@rm -rf ./bin
+	@echo "Clean test datadir..."
+	@rm -rf ./taxi-server/test-taxi-datadir
+
+cleantest:
+	@echo "Clean test datadir..."
+	@rm -rf ./taxi-server/test-taxi-datadir/
 
 ## gofmt: Go Format
 fmt:
@@ -44,8 +50,10 @@ test: fmt
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
 	go test -v -short -race ./...
 
-integrationtest: fmt
+servertest: fmt
 	export TAXI_FIXED_FEE_AMOUNT=100000000; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
-	go test -v -count=1 ./cmd/taxid
+	go test -v -count=1 ./cmd/taxid;
+
+integrationtest: servertest	cleantest

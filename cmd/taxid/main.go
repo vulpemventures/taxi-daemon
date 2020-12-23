@@ -10,20 +10,41 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
+	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/application"
-	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
+	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/dbbadger"
 	"github.com/vulpemventures/liquid-taxi/internal/interfaces/grpc"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 	g "google.golang.org/grpc"
 )
 
 func main() {
-	log.Info("Taxi server is starting...")
+	log.Info("---- Liquid Taxi ----")
 
-	topupRepository := inmemory.NewInmemoryTopupRepository()
-	lockRepository := inmemory.NewInmemoryLockRepository()
-	priceRepository := inmemory.NewInmemoryPriceRepository()
+	log.Info("loading datadir...")
+
+	datadirPath := config.GetString(config.DatadirKey)
+
+	err := dbbadger.CreateDirIfNotExist(datadirPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	topupRepository, err := dbbadger.NewBadgerTopupRepository(datadirPath, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	lockRepository, err := dbbadger.NewBadgerLockRepository(datadirPath, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	priceRepository, err := dbbadger.NewBadgerPriceRepository(datadirPath, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Info("Taxi server is starting...")
 
 	taxiSvcOptions := application.NewTaxiServiceArgs{
 		Mnemonic:        strings.Split(config.GetString(config.MnemonicKey), " "),
@@ -51,7 +72,7 @@ func main() {
 	taxiServer := g.NewServer()
 	adminServer := g.NewServer()
 
-	pb.RegisterAdminServer(adminServer, adminHandler)
+	admin.RegisterAdminServer(adminServer, adminHandler)
 	pb.RegisterTaxiServer(taxiServer, taxiHandler)
 
 	domainURL := "localhost"
