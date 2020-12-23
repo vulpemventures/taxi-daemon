@@ -18,7 +18,7 @@ service Admin {
 
 message AddAssetRequest {
   string asset_hash = 1; // The asset_hash to update (or to create if the taxi doesn't know it)
-  float price = 2; // The current prive for the given asset hash
+  float price = 2; // The current price for the given asset hash
 }
 
 message AddAssetReply {}
@@ -126,4 +126,3 @@ message Timestamps {
   uint64 settled_at = 3; // the unix timestamp of the block in wich the topup is included in the chain.
   uint64 expired_at = 9; // the unix timestamp after wich the locked bitcoin input could have been double-spent (if any)
 }
-
