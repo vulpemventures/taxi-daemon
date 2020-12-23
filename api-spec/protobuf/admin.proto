@@ -76,7 +76,7 @@ message SendToManyReply {
 
 message AddressInfo {
   string address = 1; // Liquid address
-  string derivation_path = 2; //  Derivation path of the address e.g. "84'/1'/0'/0/0"
+  string derivation_path = 2; //  Derivation path of the address e.g. "m/84'/1'/0'/0/0"
   string public_key = 3; // The hex encoded public key for the derivation path 
   int64 index = 4; // Index of the address
 }
