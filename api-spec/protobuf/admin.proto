@@ -1,0 +1,129 @@
+syntax = "proto3";
+option go_package = "github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin";
+
+service Admin {
+  // AddAsset lets update the asset_hash with price if exists, or creates it
+  rpc AddAsset(AddAssetRequest) returns (AddAssetReply);
+  // ListTopups returns all the internal topups
+  rpc ListTopups(ListTopupsRequest) returns (ListTopupsReply);
+  // ListAddresses returns a list of addresses of the taxi wallet with their derivation path
+  rpc ListAddresses(ListAddressesRequest) returns (ListAddressesReply);
+  // Balance returns total unspent outputs (confirmed and unconfirmed), all
+  // confirmed unspent outputs and all unconfirmed unspent outputs under control
+  // of the wallet.
+  rpc Balance(BalanceRequest) returns (BalanceReply);
+  // SendToMany sends funds to many outputs out of taxi wallet
+  rpc SendToMany(SendToManyRequest) returns (SendToManyReply);
+}
+
+message AddAssetRequest {
+  string asset_hash = 1; // The asset_hash to update (or to create if the taxi doesn't know it)
+  float price = 2; // The current price for the given asset hash
+}
+
+message AddAssetReply {}
+
+
+message ListTopupsRequest {
+  string asset_hash = 1; // the asset hash to filter the topups. If empty, all topups of all assets will be returned
+}
+message ListTopupsReply {
+  repeated TopupInfo topups = 1;
+}
+
+
+message ListAddressesRequest{
+  int64 start = 1; // Which index to start from
+  int64 number = 2; // Number of addresses to retrieve
+  bool change = 3; // true for internal chain, false for external
+}
+message ListAddressesReply{
+  repeated AddressInfo addresses = 1;
+}
+
+message BalanceRequest {}
+message BalanceReply {
+  // The balance info (total, confirmed, unconfirmed) of the wallet grouped by
+  // asset
+  map<string, BalanceInfo> balance = 1;
+}
+
+
+
+message SendToManyRequest {
+  /*
+  A slice of the outputs that should be created in the transaction produced.
+  */
+  repeated TxOut outputs = 1;
+  /*
+   The number of millisatoshis per byte that should be used when crafting
+   this transaction.
+   */
+  int64 millisat_per_byte = 2;
+
+  // Optional: if true the transaction will be pushed to the network
+  bool push = 3;
+}
+
+message SendToManyReply {
+  /*
+    The serialized transaction sent out on the network.
+    */
+  bytes raw_tx = 1;
+}
+
+
+
+message AddressInfo {
+  string address = 1; // Liquid address
+  string derivation_path = 2; //  Derivation path of the address e.g. "m/84'/1'/0'/0/0"
+  string public_key = 3; // The hex encoded public key for the derivation path 
+  int64 index = 4; // Index of the address
+}
+
+message BalanceInfo {
+  // The balance of the wallet
+  uint64 total_balance = 1;
+
+  // The confirmed balance of a wallet(with >= 1 confirmations)
+  uint64 confirmed_balance = 2;
+
+  // The unconfirmed balance of a wallet(with 0 confirmations)
+  uint64 unconfirmed_balance = 3;
+}
+
+message TxOut {
+  // The asset being spent
+  string asset = 1;
+  // The value of the output being spent.
+  int64 value = 2;
+  // The confidential address of the output being spent.
+  string address = 3;
+}
+message Topup {
+  string topup_id = 1; //random identifier of the currer topup
+  string partial = 2; // PSET signed with SIGHASH_SINGLE | ANYONECANPAY
+  string asset_hash = 3; // the asset hash used as payout for bitcoin fees
+  uint64 asset_amount = 4; // the asset denominated amount expressed in satoshis to be used as payout. It includes also the spread as taxi service fee
+  float asset_price = 5; // the price of bitcoin expressed in asset
+  int32 basis_point = 6; // the spread expressed in basis point on top the amount needed to repay for bitcoin fees
+}
+message TopupInfo {
+  Topup topup = 1;
+  enum Status {
+    REQUESTED = 0; // when the request for a topup has been received by the taxi
+    COMPLETED = 1; // when the reply with a partially signed topup has been delivered to the client 
+    SETTLED = 2; // when the topup has been included in the blockchain
+  }
+  Status status = 2;
+  uint64 fee_amount = 3; // amount in satoshis of bitcoin needed to cover the fees
+  uint64 millisat_per_byte = 4; // how many millisatoshi per byte we want to spend. ie. 0.1 sat/byte is 100
+  Timestamps times = 5; // the timestamps of each status change
+  string txid = 6; // the tx hash when the topup is settled, empty otherwise
+}
+message Timestamps {
+  uint64 requested_at = 1; // the unix timestamp of when the taxi received the request of a topup from a client
+  uint64 completed_at = 2; // the unix timestamp of when the taxi completed the topup and responded to client
+  uint64 settled_at = 3; // the unix timestamp of the block in wich the topup is included in the chain.
+  uint64 expired_at = 9; // the unix timestamp after wich the locked bitcoin input could have been double-spent (if any)
+}

@@ -9,7 +9,7 @@ import (
 	"path"
 
 	"github.com/btcsuite/btcutil"
-	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
+	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
 	"google.golang.org/grpc"
 )
 
@@ -78,13 +78,13 @@ func merge(maps ...map[string]string) map[string]string {
 	return merge
 }
 
-func getAdminClient() (pb.AdminClient, func() error, error) {
+func getAdminClient() (admin.AdminClient, func() error, error) {
 	conn, err := getClientConn()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return pb.NewAdminClient(conn), conn.Close, nil
+	return admin.NewAdminClient(conn), conn.Close, nil
 }
 
 func getClientConn() (*grpc.ClientConn, error) {

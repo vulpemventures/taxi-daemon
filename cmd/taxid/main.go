@@ -10,6 +10,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
+	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/application"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/dbbadger"
@@ -64,7 +65,7 @@ func main() {
 	taxiServer := g.NewServer()
 	adminServer := g.NewServer()
 
-	pb.RegisterAdminServer(adminServer, adminHandler)
+	admin.RegisterAdminServer(adminServer, adminHandler)
 	pb.RegisterTaxiServer(taxiServer, taxiHandler)
 
 	domainURL := "localhost"

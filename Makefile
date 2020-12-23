@@ -1,4 +1,4 @@
-.PHONY: build clean deploy-dev deploy-prod run test
+.PHONY: build clean deploy-dev deploy-prod run test proto
 
 build-server: 
 	export GO111MODULE=on
@@ -33,6 +33,10 @@ start:
 
 stop: 
 	nigiri stop --delete
+
+proto:
+	chmod u+x ./scripts/compile-proto
+	./scripts/compile-proto
 
 run: build
 	export TAXI_FIXED_FEE_AMOUNT=100000000; \

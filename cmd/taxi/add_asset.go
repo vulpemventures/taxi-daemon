@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/urfave/cli/v2"
-	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
+	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
 )
 
 var addAsset = cli.Command{
@@ -35,7 +35,7 @@ func addAssetAction(ctx *cli.Context) error {
 	assetHash := ctx.String("asset")
 	price := float32(ctx.Float64("price"))
 
-	_, err = adminClient.AddAsset(context.Background(), &pb.AddAssetRequest{
+	_, err = adminClient.AddAsset(context.Background(), &admin.AddAssetRequest{
 		AssetHash: assetHash,
 		Price:     price,
 	})
