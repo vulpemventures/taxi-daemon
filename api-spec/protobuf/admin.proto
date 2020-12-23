@@ -25,7 +25,7 @@ message AddAssetReply {}
 
 
 message ListTopupsRequest {
-  string asset_hash = 1; // the asset hash to filetr the topups. If empty, all topups of all assets will be returned
+  string asset_hash = 1; // the asset hash to filter the topups. If empty, all topups of all assets will be returned
 }
 message ListTopupsReply {
   repeated TopupInfo topups = 1;
