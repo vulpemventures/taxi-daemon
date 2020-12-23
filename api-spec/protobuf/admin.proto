@@ -18,14 +18,14 @@ service Admin {
 
 message AddAssetRequest {
   string asset_hash = 1; // The asset_hash to update (or to create if the taxi doesn't know it)
-  float price = 2; // The current prive for the given asset hash
+  float price = 2; // The current price for the given asset hash
 }
 
 message AddAssetReply {}
 
 
 message ListTopupsRequest {
-  string asset_hash = 1; // the asset hash to filetr the topups. If empty, all topups of all assets will be returned
+  string asset_hash = 1; // the asset hash to filter the topups. If empty, all topups of all assets will be returned
 }
 message ListTopupsReply {
   repeated TopupInfo topups = 1;
@@ -76,7 +76,7 @@ message SendToManyReply {
 
 message AddressInfo {
   string address = 1; // Liquid address
-  string derivation_path = 2; //  Derivation path of the address e.g. "84'/1'/0'/0/0"
+  string derivation_path = 2; //  Derivation path of the address e.g. "m/84'/1'/0'/0/0"
   string public_key = 3; // The hex encoded public key for the derivation path 
   int64 index = 4; // Index of the address
 }
@@ -127,4 +127,3 @@ message Timestamps {
   uint64 settled_at = 3; // the unix timestamp of the block in wich the topup is included in the chain.
   uint64 expired_at = 9; // the unix timestamp after wich the locked bitcoin input could have been double-spent (if any)
 }
-
