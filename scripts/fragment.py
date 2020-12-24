@@ -10,7 +10,6 @@ addresses = [
     "XNqdSvixmaVqgrgEEpSA9s1EEtGfPoAZoH",
     "XTL4dN9RwkvFp2P3bL8bG2CQST7rCLGCAK",
 ]
-change_address = "XJzJ7WeuLJ5oWqDSyN2dNbbWmGo5fr6ntb"
 fee_amount = 0.00005
 fragment_size = 0.0001
 
@@ -58,38 +57,40 @@ def selectUxtos(unspents, amount):
 
 
 def craftFragmentTx():
-    unspents = call(
-        'listunspent',
-        [
-            1,
-            9999999,
-            [],
-            False,
-            {
-                'asset': 'bitcoin',
-                'maximumAmount': 200.0
-            }
-        ]
-    )
+    # unspents = call(
+    #     'listunspent',
+    #     [
+    #         1,
+    #         9999999,
+    #         [],
+    #         False,
+    #         {
+    #             'asset': 'bitcoin',
+    #             'maximumAmount': 200.0
+    #         }
+    #     ]
+    # )
 
-    utxo_keys, change = selectUxtos(unspents, amount_need)
+    # utxo_keys, change = selectUxtos(unspents, amount_need)
 
     inputs = []
     outputs = []
 
-    for key in utxo_keys:
-        inputs.append(key)
+    # for key in utxo_keys:
+    #     inputs.append(key)
 
     for i in range(number_of_fragments):
-        fragment_output = {addresses[i]: str(fragment_size)}
+        fragment_output = {addresses[i]: fragment_size}
         outputs.append(fragment_output)
 
-    if change > 0:
-        change_output = {change_address: str(change)}
-        outputs.append(change_output)
+    # if change > 0:
+    #     change_output = {change_address: change}
+    #     print(change)
+    #     outputs.append(change_output)
 
-    fee_output = {'fee': str(fee_amount)}
-    outputs.append(fee_output)
+    # fee_output = {'fee': fee_amount}
+    # outputs.append(fee_output)
+    # print(fee_amount)
 
     return call('createrawtransaction', [inputs, outputs])
 
@@ -102,7 +103,14 @@ def signTx(hex):
     return sign_result['hex']
 
 
+# def sendTx(hex):
+    # call('send')
+
+
 fragmentTxHex = craftFragmentTx()
-signedTxHex = signTx(fragmentTxHex)
+fundedTx = call('fundrawtransaction', [fragmentTxHex])['hex']
+blindedTxHex = call('blindrawtransaction', [fundedTx])
+signedTxHex = signTx(blindedTxHex)
+
 
 print(signedTxHex)
