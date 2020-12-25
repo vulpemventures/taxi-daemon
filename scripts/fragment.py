@@ -1,5 +1,6 @@
 import requests
 import json
+import sys
 
 url = "http://127.0.0.1:7041/"
 rpc_user = "admin1"
@@ -10,6 +11,7 @@ addresses = [
     "XNqdSvixmaVqgrgEEpSA9s1EEtGfPoAZoH",
     "XTL4dN9RwkvFp2P3bL8bG2CQST7rCLGCAK",
 ]
+
 fee_amount = 0.00005
 fragment_size = 0.0001
 
@@ -18,11 +20,16 @@ amount_need = float(number_of_fragments) * fragment_size + fee_amount
 
 
 def error(message):
+    """Print an error message and exit the program."""
     print(message)
-    exit(-1)
+    sys.exit(-1)
 
 
 def call(method, params):
+    """
+    call function returns request an elements node rpc method with an array of params.
+    need global vars: rpc_user, rpc_pass and url.
+    """
     payload = json.dumps(
         {"jsonrpc": "1.0", "method": method, "params": params})
     headers = {'content-type': "application/json", 'cache-control': "no-cache"}
@@ -41,61 +48,30 @@ def call(method, params):
         print('No response from Node, check Bitcoin is running on this machine')
 
 
-def selectUxtos(unspents, amount):
-    total = 0.0
-    selected = []
-
-    for u in unspents:
-        utxoKey = {'txid': u['txid'], 'vout': u['vout']}
-        selected.append(utxoKey)
-        total = total + u['amount']
-        if total >= amount:
-            change = total - amount
-            return selected, change
-
-    error("Error selectUtxos: not enough BTC in your wallet")
-
-
-def craftFragmentTx():
-    # unspents = call(
-    #     'listunspent',
-    #     [
-    #         1,
-    #         9999999,
-    #         [],
-    #         False,
-    #         {
-    #             'asset': 'bitcoin',
-    #             'maximumAmount': 200.0
-    #         }
-    #     ]
-    # )
-
-    # utxo_keys, change = selectUxtos(unspents, amount_need)
-
-    inputs = []
+def createFragmentTx():
+    """call createrawtransaction RPC with 0 inputs and all the fragment outputs."""
     outputs = []
-
-    # for key in utxo_keys:
-    #     inputs.append(key)
 
     for i in range(number_of_fragments):
         fragment_output = {addresses[i]: fragment_size}
         outputs.append(fragment_output)
 
-    # if change > 0:
-    #     change_output = {change_address: change}
-    #     print(change)
-    #     outputs.append(change_output)
+    return call('createrawtransaction', [[], outputs])
 
-    # fee_output = {'fee': fee_amount}
-    # outputs.append(fee_output)
-    # print(fee_amount)
 
-    return call('createrawtransaction', [inputs, outputs])
+def fundTx(hex):
+    """
+    Use fundrawtransaction RPC to fill transaction's vin, add the fee output and the change one if needed.
+    """
+    fund_raw_tx_result = call('fundrawtransaction', [hex])
+    print('you will pay ', fund_raw_tx_result['fee'], '(fees)')
+    return fund_raw_tx_result['hex']
 
 
 def signTx(hex):
+    """
+    Use signrawtransactionwithwallet RPC to sign the transaction.
+    """
     sign_result = call('signrawtransactionwithwallet', [hex])
     if sign_result['complete'] == False:
         error('Error signTx: the wallet is not able to sign the transaction')
@@ -103,14 +79,20 @@ def signTx(hex):
     return sign_result['hex']
 
 
-# def sendTx(hex):
-    # call('send')
+def sendTx(hex):
+    return call('sendrawtransaction', [hex])
 
 
-fragmentTxHex = craftFragmentTx()
-fundedTx = call('fundrawtransaction', [fragmentTxHex])['hex']
-blindedTxHex = call('blindrawtransaction', [fundedTx])
-signedTxHex = signTx(blindedTxHex)
-
-
-print(signedTxHex)
+print('create the transaction...')
+tx = createFragmentTx()
+print('fund the transacton...')
+tx = fundTx(tx)
+print('blind the transaction...')
+tx = call('blindrawtransaction', [tx])
+print('sign the transaction with wallet...')
+tx = signTx(tx)
+print('send the transaction...')
+txid = sendTx(tx)
+print()
+print('Transaction successfully broadcasted.')
+print('txid: ', txid)
