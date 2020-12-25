@@ -1,22 +1,35 @@
 import requests
 import json
 import sys
+import argparse
 
-url = "http://127.0.0.1:7041/"
-rpc_user = "admin1"
-rpc_pass = "123"
 
-addresses = [
-    "XQFscDmxh6N9L5SknW6XxDHvjie4xfH8Bu",
-    "XNqdSvixmaVqgrgEEpSA9s1EEtGfPoAZoH",
-    "XTL4dN9RwkvFp2P3bL8bG2CQST7rCLGCAK",
-]
+my_parser = argparse.ArgumentParser(
+    description='Send a fixed amount of BTC to a set of addresses')
 
-fee_amount = 0.00005
-fragment_size = 0.0001
+my_parser.add_argument('--url', action='store', type=str,
+                       default="http://127.0.0.1:7041/",
+                       help="the node RPC interface URL")
+my_parser.add_argument('--rpc_user', action='store',
+                       type=str, default="admin1",
+                       help="the node RPC username")
+my_parser.add_argument('--rpc_pass', action='store',
+                       type=str, default="123",
+                       help="the node RPC password")
+my_parser.add_argument('--fragment_size', action='store',
+                       type=float, required=True,
+                       help="the amount to send as fragment to each addresses")
+my_parser.add_argument('--addresses', nargs='+',
+                       help="a set of addresses (determine the number of fragment), all addresses must be different", required=True)
 
+args = my_parser.parse_args()
+
+url = args.url
+rpc_user = args.rpc_user
+rpc_pass = args.rpc_pass
+addresses = args.addresses
+fragment_size = args.fragment_size
 number_of_fragments = len(addresses)
-amount_need = float(number_of_fragments) * fragment_size + fee_amount
 
 
 def error(message):
@@ -45,7 +58,7 @@ def call(method, params):
     except requests.exceptions.RequestException as e:
         print(e)
     except:
-        print('No response from Node, check Bitcoin is running on this machine')
+        print('No response from Node, check Elements is running on this machine (or do you provide right rpc credentials?)')
 
 
 def createFragmentTx():
@@ -81,6 +94,14 @@ def signTx(hex):
 
 def sendTx(hex):
     return call('sendrawtransaction', [hex])
+
+
+print('--- fragmenter ---')
+print()
+print('number of fragments:', number_of_fragments)
+print('fragment size:', fragment_size)
+print(number_of_fragments*fragment_size, 'BTC will be spend (+fees)')
+print()
 
 
 print('create the transaction...')
