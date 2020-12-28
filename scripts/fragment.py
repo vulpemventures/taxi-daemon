@@ -109,7 +109,8 @@ def fundTx(hex):
     """
     Use fundrawtransaction RPC to fill transaction's vin, add the fee output and the change one if needed.
     """
-    fund_raw_tx_result = call('fundrawtransaction', [hex])
+    fund_raw_tx_result = call('fundrawtransaction', [
+                              hex, {'feeRate': 0.00000100}])
     print('you will pay ', fund_raw_tx_result['fee'], '(fees)')
     return fund_raw_tx_result['hex']
 
