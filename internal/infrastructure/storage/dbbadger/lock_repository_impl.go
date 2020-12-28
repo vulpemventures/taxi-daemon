@@ -30,7 +30,7 @@ func NewBadgerLockRepository(baseDirPath string, logger badger.Logger) (domain.L
 
 func (r *badgerLockRepository) Lock(ctx context.Context, keys []domain.Lock) error {
 	for _, lock := range keys {
-		err := r.store.Insert(lock.UniqueID(), lock)
+		err := r.store.Insert(lock.String(), lock)
 		if err != nil {
 			return err
 		}
@@ -40,7 +40,7 @@ func (r *badgerLockRepository) Lock(ctx context.Context, keys []domain.Lock) err
 }
 
 func (r *badgerLockRepository) Unlock(ctx context.Context, key domain.Lock) error {
-	return r.store.Delete(key.UniqueID(), key)
+	return r.store.Delete(key.String(), key)
 }
 
 func (r *badgerLockRepository) IsLocked(ctx context.Context, key domain.Lock) bool {
