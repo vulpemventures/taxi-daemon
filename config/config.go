@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/btcsuite/btcutil"
 	log "github.com/sirupsen/logrus"
@@ -121,6 +122,12 @@ func GetInt(key string) int {
 	return vip.GetInt(key)
 }
 
+// GetMnemonic returns the mnemonic as a list of words
+func GetMnemonic() []string {
+	mnemonic := GetString(MnemonicKey)
+	return strings.Split(mnemonic, " ")
+}
+
 // GetNetwork returns a pointer to the configurated network
 func GetNetwork() *network.Network {
 	switch vip.GetString(NetworkKey) {
@@ -131,4 +138,8 @@ func GetNetwork() *network.Network {
 	default:
 		return nil
 	}
+}
+
+func Set(key string, value interface{}) {
+	vip.Set(key, value)
 }
