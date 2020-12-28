@@ -4,6 +4,7 @@ package admin
 
 import (
 	context "context"
+
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -19,6 +20,8 @@ const _ = grpc.SupportPackageIsVersion7
 type AdminClient interface {
 	// AddAsset lets update the asset_hash with price if exists, or creates it
 	AddAsset(ctx context.Context, in *AddAssetRequest, opts ...grpc.CallOption) (*AddAssetReply, error)
+	// FundingAddress returns one or more receiving addresses to deposit LBTC funds
+	FundingAddress(ctx context.Context, in *FundingAddressRequest, opts ...grpc.CallOption) (*FundingAddressReply, error)
 	// ListTopups returns all the internal topups
 	ListTopups(ctx context.Context, in *ListTopupsRequest, opts ...grpc.CallOption) (*ListTopupsReply, error)
 	// ListAddresses returns a list of addresses of the taxi wallet with their derivation path
@@ -42,6 +45,15 @@ func NewAdminClient(cc grpc.ClientConnInterface) AdminClient {
 func (c *adminClient) AddAsset(ctx context.Context, in *AddAssetRequest, opts ...grpc.CallOption) (*AddAssetReply, error) {
 	out := new(AddAssetReply)
 	err := c.cc.Invoke(ctx, "/Admin/AddAsset", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminClient) FundingAddress(ctx context.Context, in *FundingAddressRequest, opts ...grpc.CallOption) (*FundingAddressReply, error) {
+	out := new(FundingAddressReply)
+	err := c.cc.Invoke(ctx, "/Admin/FundingAddress", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -90,6 +102,8 @@ func (c *adminClient) SendToMany(ctx context.Context, in *SendToManyRequest, opt
 type AdminServer interface {
 	// AddAsset lets update the asset_hash with price if exists, or creates it
 	AddAsset(context.Context, *AddAssetRequest) (*AddAssetReply, error)
+	// FundingAddress returns one or more receiving addresses to deposit LBTC funds
+	FundingAddress(context.Context, *FundingAddressRequest) (*FundingAddressReply, error)
 	// ListTopups returns all the internal topups
 	ListTopups(context.Context, *ListTopupsRequest) (*ListTopupsReply, error)
 	// ListAddresses returns a list of addresses of the taxi wallet with their derivation path
@@ -109,6 +123,9 @@ type UnimplementedAdminServer struct {
 
 func (UnimplementedAdminServer) AddAsset(context.Context, *AddAssetRequest) (*AddAssetReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddAsset not implemented")
+}
+func (UnimplementedAdminServer) FundingAddress(context.Context, *FundingAddressRequest) (*FundingAddressReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FundingAddress not implemented")
 }
 func (UnimplementedAdminServer) ListTopups(context.Context, *ListTopupsRequest) (*ListTopupsReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTopups not implemented")
@@ -149,6 +166,24 @@ func _Admin_AddAsset_Handler(srv interface{}, ctx context.Context, dec func(inte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServer).AddAsset(ctx, req.(*AddAssetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Admin_FundingAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FundingAddressRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServer).FundingAddress(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Admin/FundingAddress",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServer).FundingAddress(ctx, req.(*FundingAddressRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -235,6 +270,10 @@ var Admin_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddAsset",
 			Handler:    _Admin_AddAsset_Handler,
+		},
+		{
+			MethodName: "FundingAddress",
+			Handler:    _Admin_FundingAddress_Handler,
 		},
 		{
 			MethodName: "ListTopups",

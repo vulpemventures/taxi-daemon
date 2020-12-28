@@ -7,10 +7,11 @@
 package admin
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -162,6 +163,100 @@ func (*AddAssetReply) Descriptor() ([]byte, []int) {
 	return file_admin_proto_rawDescGZIP(), []int{1}
 }
 
+type FundingAddressRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	NumOfAddresses int64 `protobuf:"varint,1,opt,name=num_of_addresses,json=numOfAddresses,proto3" json:"num_of_addresses,omitempty"` // the number of addresses to generate. Defaults to 1 if omitted.
+}
+
+func (x *FundingAddressRequest) Reset() {
+	*x = FundingAddressRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_admin_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *FundingAddressRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FundingAddressRequest) ProtoMessage() {}
+
+func (x *FundingAddressRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FundingAddressRequest.ProtoReflect.Descriptor instead.
+func (*FundingAddressRequest) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *FundingAddressRequest) GetNumOfAddresses() int64 {
+	if x != nil {
+		return x.NumOfAddresses
+	}
+	return 0
+}
+
+type FundingAddressReply struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Addresses []string `protobuf:"bytes,1,rep,name=addresses,proto3" json:"addresses,omitempty"` // the list of generated addresses.
+}
+
+func (x *FundingAddressReply) Reset() {
+	*x = FundingAddressReply{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_admin_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *FundingAddressReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FundingAddressReply) ProtoMessage() {}
+
+func (x *FundingAddressReply) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FundingAddressReply.ProtoReflect.Descriptor instead.
+func (*FundingAddressReply) Descriptor() ([]byte, []int) {
+	return file_admin_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *FundingAddressReply) GetAddresses() []string {
+	if x != nil {
+		return x.Addresses
+	}
+	return nil
+}
+
 type ListTopupsRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -173,7 +268,7 @@ type ListTopupsRequest struct {
 func (x *ListTopupsRequest) Reset() {
 	*x = ListTopupsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_admin_proto_msgTypes[2]
+		mi := &file_admin_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -186,7 +281,7 @@ func (x *ListTopupsRequest) String() string {
 func (*ListTopupsRequest) ProtoMessage() {}
 
 func (x *ListTopupsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[2]
+	mi := &file_admin_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -199,7 +294,7 @@ func (x *ListTopupsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTopupsRequest.ProtoReflect.Descriptor instead.
 func (*ListTopupsRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{2}
+	return file_admin_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListTopupsRequest) GetAssetHash() string {
@@ -220,7 +315,7 @@ type ListTopupsReply struct {
 func (x *ListTopupsReply) Reset() {
 	*x = ListTopupsReply{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_admin_proto_msgTypes[3]
+		mi := &file_admin_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -233,7 +328,7 @@ func (x *ListTopupsReply) String() string {
 func (*ListTopupsReply) ProtoMessage() {}
 
 func (x *ListTopupsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[3]
+	mi := &file_admin_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -246,7 +341,7 @@ func (x *ListTopupsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTopupsReply.ProtoReflect.Descriptor instead.
 func (*ListTopupsReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{3}
+	return file_admin_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListTopupsReply) GetTopups() []*TopupDetails {
@@ -269,7 +364,7 @@ type ListAddressesRequest struct {
 func (x *ListAddressesRequest) Reset() {
 	*x = ListAddressesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_admin_proto_msgTypes[4]
+		mi := &file_admin_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -282,7 +377,7 @@ func (x *ListAddressesRequest) String() string {
 func (*ListAddressesRequest) ProtoMessage() {}
 
 func (x *ListAddressesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[4]
+	mi := &file_admin_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -295,7 +390,7 @@ func (x *ListAddressesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAddressesRequest.ProtoReflect.Descriptor instead.
 func (*ListAddressesRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{4}
+	return file_admin_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListAddressesRequest) GetStart() int64 {
@@ -330,7 +425,7 @@ type ListAddressesReply struct {
 func (x *ListAddressesReply) Reset() {
 	*x = ListAddressesReply{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_admin_proto_msgTypes[5]
+		mi := &file_admin_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -343,7 +438,7 @@ func (x *ListAddressesReply) String() string {
 func (*ListAddressesReply) ProtoMessage() {}
 
 func (x *ListAddressesReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[5]
+	mi := &file_admin_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -356,7 +451,7 @@ func (x *ListAddressesReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAddressesReply.ProtoReflect.Descriptor instead.
 func (*ListAddressesReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{5}
+	return file_admin_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListAddressesReply) GetAddresses() []*AddressInfo {
@@ -375,7 +470,7 @@ type BalanceRequest struct {
 func (x *BalanceRequest) Reset() {
 	*x = BalanceRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_admin_proto_msgTypes[6]
+		mi := &file_admin_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -388,7 +483,7 @@ func (x *BalanceRequest) String() string {
 func (*BalanceRequest) ProtoMessage() {}
 
 func (x *BalanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[6]
+	mi := &file_admin_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -401,7 +496,7 @@ func (x *BalanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BalanceRequest.ProtoReflect.Descriptor instead.
 func (*BalanceRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{6}
+	return file_admin_proto_rawDescGZIP(), []int{8}
 }
 
 type BalanceReply struct {
@@ -417,7 +512,7 @@ type BalanceReply struct {
 func (x *BalanceReply) Reset() {
 	*x = BalanceReply{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_admin_proto_msgTypes[7]
+		mi := &file_admin_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -430,7 +525,7 @@ func (x *BalanceReply) String() string {
 func (*BalanceReply) ProtoMessage() {}
 
 func (x *BalanceReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[7]
+	mi := &file_admin_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -443,7 +538,7 @@ func (x *BalanceReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BalanceReply.ProtoReflect.Descriptor instead.
 func (*BalanceReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{7}
+	return file_admin_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *BalanceReply) GetBalance() map[string]*BalanceInfo {
@@ -472,7 +567,7 @@ type SendToManyRequest struct {
 func (x *SendToManyRequest) Reset() {
 	*x = SendToManyRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_admin_proto_msgTypes[8]
+		mi := &file_admin_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -485,7 +580,7 @@ func (x *SendToManyRequest) String() string {
 func (*SendToManyRequest) ProtoMessage() {}
 
 func (x *SendToManyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[8]
+	mi := &file_admin_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -498,7 +593,7 @@ func (x *SendToManyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendToManyRequest.ProtoReflect.Descriptor instead.
 func (*SendToManyRequest) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{8}
+	return file_admin_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SendToManyRequest) GetOutputs() []*TxOut {
@@ -535,7 +630,7 @@ type SendToManyReply struct {
 func (x *SendToManyReply) Reset() {
 	*x = SendToManyReply{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_admin_proto_msgTypes[9]
+		mi := &file_admin_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -548,7 +643,7 @@ func (x *SendToManyReply) String() string {
 func (*SendToManyReply) ProtoMessage() {}
 
 func (x *SendToManyReply) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[9]
+	mi := &file_admin_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -561,7 +656,7 @@ func (x *SendToManyReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendToManyReply.ProtoReflect.Descriptor instead.
 func (*SendToManyReply) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{9}
+	return file_admin_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *SendToManyReply) GetRawTx() []byte {
@@ -585,7 +680,7 @@ type AddressInfo struct {
 func (x *AddressInfo) Reset() {
 	*x = AddressInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_admin_proto_msgTypes[10]
+		mi := &file_admin_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -598,7 +693,7 @@ func (x *AddressInfo) String() string {
 func (*AddressInfo) ProtoMessage() {}
 
 func (x *AddressInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[10]
+	mi := &file_admin_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -611,7 +706,7 @@ func (x *AddressInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddressInfo.ProtoReflect.Descriptor instead.
 func (*AddressInfo) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{10}
+	return file_admin_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *AddressInfo) GetAddress() string {
@@ -658,7 +753,7 @@ type BalanceInfo struct {
 func (x *BalanceInfo) Reset() {
 	*x = BalanceInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_admin_proto_msgTypes[11]
+		mi := &file_admin_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -671,7 +766,7 @@ func (x *BalanceInfo) String() string {
 func (*BalanceInfo) ProtoMessage() {}
 
 func (x *BalanceInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[11]
+	mi := &file_admin_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -684,7 +779,7 @@ func (x *BalanceInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BalanceInfo.ProtoReflect.Descriptor instead.
 func (*BalanceInfo) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{11}
+	return file_admin_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *BalanceInfo) GetTotalBalance() uint64 {
@@ -724,7 +819,7 @@ type TxOut struct {
 func (x *TxOut) Reset() {
 	*x = TxOut{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_admin_proto_msgTypes[12]
+		mi := &file_admin_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -737,7 +832,7 @@ func (x *TxOut) String() string {
 func (*TxOut) ProtoMessage() {}
 
 func (x *TxOut) ProtoReflect() protoreflect.Message {
-	mi := &file_admin_proto_msgTypes[12]
+	mi := &file_admin_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -750,7 +845,7 @@ func (x *TxOut) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TxOut.ProtoReflect.Descriptor instead.
 func (*TxOut) Descriptor() ([]byte, []int) {
-	return file_admin_proto_rawDescGZIP(), []int{12}
+	return file_admin_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *TxOut) GetAsset() string {
@@ -793,7 +888,7 @@ type TopupDetails struct {
 func (x *TopupDetails) Reset() {
 	*x = TopupDetails{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_admin_proto_msgTypes[13]
+		mi := &file_admin_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1169,7 +1264,7 @@ func file_admin_proto_init() {
 			}
 		}
 		file_admin_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListTopupsRequest); i {
+			switch v := v.(*FundingAddressRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1181,7 +1276,7 @@ func file_admin_proto_init() {
 			}
 		}
 		file_admin_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListTopupsReply); i {
+			switch v := v.(*FundingAddressReply); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1193,7 +1288,7 @@ func file_admin_proto_init() {
 			}
 		}
 		file_admin_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListAddressesRequest); i {
+			switch v := v.(*ListTopupsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1205,7 +1300,7 @@ func file_admin_proto_init() {
 			}
 		}
 		file_admin_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListAddressesReply); i {
+			switch v := v.(*ListTopupsReply); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1217,7 +1312,7 @@ func file_admin_proto_init() {
 			}
 		}
 		file_admin_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BalanceRequest); i {
+			switch v := v.(*ListAddressesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1229,7 +1324,7 @@ func file_admin_proto_init() {
 			}
 		}
 		file_admin_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BalanceReply); i {
+			switch v := v.(*ListAddressesReply); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1241,7 +1336,7 @@ func file_admin_proto_init() {
 			}
 		}
 		file_admin_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SendToManyRequest); i {
+			switch v := v.(*BalanceRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1253,7 +1348,7 @@ func file_admin_proto_init() {
 			}
 		}
 		file_admin_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SendToManyReply); i {
+			switch v := v.(*BalanceReply); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1265,7 +1360,7 @@ func file_admin_proto_init() {
 			}
 		}
 		file_admin_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AddressInfo); i {
+			switch v := v.(*SendToManyRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1277,7 +1372,7 @@ func file_admin_proto_init() {
 			}
 		}
 		file_admin_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BalanceInfo); i {
+			switch v := v.(*SendToManyReply); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1289,7 +1384,7 @@ func file_admin_proto_init() {
 			}
 		}
 		file_admin_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TxOut); i {
+			switch v := v.(*AddressInfo); i {
 			case 0:
 				return &v.state
 			case 1:
