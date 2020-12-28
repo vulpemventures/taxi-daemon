@@ -68,7 +68,7 @@ func validate() {
 	feeAmount := GetInt(FixedFeeAmountKey)
 
 	if feeAmount < MinFixedFeeAmount {
-		log.Fatal("fragment amount can't be lesser than ", MinFixedFeeAmount, " satoshis")
+		log.Fatal("fragment amount can't be lower than ", MinFixedFeeAmount, " satoshis")
 	}
 
 	if feeAmount > MaxFixedFeeAmount {
