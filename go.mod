@@ -13,7 +13,7 @@ require (
 	github.com/dgraph-io/ristretto v0.0.3 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/golang/protobuf v1.4.3
+	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/google/uuid v1.1.2
@@ -35,7 +35,6 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/tdex-network/tdex-daemon v0.1.2
 	github.com/timshannon/badgerhold/v2 v2.0.0-20201016201833-94bc303c76d4
-	github.com/tj/assert v0.0.3
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/vulpemventures/go-elements v0.1.1
