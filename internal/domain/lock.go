@@ -15,7 +15,7 @@ type Lock struct {
 }
 
 // UniqueID returns a unique string for the lock
-func (l Lock) UniqueID() string {
+func (l Lock) String() string {
 	return l.TxID + ":" + fmt.Sprint(l.Vout)
 }
 
