@@ -4,6 +4,8 @@ option go_package = "github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen
 service Admin {
   // AddAsset lets update the asset_hash with price if exists, or creates it
   rpc AddAsset(AddAssetRequest) returns (AddAssetReply);
+  // FundingAddress returns one or more receiving addresses to deposit LBTC funds 
+  rpc FundingAddress(FundingAddressRequest) returns (FundingAddressReply);
   // ListTopups returns all the internal topups
   rpc ListTopups(ListTopupsRequest) returns (ListTopupsReply);
   // ListAddresses returns a list of addresses of the taxi wallet with their derivation path
@@ -23,6 +25,13 @@ message AddAssetRequest {
 
 message AddAssetReply {}
 
+message FundingAddressRequest {
+  int64 num_of_addresses = 1; // the number of addresses to generate. Defaults to 1 if omitted.
+}
+
+message FundingAddressReply {
+  repeated string addresses = 1; // the list of generated addresses.
+}
 
 message ListTopupsRequest {
   string asset_hash = 1; // the asset hash to filter the topups. If empty, all topups of all assets will be returned
