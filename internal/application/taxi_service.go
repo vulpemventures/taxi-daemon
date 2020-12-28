@@ -34,6 +34,7 @@ type taxiService struct {
 	network          network.Network
 	fixedFeeAmount   uint64
 	basisPointLocker sync.Locker
+	utxoTTL          time.Duration
 }
 
 // NewTaxiServiceArgs is a wrapper type for NewTaxiService factory function
@@ -45,6 +46,7 @@ type NewTaxiServiceArgs struct {
 	LockRepository  domain.LockRepository
 	PriceRepository domain.PriceRepository
 	ExplorerSvc     explorer.Service
+	UtxoTTL         time.Duration
 }
 
 // NewTaxiService returns a TaxiService interface
@@ -67,13 +69,12 @@ func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
 		fixedFeeAmount:   args.FixedFeeAmount,
 		basisPointLocker: &sync.Mutex{},
 		network:          args.Network,
+		utxoTTL:          args.UtxoTTL,
 	}, nil
 }
 
 // TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
 func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (*domain.Topup, error) {
-	ttlUtxo := 10 * time.Minute
-
 	// check if asset is available
 	price, err := taxi.priceRepository.GetPrice(ctx, assetHash)
 	if err != nil {
@@ -95,7 +96,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	expireAt := time.Now().Add(ttlUtxo)
+	expireAt := time.Now().Add(taxi.utxoTTL)
 
 	topup := domain.NewTopup(assetHash, taxi.fixedFeeAmount, price.Amount, expireAt)
 	err = taxi.topupRepository.AddTopup(ctx, topup)
@@ -155,7 +156,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	}
 
 	go func() {
-		time.Sleep(ttlUtxo)
+		time.Sleep(taxi.utxoTTL)
 		taxi.lockRepository.Unlock(ctx, utxoKey)
 	}()
 

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
+	"github.com/tyler-smith/go-bip39"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
@@ -72,4 +73,16 @@ func newMockedPriceRepository(t *testing.T, assets []string) domain.PriceReposit
 	}
 
 	return repo
+}
+
+func generateMnemonic(entropySize int) ([]string, error) {
+	entropy, err := bip39.NewEntropy(entropySize)
+	if err != nil {
+		return nil, err
+	}
+	mnemonic, err := bip39.NewMnemonic(entropy)
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(mnemonic, " "), nil
 }

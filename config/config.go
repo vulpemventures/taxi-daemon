@@ -27,6 +27,8 @@ const (
 	FixedFeeAmountKey = "FIXED_FEE_AMOUNT"
 	// LogLevelKey is the level used as logus' logger level
 	LogLevelKey = "LOG_LEVEL"
+	// UtxoTTLKey is the time to live for utxos lockers (in seconds)
+	UtxoTTLKey = "UTXO_LOCK_IN_SECONDS"
 	// MinFixedFeeAmount is the minimum value allowed for LBTC fees
 	MinFixedFeeAmount = 100
 	// MaxFixedFeeAmount is the maximum value allowed for LBTC fees
@@ -53,6 +55,7 @@ func init() {
 	vip.SetDefault(MnemonicKey, "")
 	vip.SetDefault(LogLevelKey, 4)
 	vip.SetDefault(FixedFeeAmountKey, 1000)
+	vip.SetDefault(UtxoTTLKey, 180)
 	vip.SetDefault(DatadirKey, btcutil.AppDataDir("taxid", false))
 
 	validate()

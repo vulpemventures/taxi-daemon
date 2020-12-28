@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
@@ -14,6 +15,59 @@ import (
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 )
+
+func TestUtxoTTLAfterTopup(t *testing.T) {
+	lockRepo := inmemory.NewInmemoryLockRepository()
+	newWords, err := generateMnemonic(256)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newTaxiOpts := NewTaxiServiceArgs{
+		Mnemonic:        newWords,
+		Network:         regtest,
+		FixedFeeAmount:  100000000,
+		TopupRepository: inmemory.NewInmemoryTopupRepository(),
+		LockRepository:  lockRepo,
+		PriceRepository: newMockedPriceRepository(t, []string{superToken}),
+		ExplorerSvc:     explorer.NewService(explorerEndpoint),
+		UtxoTTL:         3 * time.Second,
+	}
+
+	taxiSvc, err := newTaxiService(newTaxiOpts)
+	if err != nil {
+		t.Fatal(nil)
+	}
+
+	// found taxi with LBTC
+	addr, err := taxiSvc.getFundAddress()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = faucet(addr, explorerEndpoint)
+	if err != nil {
+		t.Fatal(nil)
+	}
+
+	topup, err := taxiSvc.TopupWithAsset(context.Background(), superToken)
+	assert.Nil(t, err)
+	assert.NotNil(t, topup)
+
+	p, err := pset.NewPsetFromBase64(topup.Partial)
+	assert.Nil(t, err)
+	assert.NotNil(t, p)
+
+	topup, err = taxiSvc.TopupWithAsset(context.Background(), superToken)
+	if err == nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(4 * time.Second)
+
+	topup, err = taxiSvc.TopupWithAsset(context.Background(), superToken)
+	assert.Nil(t, err)
+	assert.NotNil(t, topup)
+}
 
 func TestTopupWithAsset(t *testing.T) {
 	newTaxiOpts := NewTaxiServiceArgs{
@@ -24,6 +78,7 @@ func TestTopupWithAsset(t *testing.T) {
 		LockRepository:  inmemory.NewInmemoryLockRepository(),
 		PriceRepository: newMockedPriceRepository(t, []string{superToken}),
 		ExplorerSvc:     explorer.NewService(explorerEndpoint),
+		UtxoTTL:         time.Minute,
 	}
 
 	taxiSvc, err := newTaxiService(newTaxiOpts)
@@ -91,6 +146,7 @@ func TestListAssets(t *testing.T) {
 			LockRepository:  inmemory.NewInmemoryLockRepository(),
 			PriceRepository: newMockedPriceRepository(t, test.input),
 			ExplorerSvc:     explorer.NewService(explorerEndpoint),
+			UtxoTTL:         time.Minute,
 		}
 
 		taxiSvc, err := NewTaxiService(newTaxiOpts)
