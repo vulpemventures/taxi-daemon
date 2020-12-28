@@ -43,7 +43,7 @@ $ make stop # Stop and delete the containers
 
 Taxi needs utxos with a fixed amount (i.e fragment size). `scripts/fragment.py` is a Python script used to create these fragments from an Elements/Liquid node.
 
-Example: the following command will connect to node's RPC `http://127.0.0.1:7041` with credentials `admin1`/`123`. Then the script will create and broadcast a transaction sending `0.0001` BTC to `XQFscDmxh6N9L5SknW6XxDHvjie4xfH8Bu` and `XNqdSvixmaVqgrgEEpSA9s1EEtGfPoAZoH`. Node that the number of addresses specified as argument determines the number of fragments created.
+ NOTICE: the number of addresses specified as argument determines the number of fragments created.
 ```sh
 python3 scripts/fragment.py --url http://127.0.0.1:7041 \
     --rpc_user admin1 \
@@ -58,7 +58,6 @@ tips: use `-h` to print the script's help guide.
 
 * Go
 * Python 3 (fragment script)
-
 
 
 
