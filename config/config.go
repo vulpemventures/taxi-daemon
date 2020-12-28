@@ -29,11 +29,18 @@ const (
 	LogLevelKey = "LOG_LEVEL"
 	// UtxoTTLKey is the time to live for utxos lockers (in seconds)
 	UtxoTTLKey = "UTXO_TTL"
+	// MinFixedFeeAmount is the minimum value allowed for LBTC fees
+	MinFixedFeeAmount = 100
+	// MaxFixedFeeAmount is the maximum value allowed for LBTC fees
+	// TODO Change MAX to 10000000 sats (current / 10), max is set to 1BTC for test purpose, this will be change with the fragment script PR
+	MaxFixedFeeAmount = 100000000
 	// DatadirKey is the path of the directory used to store the taxi's database files
 	DatadirKey = "DATADIR"
 )
 
-var vip *viper.Viper
+var (
+	vip *viper.Viper
+)
 
 func init() {
 	vip = viper.New()
@@ -65,8 +72,14 @@ func validate() {
 		log.Fatal("network does not exist")
 	}
 
-	if GetInt(FixedFeeAmountKey) < 1 {
-		log.Fatal("fragment amount can't be lower than 1 satoshi")
+	feeAmount := GetInt(FixedFeeAmountKey)
+
+	if feeAmount < MinFixedFeeAmount {
+		log.Fatal("fragment amount can't be lower than ", MinFixedFeeAmount, " satoshis")
+	}
+
+	if feeAmount > MaxFixedFeeAmount {
+		log.Fatal("fragment amount can't be greater than ", MaxFixedFeeAmount, " satoshis")
 	}
 
 	p := GetInt(TaxiPortKey)
