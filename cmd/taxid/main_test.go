@@ -21,6 +21,7 @@ import (
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
+	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
 	"github.com/vulpemventures/liquid-taxi/config"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 	g "google.golang.org/grpc"
@@ -55,10 +56,10 @@ func TestTaxiServer(t *testing.T) {
 	}
 	defer conn.Close()
 
-	adminClient := pb.NewAdminClient(conn)
+	adminClient := admin.NewAdminClient(conn)
 
 	// Init with USDT
-	_, err = adminClient.AddAsset(emptyContext, &pb.AddAssetRequest{
+	_, err = adminClient.AddAsset(emptyContext, &admin.AddAssetRequest{
 		AssetHash: USDT,
 		Price:     20.36,
 	})

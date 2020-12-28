@@ -14,6 +14,10 @@ clean:
 	@echo "Clean..."
 	@rm -rf ./bin
 
+cleantest:
+	@echo "Clean test datadir..."
+	@rm -rf ./cmd/taxid/test-taxi-datadir/
+
 ## gofmt: Go Format
 fmt:
 	@echo "Gofmt..."
@@ -42,10 +46,14 @@ test: fmt
 	export TAXI_FIXED_FEE_AMOUNT=100000000; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
+	export TAXI_DATADIR="./test-taxi-datadir"; \
 	go test -v -short -race ./...
 
-integrationtest: fmt
+servertest: fmt
 	export TAXI_FIXED_FEE_AMOUNT=100000000; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
-	go test -v -count=1 ./cmd/taxid
+	export TAXI_DATADIR="./test-taxi-datadir"; \
+	go test -v -count=1 ./cmd/taxid;
+
+integrationtest: servertest	cleantest

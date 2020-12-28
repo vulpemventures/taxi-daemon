@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/btcsuite/btcutil"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/vulpemventures/go-elements/network"
@@ -29,8 +30,10 @@ const (
 	// MinFixedFeeAmount is the minimum value allowed for LBTC fees
 	MinFixedFeeAmount = 100
 	// MaxFixedFeeAmount is the maximum value allowed for LBTC fees
-	MaxFixedFeeAmount = 100000000
 	// TODO Change MAX to 10000000 sats (current / 10), max is set to 1BTC for test purpose, this will be change with the fragment script PR
+	MaxFixedFeeAmount = 100000000
+	// DatadirKey is the path of the directory used to store the taxi's database files
+	DatadirKey = "DATADIR"
 )
 
 var (
@@ -50,6 +53,7 @@ func init() {
 	vip.SetDefault(MnemonicKey, "")
 	vip.SetDefault(LogLevelKey, 4)
 	vip.SetDefault(FixedFeeAmountKey, 1000)
+	vip.SetDefault(DatadirKey, btcutil.AppDataDir("taxid", false))
 
 	validate()
 

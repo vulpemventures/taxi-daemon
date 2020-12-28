@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
+	admin "github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 )
 
@@ -92,7 +93,7 @@ func (t *Topup) Settle() error {
 	return ErrTopupNeedToBeCompleted
 }
 
-// ToProtobufTopupMessage maps topup domain to pb.Topup message type
+// ToProtobufTopupMessage maps topup domain to admin.Topup message type
 func (t *Topup) ToProtobufTopupMessage() *pb.Topup {
 	price, _ := t.AssetPrice.Float64()
 
@@ -105,20 +106,33 @@ func (t *Topup) ToProtobufTopupMessage() *pb.Topup {
 	}
 }
 
-// ToProtobufTimestampsMessage maps topup domain to pb.Timestamps message type
-func (t *Topup) ToProtobufTimestampsMessage() *pb.Timestamps {
-	return &pb.Timestamps{
+// ToAdminTopupMessage maps topup domain to admin.Topup message type
+func (t *Topup) ToAdminTopupMessage() *admin.Topup {
+	price, _ := t.AssetPrice.Float64()
+
+	return &admin.Topup{
+		TopupId:     t.ID,
+		Partial:     t.Partial,
+		AssetHash:   t.AssetHash,
+		AssetAmount: t.AssetAmount,
+		AssetPrice:  float32(price),
+	}
+}
+
+// ToProtobufTimestampsMessage maps topup domain to admin.Timestamps message type
+func (t *Topup) ToProtobufTimestampsMessage() *admin.Timestamps {
+	return &admin.Timestamps{
 		RequestedAt: uint64(t.RequestedAt.Unix()),
 		CompletedAt: uint64(t.CompletedAt.Unix()),
 		SettledAt:   uint64(t.SettledAt.Unix()),
 	}
 }
 
-// ToProtobufTopupInfoMessage maps topup domain to pb.TopupInfo message type
-func (t *Topup) ToProtobufTopupInfoMessage() *pb.TopupInfo {
-	return &pb.TopupInfo{
-		Topup:           t.ToProtobufTopupMessage(),
-		Status:          pb.TopupInfo_Status(t.Status),
+// ToProtobufTopupInfoMessage maps topup domain to admin.TopupInfo message type
+func (t *Topup) ToProtobufTopupInfoMessage() *admin.TopupInfo {
+	return &admin.TopupInfo{
+		Topup:           t.ToAdminTopupMessage(),
+		Status:          admin.TopupInfo_Status(t.Status),
 		FeeAmount:       t.FeeAmount,
 		MillisatPerByte: 0,
 		Times:           t.ToProtobufTimestampsMessage(),
