@@ -46,7 +46,7 @@ func init() {
 	vip.SetDefault(MnemonicKey, "")
 	vip.SetDefault(LogLevelKey, 4)
 	vip.SetDefault(FixedFeeAmountKey, 1000)
-	vip.SetDefault(DatadirKey, btcutil.AppDataDir("taxi-datadir", false))
+	vip.SetDefault(DatadirKey, btcutil.AppDataDir("taxid", false))
 
 	validate()
 
