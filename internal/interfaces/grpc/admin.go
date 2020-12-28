@@ -2,52 +2,58 @@ package grpc
 
 import (
 	"context"
-	"errors"
 
 	"github.com/shopspring/decimal"
+	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
 	"github.com/vulpemventures/liquid-taxi/internal/application"
-	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 )
 
 type adminServer struct {
-	pb.UnimplementedAdminServer
+	admin.UnimplementedAdminServer
 	adminSvc application.AdminService
 }
 
-// NewAdminHandler returns a types implementing the pb.AdminServer grpc interface
-func NewAdminHandler(adminSvc application.AdminService) pb.AdminServer {
+// NewAdminHandler returns a types implementing the admin.AdminServer grpc interface
+func NewAdminHandler(adminSvc application.AdminService) admin.AdminServer {
 	return &adminServer{
 		adminSvc: adminSvc,
 	}
 }
 
-func (a *adminServer) AddAsset(ctx context.Context, req *pb.AddAssetRequest) (*pb.AddAssetReply, error) {
+func (a *adminServer) AddAsset(ctx context.Context, req *admin.AddAssetRequest) (*admin.AddAssetReply, error) {
 	priceAmountAsDecimal := decimal.NewFromFloat(float64(req.GetPrice()))
 
-	return &pb.AddAssetReply{}, a.adminSvc.AddAsset(
+	return &admin.AddAssetReply{}, a.adminSvc.AddAsset(
 		ctx,
 		req.GetAssetHash(),
 		priceAmountAsDecimal,
 	)
 }
 
-func (a *adminServer) ListTopups(ctx context.Context, req *pb.ListTopupsRequest) (*pb.ListTopupsReply, error) {
+func (a *adminServer) ListTopups(ctx context.Context, req *admin.ListTopupsRequest) (*admin.ListTopupsReply, error) {
 	topups, err := a.adminSvc.ListTopups(ctx, req.GetAssetHash())
 	if err != nil {
 		return nil, err
 	}
 
-	reply := make([]*pb.TopupInfo, 0)
+	reply := make([]*admin.TopupInfo, 0)
 	for _, t := range topups {
 		reply = append(reply, t.ToProtobufTopupInfoMessage())
 	}
 
-	return &pb.ListTopupsReply{
+	return &admin.ListTopupsReply{
 		Topups: reply,
 	}, nil
 }
 
-func (a *adminServer) ChangeSpread(ctx context.Context, req *pb.ChangeSpreadRequest) (*pb.ChangeSpreadReply, error) {
-	// TODO implement change spread
-	return nil, errors.New("Not implemented")
+func (a *adminServer) ListAddresses(context.Context, *admin.ListAddressesRequest) (*admin.ListAddressesReply, error) {
+	panic("not implemented")
+}
+
+func (a *adminServer) Balance(context.Context, *admin.BalanceRequest) (*admin.BalanceReply, error) {
+	panic("not implemented")
+}
+
+func (a *adminServer) SendToMany(context.Context, *admin.SendToManyRequest) (*admin.SendToManyReply, error) {
+	panic("not implemented")
 }

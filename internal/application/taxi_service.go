@@ -220,11 +220,11 @@ func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Ut
 }
 
 func (taxi *taxiService) getPaymentForAsset() (*payment.Payment, error) {
-	return taxi.wallet.DerivePath(derivationPathForAsset, &taxi.network)
+	return taxi.wallet.DerivePath(derivationPathForAsset)
 }
 
 func (taxi *taxiService) getPaymentForLBTC() (*payment.Payment, error) {
-	return taxi.wallet.DerivePath(derivationPathForLBTC, &taxi.network)
+	return taxi.wallet.DerivePath(derivationPathForLBTC)
 }
 
 func selectOneUtxo(utxos []explorer.Utxo, targetAmount uint64, targetAsset string) (explorer.Utxo, error) {

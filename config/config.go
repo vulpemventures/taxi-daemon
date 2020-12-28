@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/btcsuite/btcutil"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/vulpemventures/go-elements/network"
@@ -28,6 +29,8 @@ const (
 	LogLevelKey = "LOG_LEVEL"
 	// UtxoTTLKey is the time to live for utxos lockers (in seconds)
 	UtxoTTLKey = "UTXO_TTL"
+	// DatadirKey is the path of the directory used to store the taxi's database files
+	DatadirKey = "DATADIR"
 )
 
 var vip *viper.Viper
@@ -46,6 +49,7 @@ func init() {
 	vip.SetDefault(LogLevelKey, 4)
 	vip.SetDefault(FixedFeeAmountKey, 1000)
 	vip.SetDefault(UtxoTTLKey, 180)
+	vip.SetDefault(DatadirKey, btcutil.AppDataDir("taxid", false))
 
 	validate()
 
