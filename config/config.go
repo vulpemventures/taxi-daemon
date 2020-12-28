@@ -28,7 +28,7 @@ const (
 	// LogLevelKey is the level used as logus' logger level
 	LogLevelKey = "LOG_LEVEL"
 	// UtxoTTLKey is the time to live for utxos lockers (in seconds)
-	UtxoTTLKey = "UTXO_TTL"
+	UtxoTTLKey = "UTXO_LOCK_IN_SECONDS"
 	// MinFixedFeeAmount is the minimum value allowed for LBTC fees
 	MinFixedFeeAmount = 100
 	// MaxFixedFeeAmount is the maximum value allowed for LBTC fees
