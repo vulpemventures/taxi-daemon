@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/shopspring/decimal"
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 )

@@ -15,7 +15,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/prometheus/common/log"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
