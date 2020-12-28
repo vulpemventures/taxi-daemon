@@ -16,7 +16,7 @@ type Lock struct {
 
 // UniqueID returns a unique string for the lock
 func (l Lock) UniqueID() string {
-	return l.TxID + fmt.Sprint(l.Vout)
+	return l.TxID + ":" + fmt.Sprint(l.Vout)
 }
 
 // UtxoToLock maps an explorer.utxo to a Lock
