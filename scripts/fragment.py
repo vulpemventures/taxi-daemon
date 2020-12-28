@@ -120,7 +120,6 @@ def signTx(hex):
     Use signrawtransactionwithwallet RPC to sign the transaction.
     """
     print('the following transaction will be broadcasted.')
-    print('hex: ', hex)
     isYes = query_yes_no('Are you sure to sign and broadcast the tx?')
 
     if isYes:
