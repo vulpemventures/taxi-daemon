@@ -1,6 +1,10 @@
 package domain
 
-import "github.com/tdex-network/tdex-daemon/pkg/explorer"
+import (
+	"fmt"
+
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
+)
 
 // Lock represents the unique identifier of an Utxo
 type Lock struct {
@@ -8,6 +12,11 @@ type Lock struct {
 	TxID string
 	// Vout is the output index of the prevout utxo transaction
 	Vout uint32
+}
+
+// UniqueID returns a unique string for the lock
+func (l Lock) String() string {
+	return l.TxID + ":" + fmt.Sprint(l.Vout)
 }
 
 // UtxoToLock maps an explorer.utxo to a Lock

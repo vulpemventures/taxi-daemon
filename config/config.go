@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/btcsuite/btcutil"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/vulpemventures/go-elements/network"
@@ -26,6 +27,8 @@ const (
 	FixedFeeAmountKey = "FIXED_FEE_AMOUNT"
 	// LogLevelKey is the level used as logus' logger level
 	LogLevelKey = "LOG_LEVEL"
+	// DatadirKey is the path of the directory used to store the taxi's database files
+	DatadirKey = "DATADIR"
 )
 
 var vip *viper.Viper
@@ -43,6 +46,7 @@ func init() {
 	vip.SetDefault(MnemonicKey, "")
 	vip.SetDefault(LogLevelKey, 4)
 	vip.SetDefault(FixedFeeAmountKey, 1000)
+	vip.SetDefault(DatadirKey, btcutil.AppDataDir("taxid", false))
 
 	validate()
 
