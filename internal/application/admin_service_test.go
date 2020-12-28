@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
@@ -22,6 +23,7 @@ func TestListTopups(t *testing.T) {
 		LockRepository:  inmemory.NewInmemoryLockRepository(),
 		PriceRepository: priceRepo,
 		ExplorerSvc:     explorer.NewService(explorerEndpoint),
+		UtxoTTL:         time.Minute,
 	}
 
 	taxiSvc, err := newTaxiService(newTaxiOpts)

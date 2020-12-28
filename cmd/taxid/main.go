@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
@@ -33,6 +34,7 @@ func main() {
 		PriceRepository: priceRepository,
 		TopupRepository: topupRepository,
 		ExplorerSvc:     explorer.NewService(config.GetString(config.ExplorerEndpointKey)),
+		UtxoTTL:         time.Duration(config.GetInt(config.UtxoTTLKey)) * time.Second,
 	}
 
 	taxiSvc, err := application.NewTaxiService(taxiSvcOptions)

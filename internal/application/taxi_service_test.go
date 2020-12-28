@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
@@ -24,6 +25,7 @@ func TestTopupWithAsset(t *testing.T) {
 		LockRepository:  inmemory.NewInmemoryLockRepository(),
 		PriceRepository: newMockedPriceRepository(t, []string{superToken}),
 		ExplorerSvc:     explorer.NewService(explorerEndpoint),
+		UtxoTTL:         time.Minute,
 	}
 
 	taxiSvc, err := newTaxiService(newTaxiOpts)
@@ -91,6 +93,7 @@ func TestListAssets(t *testing.T) {
 			LockRepository:  inmemory.NewInmemoryLockRepository(),
 			PriceRepository: newMockedPriceRepository(t, test.input),
 			ExplorerSvc:     explorer.NewService(explorerEndpoint),
+			UtxoTTL:         time.Minute,
 		}
 
 		taxiSvc, err := NewTaxiService(newTaxiOpts)
