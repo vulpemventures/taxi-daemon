@@ -26,9 +26,16 @@ const (
 	FixedFeeAmountKey = "FIXED_FEE_AMOUNT"
 	// LogLevelKey is the level used as logus' logger level
 	LogLevelKey = "LOG_LEVEL"
+	// MinFixedFeeAmount is the minimum value allowed for LBTC fees
+	MinFixedFeeAmount = 100
+	// MaxFixedFeeAmount is the maximum value allowed for LBTC fees
+	MaxFixedFeeAmount = 100000000
+	// TODO Change MAX to 10000000 sats (current / 10), max is set to 1BTC for test purpose, this will be change with the fragment script PR
 )
 
-var vip *viper.Viper
+var (
+	vip *viper.Viper
+)
 
 func init() {
 	vip = viper.New()
@@ -58,8 +65,17 @@ func validate() {
 		log.Fatal("network does not exist")
 	}
 
-	if GetInt(FixedFeeAmountKey) < 1 {
+	feeAmount := GetInt(FixedFeeAmountKey)
+	if feeAmount < 1 {
 		log.Fatal("fragment amount can't be lower than 1 satoshi")
+	}
+
+	if feeAmount < MinFixedFeeAmount {
+		log.Fatal("fragment amount can't be lesser than ", MinFixedFeeAmount, " satoshis")
+	}
+
+	if feeAmount > MaxFixedFeeAmount {
+		log.Fatal("fragment amount can't be greater than ", MaxFixedFeeAmount, " satoshis")
 	}
 
 	p := GetInt(TaxiPortKey)
