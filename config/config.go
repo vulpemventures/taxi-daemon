@@ -27,7 +27,7 @@ const (
 	// LogLevelKey is the level used as logus' logger level
 	LogLevelKey = "LOG_LEVEL"
 	// UtxoTTLKey is the time to live for utxos lockers (in seconds)
-	UtxoTTLKey = "UTXO_TTL"
+	UtxoTTLKey = "UTXO_LOCK_IN_SECONDS"
 )
 
 var vip *viper.Viper
