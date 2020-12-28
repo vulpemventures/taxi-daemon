@@ -18,3 +18,5 @@ bin/
 #sls
 .serverless/
 .vscode
+
+**/test-taxi-datadir/

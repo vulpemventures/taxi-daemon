@@ -21,6 +21,7 @@ import (
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
+	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
 	"github.com/vulpemventures/liquid-taxi/config"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 	g "google.golang.org/grpc"
@@ -49,16 +50,16 @@ func TestTaxiServer(t *testing.T) {
 
 	// SERVER SIDE --->
 	// The admin connects to admin interface
-	conn, err := g.Dial("localhost:8081", g.WithInsecure())
+	conn, err := g.Dial("localhost:7000", g.WithInsecure())
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer conn.Close()
 
-	adminClient := pb.NewAdminClient(conn)
+	adminClient := admin.NewAdminClient(conn)
 
 	// Init with USDT
-	_, err = adminClient.AddAsset(emptyContext, &pb.AddAssetRequest{
+	_, err = adminClient.AddAsset(emptyContext, &admin.AddAssetRequest{
 		AssetHash: USDT,
 		Price:     20.36,
 	})
@@ -68,7 +69,7 @@ func TestTaxiServer(t *testing.T) {
 
 	// CLIENT SIDE --->
 	// Alice connect to server
-	conn, err = g.Dial("localhost:8080", g.WithInsecure())
+	conn, err = g.Dial("localhost:8000", g.WithInsecure())
 	if err != nil {
 		t.Fatal(err)
 	}
