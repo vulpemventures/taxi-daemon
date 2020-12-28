@@ -66,9 +66,6 @@ func validate() {
 	}
 
 	feeAmount := GetInt(FixedFeeAmountKey)
-	if feeAmount < 1 {
-		log.Fatal("fragment amount can't be lower than 1 satoshi")
-	}
 
 	if feeAmount < MinFixedFeeAmount {
 		log.Fatal("fragment amount can't be lesser than ", MinFixedFeeAmount, " satoshis")
