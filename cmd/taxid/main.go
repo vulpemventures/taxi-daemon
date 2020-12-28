@@ -13,6 +13,7 @@ import (
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/application"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/dbbadger"
+	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 	"github.com/vulpemventures/liquid-taxi/internal/interfaces/grpc"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 	g "google.golang.org/grpc"
@@ -30,6 +31,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	hdTreeRepository := inmemory.NewInmemoryHDTreeRepository()
 	dbLogger := log.New()
 	topupRepository, err := dbbadger.NewBadgerTopupRepository(datadirPath, dbLogger)
 	if err != nil {

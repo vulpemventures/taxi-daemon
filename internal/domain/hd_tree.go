@@ -141,7 +141,7 @@ func (t *HDTree) deriveAddressInfo(
 		uint32(addressIndex),
 	}
 
-	p, err := w.DerivePath(derivationPath.String(), config.GetNetwork())
+	p, err := w.DerivePath(derivationPath.String())
 	if err != nil {
 		return nil, nil, err
 	}

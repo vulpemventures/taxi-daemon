@@ -130,7 +130,7 @@ func (w *wallet) SignInput(args SignInputArgs) (string, error) {
 }
 
 // DerivePath gets a derivation path and return a payment.Payment pointer
-func (w *wallet) DerivePath(path string, network *network.Network) (*payment.Payment, error) {
+func (w *wallet) DerivePath(path string) (*payment.Payment, error) {
 	_, pubkey, err := deriveSigningKeyPair(w.masterKey, path)
 	if err != nil {
 		return nil, err

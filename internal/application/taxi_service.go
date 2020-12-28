@@ -55,6 +55,7 @@ func newTaxiService(
 
 // TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
 func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (*domain.Topup, error) {
+	utxoTTL := time.Duration(config.GetInt(config.UtxoTTLKey)) * time.Second
 	// check if asset is available
 	price, err := taxi.priceRepository.GetPrice(ctx, assetHash)
 	if err != nil {
@@ -78,7 +79,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	expireAt := time.Now().Add(taxi.utxoTTL)
+	expireAt := time.Now().Add(utxoTTL)
 
 	topup := domain.NewTopup(assetHash, feeAmount, price.Amount, expireAt)
 	err = taxi.topupRepository.AddTopup(ctx, topup)
@@ -116,7 +117,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	}
 
 	go func() {
-		time.Sleep(taxi.utxoTTL)
+		time.Sleep(utxoTTL)
 		taxi.lockRepository.Unlock(ctx, utxoKey)
 	}()
 
