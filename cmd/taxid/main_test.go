@@ -67,14 +67,15 @@ func TestTaxiServer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// addresses, err := adminClient.FundingAddress(emptyContext, &pb.FundingAddressRequest{})
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
+	faReply, err := adminClient.FundingAddress(emptyContext, &admin.FundingAddressRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := faReply.GetAddresses()[0]
 
-	// if _, err := faucet(addresses[0], config.GetString(config.ExplorerEndpointKey)); err != nil {
-	// 	t.Fatal(err)
-	// }
+	if _, err := faucet(addr, config.GetString(config.ExplorerEndpointKey)); err != nil {
+		t.Fatal(err)
+	}
 
 	time.Sleep(2 * time.Second)
 
