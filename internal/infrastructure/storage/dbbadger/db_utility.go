@@ -1,8 +1,6 @@
 package dbbadger
 
 import (
-	"bytes"
-	"encoding/json"
 	"os"
 
 	"github.com/dgraph-io/badger/v2"
@@ -14,8 +12,8 @@ func createDb(dbDir string, logger badger.Logger) (db *badgerhold.Store, err err
 	opts.Logger = logger
 
 	db, err = badgerhold.Open(badgerhold.Options{
-		Encoder:          JSONEncode,
-		Decoder:          JSONDecode,
+		Encoder:          badgerhold.DefaultEncode,
+		Decoder:          badgerhold.DefaultDecode,
 		SequenceBandwith: 100,
 		Options:          opts,
 	})
@@ -40,31 +38,4 @@ func CreateDirIfNotExist(path string) error {
 	}
 
 	return err
-}
-
-// JSONEncode is a custom JSON based encoder for badger
-func JSONEncode(value interface{}) ([]byte, error) {
-	var buff bytes.Buffer
-
-	en := json.NewEncoder(&buff)
-
-	err := en.Encode(value)
-	if err != nil {
-		return nil, err
-	}
-
-	return buff.Bytes(), nil
-}
-
-// JSONDecode is a custom JSON based decoder for badger
-func JSONDecode(data []byte, value interface{}) error {
-	var buff bytes.Buffer
-	de := json.NewDecoder(&buff)
-
-	_, err := buff.Write(data)
-	if err != nil {
-		return err
-	}
-
-	return de.Decode(value)
 }

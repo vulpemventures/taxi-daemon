@@ -31,15 +31,17 @@ func main() {
 		log.Fatal(err)
 	}
 
-	topupRepository, err := dbbadger.NewBadgerTopupRepository(datadirPath, nil)
+	dbLogger := log.New()
+
+	topupRepository, err := dbbadger.NewBadgerTopupRepository(datadirPath, dbLogger)
 	if err != nil {
 		log.Fatal(err)
 	}
-	lockRepository, err := dbbadger.NewBadgerLockRepository(datadirPath, nil)
+	lockRepository, err := dbbadger.NewBadgerLockRepository(datadirPath, dbLogger)
 	if err != nil {
 		log.Fatal(err)
 	}
-	priceRepository, err := dbbadger.NewBadgerPriceRepository(datadirPath, nil)
+	priceRepository, err := dbbadger.NewBadgerPriceRepository(datadirPath, dbLogger)
 	if err != nil {
 		log.Fatal(err)
 	}
