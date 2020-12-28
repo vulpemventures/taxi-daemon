@@ -38,6 +38,39 @@ def error(message):
     sys.exit(-1)
 
 
+def query_yes_no(question, default="yes"):
+    """Ask a yes/no question via raw_input() and return their answer.
+
+    "question" is a string that is presented to the user.
+    "default" is the presumed answer if the user just hits <Enter>.
+        It must be "yes" (the default), "no" or None (meaning
+        an answer is required of the user).
+
+    The "answer" return value is True for "yes" or False for "no".
+    """
+    valid = {"yes": True, "y": True, "ye": True,
+             "no": False, "n": False}
+    if default is None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = input().lower()
+        if default is not None and choice == '':
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' "
+                             "(or 'y' or 'n').\n")
+
+
 def call(method, params):
     """
     call function returns request an elements node rpc method with an array of params.
@@ -85,11 +118,18 @@ def signTx(hex):
     """
     Use signrawtransactionwithwallet RPC to sign the transaction.
     """
-    sign_result = call('signrawtransactionwithwallet', [hex])
-    if sign_result['complete'] == False:
-        error('Error signTx: the wallet is not able to sign the transaction')
+    print('the following transaction will be broadcasted.')
+    print('hex: ', hex)
+    isYes = query_yes_no('Are you sure to sign and broadcast the tx?')
 
-    return sign_result['hex']
+    if isYes:
+        sign_result = call('signrawtransactionwithwallet', [hex])
+        if sign_result['complete'] == False:
+            error('Error signTx: the wallet is not able to sign the transaction')
+
+        return sign_result['hex']
+
+    error('abort')
 
 
 def sendTx(hex):
