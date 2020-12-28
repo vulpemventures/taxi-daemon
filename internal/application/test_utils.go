@@ -7,11 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/shopspring/decimal"
-	"github.com/tyler-smith/go-bip39"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
@@ -31,7 +29,6 @@ var (
 	doesnotmatterAmount = decimal.NewFromFloat(66.6)
 )
 
-// Faucet ...
 func faucet(address string, baseURL string) (string, error) {
 	url := baseURL + "/faucet"
 	payload := map[string]string{"address": address}
@@ -50,13 +47,13 @@ func faucet(address string, baseURL string) (string, error) {
 		return "", err
 	}
 
-	time.Sleep(5 * time.Second)
 	return respBody["txId"], nil
 }
 
-func newMockedPriceRepository(t *testing.T, assets []string) domain.PriceRepository {
+func newMockedPriceRepository(assets []string) domain.PriceRepository {
 	repo := inmemory.NewInmemoryPriceRepository()
 	initialPrices := []domain.Price{}
+	ctx := context.Background()
 
 	for _, a := range assets {
 		initialPrices = append(initialPrices, domain.Price{
@@ -66,23 +63,44 @@ func newMockedPriceRepository(t *testing.T, assets []string) domain.PriceReposit
 	}
 
 	for _, price := range initialPrices {
-		err := repo.UpdateOrCreatePrice(context.Background(), price)
-		if err != nil {
-			t.Fatal(err)
-		}
+		repo.UpdateOrCreatePrice(ctx, price)
 	}
 
 	return repo
 }
 
-func generateMnemonic(entropySize int) ([]string, error) {
-	entropy, err := bip39.NewEntropy(entropySize)
-	if err != nil {
-		return nil, err
+func newMockedTopupRepository(assets []string) domain.TopupRepository {
+	fee := uint64(1000)
+	price := decimal.NewFromInt(25000)
+	expirationTime := time.Now().Add(10 * time.Minute)
+
+	repo := inmemory.NewInmemoryTopupRepository()
+	topups := make([]domain.Topup, len(assets), len(assets))
+	for i, asset := range assets {
+		topups[i] = domain.NewTopup(asset, fee, price, expirationTime)
 	}
-	mnemonic, err := bip39.NewMnemonic(entropy)
-	if err != nil {
-		return nil, err
+
+	ctx := context.Background()
+	for _, t := range topups {
+		repo.AddTopup(ctx, t)
 	}
-	return strings.Split(mnemonic, " "), nil
+
+	return repo
+}
+
+func newMockedHDTreeRepository(numOfAddresses uint) domain.HDTreeRepository {
+	repo := inmemory.NewInmemoryHDTreeRepository()
+	ctx := context.Background()
+
+	repo.GetOrCreateHDTree(ctx)
+	if numOfAddresses > 0 {
+		repo.GetNewFundingAddresses(ctx, numOfAddresses)
+		repo.GetNewPayoutAddresses(ctx, numOfAddresses)
+	}
+
+	return repo
+}
+
+func newMockedLockRepository() domain.LockRepository {
+	return inmemory.NewInmemoryLockRepository()
 }

@@ -2,14 +2,13 @@ package application
 
 import (
 	"context"
-	"sync"
+	"encoding/hex"
 	"time"
 
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/shopspring/decimal"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
-	"github.com/vulpemventures/go-elements/network"
-	"github.com/vulpemventures/go-elements/payment"
+	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
@@ -22,55 +21,36 @@ const (
 // TaxiService provides interface for user UI
 type TaxiService interface {
 	TopupWithAsset(ctx context.Context, assetHash string) (*domain.Topup, error)
-	ListAssets(ctx context.Context) []string
+	ListAssets(ctx context.Context) ([]string, error)
 }
 
 type taxiService struct {
+	hdTreeRepository domain.HDTreeRepository
 	lockRepository   domain.LockRepository
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
 	explorer         explorer.Service
-	wallet           wallet.Wallet
-	network          network.Network
-	fixedFeeAmount   uint64
-	basisPointLocker sync.Locker
-	utxoTTL          time.Duration
-}
-
-// NewTaxiServiceArgs is a wrapper type for NewTaxiService factory function
-type NewTaxiServiceArgs struct {
-	Mnemonic        []string
-	Network         network.Network
-	FixedFeeAmount  uint64
-	TopupRepository domain.TopupRepository
-	LockRepository  domain.LockRepository
-	PriceRepository domain.PriceRepository
-	ExplorerSvc     explorer.Service
-	UtxoTTL         time.Duration
 }
 
 // NewTaxiService returns a TaxiService interface
-func NewTaxiService(args NewTaxiServiceArgs) (TaxiService, error) {
-	return newTaxiService(args)
+func NewTaxiService(
+	hdTreeRepo domain.HDTreeRepository,
+	lockRepo domain.LockRepository,
+	topupRepo domain.TopupRepository,
+	priceRepo domain.PriceRepository,
+	explorerSvc explorer.Service,
+) TaxiService {
+	return newTaxiService(hdTreeRepo, lockRepo, topupRepo, priceRepo, explorerSvc)
 }
 
-func newTaxiService(args NewTaxiServiceArgs) (*taxiService, error) {
-	w, err := wallet.NewWallet(args.Mnemonic, args.Network)
-	if err != nil {
-		return nil, err
-	}
-
-	return &taxiService{
-		lockRepository:   args.LockRepository,
-		topupRepository:  args.TopupRepository,
-		priceRepository:  args.PriceRepository,
-		explorer:         args.ExplorerSvc,
-		wallet:           w,
-		fixedFeeAmount:   args.FixedFeeAmount,
-		basisPointLocker: &sync.Mutex{},
-		network:          args.Network,
-		utxoTTL:          args.UtxoTTL,
-	}, nil
+func newTaxiService(
+	hdTreeRepo domain.HDTreeRepository,
+	lockRepo domain.LockRepository,
+	topupRepo domain.TopupRepository,
+	priceRepo domain.PriceRepository,
+	explorerSvc explorer.Service,
+) *taxiService {
+	return &taxiService{hdTreeRepo, lockRepo, topupRepo, priceRepo, explorerSvc}
 }
 
 // TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
@@ -80,7 +60,6 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	if err != nil {
 		return nil, err
 	}
-
 	if price == nil {
 		return nil, ErrAssetNotSupported{AssetHash: assetHash}
 	}
@@ -91,67 +70,48 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	utxo, err := selectOneUtxo(utxos, taxi.fixedFeeAmount, taxi.network.AssetID)
+	feeAmount := uint64(config.GetInt(config.FixedFeeAmountKey))
+	lbtcAsset := config.GetNetwork().AssetID
+
+	utxo, err := selectOneUtxo(utxos, feeAmount, lbtcAsset)
 	if err != nil {
 		return nil, err
 	}
 
 	expireAt := time.Now().Add(taxi.utxoTTL)
 
-	topup := domain.NewTopup(assetHash, taxi.fixedFeeAmount, price.Amount, expireAt)
+	topup := domain.NewTopup(assetHash, feeAmount, price.Amount, expireAt)
 	err = taxi.topupRepository.AddTopup(ctx, topup)
 	if err != nil {
 		return nil, err
 	}
 
-	amountAsDecimal := decimal.NewFromInt(int64(taxi.fixedFeeAmount))
+	amountAsDecimal := decimal.NewFromInt(int64(feeAmount))
 	assetAmount := uint64(price.Amount.Mul(amountAsDecimal).IntPart())
 
-	payment, err := taxi.getPaymentForAsset()
+	payouts, err := taxi.hdTreeRepository.GetNewPayoutAddresses(ctx, 1)
 	if err != nil {
 		return nil, err
 	}
 
-	outputsOpts := []wallet.PsetOutputOpts{
-		wallet.PsetOutputOpts{
-			WitnessScript: payment.WitnessScript,
-			Asset:         assetHash,
-			Amount:        assetAmount,
-		},
-		wallet.PsetOutputOpts{
-			WitnessScript: []byte{},
-			Asset:         taxi.network.AssetID,
-			Amount:        taxi.fixedFeeAmount,
-		},
-	}
-
-	// create transaction
-	taxiPset, err := taxi.wallet.CreatePSET([]explorer.Utxo{utxo}, outputsOpts)
+	psetBase64, err := taxi.createAndSignTopupTx(createAndSignTopupTxArgs{
+		unspent:       utxo,
+		assetHash:     assetHash,
+		assetAmount:   assetAmount,
+		payoutAddress: payouts[0],
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	signOpts := wallet.SignInputArgs{
-		PsetBase64: taxiPset,
-		Path:       derivationPathForLBTC,
-		InputIndex: 0,
-		HashType:   txscript.SigHashSingle | txscript.SigHashAnyOneCanPay,
-	}
-
-	signedPsetBase64, err := taxi.wallet.SignInput(signOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	topupCompleted, err := taxi.topupRepository.MarkAsCompleted(ctx, topup.ID, signedPsetBase64, assetAmount)
+	topupCompleted, err := taxi.topupRepository.MarkAsCompleted(ctx, topup.ID, psetBase64, assetAmount)
 	if err != nil {
 		return nil, err
 	}
 
 	// Lock the utxo used for this topup to avoid other ones to use it
 	utxoKey := domain.UtxoToLock(utxo)
-	err = taxi.lockRepository.Lock(ctx, []domain.Lock{utxoKey})
-	if err != nil {
+	if err = taxi.lockRepository.Lock(ctx, []domain.Lock{utxoKey}); err != nil {
 		return nil, err
 	}
 
@@ -164,67 +124,49 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 }
 
 // ListAssets return all the available assets of the taxi service
-func (taxi *taxiService) ListAssets(ctx context.Context) []string {
+func (taxi *taxiService) ListAssets(ctx context.Context) ([]string, error) {
 	prices, err := taxi.priceRepository.GetAllPrices(ctx)
-	if err != nil {
-		return nil
-	}
-
-	supportedAssets := make([]string, 0)
-
-	for _, price := range prices {
-		supportedAssets = append(supportedAssets, price.AssetHash)
-	}
-
-	return supportedAssets
-}
-
-// utils function using to fund the service
-func (taxi *taxiService) getFundAddress() (string, error) {
-	paymentForLBTC, err := taxi.getPaymentForLBTC()
-	if err != nil {
-		return "", err
-	}
-
-	lbtcAddress, err := paymentForLBTC.WitnessPubKeyHash()
-	if err != nil {
-		return "", err
-	}
-
-	// TODO now the taxi service has only two addresses. In the future taxi will generate a set of addresses for each topup
-	return lbtcAddress, nil
-}
-
-func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Utxo, error) {
-	address, err := taxi.getFundAddress()
 	if err != nil {
 		return nil, err
 	}
 
-	utxos, err := taxi.explorer.GetUnspents(address, [][]byte{})
+	assets := make([]string, 0)
+	for _, price := range prices {
+		assets = append(assets, price.AssetHash)
+	}
+
+	return assets, nil
+}
+
+func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Utxo, error) {
+	// retrieve root path of the hd tree and instantiate the inmemory wallet
+	hdTree, err := taxi.hdTreeRepository.GetOrCreateHDTree(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// get all funding derived addresses
+	addrInfoList, err := hdTree.AllDerivedAddressInfoForLBTCAccount()
 	if err != nil {
 		return nil, err
 	}
 
 	availableUtxos := make([]explorer.Utxo, 0)
+	for _, addrInfo := range addrInfoList {
+		utxos, err := taxi.explorer.GetUnspents(addrInfo.Address, [][]byte{})
+		if err != nil {
+			return nil, err
+		}
 
-	for _, utxo := range utxos {
-		utxoKey := domain.UtxoToLock(utxo)
-
-		if !taxi.lockRepository.IsLocked(ctx, utxoKey) {
-			availableUtxos = append(availableUtxos, utxo)
+		for _, utxo := range utxos {
+			utxoKey := domain.UtxoToLock(utxo)
+			if !taxi.lockRepository.IsLocked(ctx, utxoKey) {
+				availableUtxos = append(availableUtxos, utxo)
+			}
 		}
 	}
 
 	return availableUtxos, nil
-}
-
-func (taxi *taxiService) getPaymentForAsset() (*payment.Payment, error) {
-	return taxi.wallet.DerivePath(derivationPathForAsset)
-}
-
-func (taxi *taxiService) getPaymentForLBTC() (*payment.Payment, error) {
-	return taxi.wallet.DerivePath(derivationPathForLBTC)
 }
 
 func selectOneUtxo(utxos []explorer.Utxo, targetAmount uint64, targetAsset string) (explorer.Utxo, error) {
@@ -238,4 +180,56 @@ func selectOneUtxo(utxos []explorer.Utxo, targetAmount uint64, targetAsset strin
 		TargetedAmount: targetAmount,
 		TargetedAsset:  targetAsset,
 	}
+}
+
+type createAndSignTopupTxArgs struct {
+	context       context.Context
+	unspent       explorer.Utxo
+	assetHash     string
+	assetAmount   uint64
+	payoutAddress string
+}
+
+func (taxi *taxiService) createAndSignTopupTx(args createAndSignTopupTxArgs) (string, error) {
+	hdTree, err := taxi.hdTreeRepository.GetOrCreateHDTree(args.context)
+	if err != nil {
+		return "", err
+	}
+	rootPath, _ := wallet.ParseDerivationPath(hdTree.RootDerivationPath)
+	w, err := wallet.NewWallet(config.GetMnemonic(), rootPath, *config.GetNetwork())
+	if err != nil {
+		return "", err
+	}
+
+	outputsOpts := []wallet.Receiver{
+		{
+			Address: args.payoutAddress,
+			Asset:   args.assetHash,
+			Amount:  args.assetAmount,
+		},
+		{
+			Asset:  config.GetNetwork().AssetID,
+			Amount: uint64(config.GetInt(config.FixedFeeAmountKey)),
+		},
+	}
+	psetBase64, err := w.CreatePSET(
+		[]explorer.Utxo{args.unspent},
+		outputsOpts,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	derivationPath, _ := hdTree.DerivationPathForScript(
+		hex.EncodeToString(args.unspent.Script()),
+	)
+
+	signOpts := wallet.SignInputArgs{
+		PsetBase64: psetBase64,
+		Path:       derivationPath,
+		InputIndex: 0,
+		HashType:   txscript.SigHashSingle | txscript.SigHashAnyOneCanPay,
+	}
+
+	return w.SignInput(signOpts)
 }

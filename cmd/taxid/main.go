@@ -5,9 +5,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
@@ -33,7 +31,6 @@ func main() {
 	}
 
 	dbLogger := log.New()
-
 	topupRepository, err := dbbadger.NewBadgerTopupRepository(datadirPath, dbLogger)
 	if err != nil {
 		log.Fatal(err)
@@ -46,26 +43,20 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	explorerSvc := explorer.NewService(config.GetString(config.ExplorerEndpointKey))
 
 	log.Info("Taxi server is starting...")
 
-	taxiSvcOptions := application.NewTaxiServiceArgs{
-		Mnemonic:        strings.Split(config.GetString(config.MnemonicKey), " "),
-		Network:         *config.GetNetwork(),
-		FixedFeeAmount:  uint64(config.GetInt(config.FixedFeeAmountKey)),
-		LockRepository:  lockRepository,
-		PriceRepository: priceRepository,
-		TopupRepository: topupRepository,
-		ExplorerSvc:     explorer.NewService(config.GetString(config.ExplorerEndpointKey)),
-		UtxoTTL:         time.Duration(config.GetInt(config.UtxoTTLKey)) * time.Second,
-	}
-
-	taxiSvc, err := application.NewTaxiService(taxiSvcOptions)
-	if err != nil {
-		log.Fatal("taxi service creation error ", err)
-	}
+	taxiSvc := application.NewTaxiService(
+		hdTreeRepository,
+		lockRepository,
+		topupRepository,
+		priceRepository,
+		explorerSvc,
+	)
 
 	adminSvc := application.NewAdminService(
+		hdTreeRepository,
 		topupRepository,
 		priceRepository,
 	)

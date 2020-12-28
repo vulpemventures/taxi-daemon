@@ -9,25 +9,40 @@ import (
 
 // AdminService administrates a TaxiService
 type AdminService interface {
+	GetFundingAddresses(ctx context.Context, numOfAddresses uint) ([]string, error)
 	ListTopups(ctx context.Context, assetHashFilter string) ([]domain.Topup, error)
 	AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error
 	ChangeSpread(ctx context.Context, basisPoint uint32)
 }
 
 type adminService struct {
-	topupRepository domain.TopupRepository
-	priceRepository domain.PriceRepository
+	hdTreeRepository domain.HDTreeRepository
+	topupRepository  domain.TopupRepository
+	priceRepository  domain.PriceRepository
 }
 
 // NewAdminService is a factory function for AdminService interface
 func NewAdminService(
-	topupRepository domain.TopupRepository,
-	priceRepository domain.PriceRepository,
+	hdTreeRepo domain.HDTreeRepository,
+	topupRepo domain.TopupRepository,
+	priceRepo domain.PriceRepository,
 ) AdminService {
-	return &adminService{
-		topupRepository: topupRepository,
-		priceRepository: priceRepository,
+	return newAdminService(hdTreeRepo, topupRepo, priceRepo)
+}
+func newAdminService(
+	hdTreeRepo domain.HDTreeRepository,
+	topupRepo domain.TopupRepository,
+	priceRepo domain.PriceRepository,
+) AdminService {
+	return &adminService{hdTreeRepo, topupRepo, priceRepo}
+}
+
+func (adminSvc *adminService) GetFundingAddresses(ctx context.Context, numOfAddresses uint) ([]string, error) {
+	if numOfAddresses == 0 {
+		numOfAddresses = 1
 	}
+
+	return adminSvc.hdTreeRepository.GetNewFundingAddresses(ctx, numOfAddresses)
 }
 
 func (adminSvc *adminService) AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error {
