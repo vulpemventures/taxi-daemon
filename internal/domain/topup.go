@@ -93,8 +93,8 @@ func (t *Topup) Settle() error {
 	return ErrTopupNeedToBeCompleted
 }
 
-// ToProtobufTopupMessage maps topup domain to admin.Topup message type
-func (t *Topup) ToProtobufTopupMessage() *pb.Topup {
+// ToTopupMessage maps topup domain to admin.Topup message type
+func (t *Topup) ToTopupMessage() *pb.Topup {
 	price, _ := t.AssetPrice.Float64()
 
 	return &pb.Topup{
@@ -106,35 +106,27 @@ func (t *Topup) ToProtobufTopupMessage() *pb.Topup {
 	}
 }
 
-// ToAdminTopupMessage maps topup domain to admin.Topup message type
-func (t *Topup) ToAdminTopupMessage() *admin.Topup {
+// ToTopupDetailsMessage maps topup domain to admin.Topup message type
+func (t *Topup) ToTopupDetailsMessage() *admin.TopupDetails {
 	price, _ := t.AssetPrice.Float64()
 
-	return &admin.Topup{
+	return &admin.TopupDetails{
 		TopupId:     t.ID,
 		Partial:     t.Partial,
 		AssetHash:   t.AssetHash,
 		AssetAmount: t.AssetAmount,
 		AssetPrice:  float32(price),
+		Status:      admin.TopupDetails_Status(t.Status),
+		FeeAmount:   t.FeeAmount,
+		Times:       t.toProtobufTimestampsMessage(),
+		Txid:        "",
 	}
 }
 
-// ToProtobufTimestampsMessage maps topup domain to admin.Timestamps message type
-func (t *Topup) ToProtobufTimestampsMessage() *admin.Timestamps {
+func (t *Topup) toProtobufTimestampsMessage() *admin.Timestamps {
 	return &admin.Timestamps{
 		RequestedAt: uint64(t.RequestedAt.Unix()),
 		CompletedAt: uint64(t.CompletedAt.Unix()),
 		SettledAt:   uint64(t.SettledAt.Unix()),
-	}
-}
-
-// ToProtobufTopupInfoMessage maps topup domain to admin.TopupInfo message type
-func (t *Topup) ToProtobufTopupInfoMessage() *admin.TopupInfo {
-	return &admin.TopupInfo{
-		Topup:           t.ToAdminTopupMessage(),
-		Status:          admin.TopupInfo_Status(t.Status),
-		FeeAmount:       t.FeeAmount,
-		MillisatPerByte: 0,
-		Times:           t.ToProtobufTimestampsMessage(),
 	}
 }
