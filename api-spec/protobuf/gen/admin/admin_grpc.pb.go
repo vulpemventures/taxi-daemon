@@ -4,7 +4,6 @@ package admin
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -149,7 +148,7 @@ type UnsafeAdminServer interface {
 }
 
 func RegisterAdminServer(s grpc.ServiceRegistrar, srv AdminServer) {
-	s.RegisterService(&Admin_ServiceDesc, srv)
+	s.RegisterService(&_Admin_serviceDesc, srv)
 }
 
 func _Admin_AddAsset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -260,10 +259,7 @@ func _Admin_SendToMany_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-// Admin_ServiceDesc is the grpc.ServiceDesc for Admin service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var Admin_ServiceDesc = grpc.ServiceDesc{
+var _Admin_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "Admin",
 	HandlerType: (*AdminServer)(nil),
 	Methods: []grpc.MethodDesc{
