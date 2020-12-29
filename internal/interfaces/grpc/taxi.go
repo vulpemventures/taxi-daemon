@@ -33,7 +33,7 @@ func (t *taxiServer) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetR
 	}
 
 	return &pb.TopupWithAssetReply{
-		Topup:  topup.ToProtobufTopupMessage(),
+		Topup:  topup.ToTopupMessage(),
 		Expiry: uint64(topup.ExpireAt.Unix()),
 	}, nil
 }

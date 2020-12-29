@@ -28,7 +28,7 @@ message ListTopupsRequest {
   string asset_hash = 1; // the asset hash to filter the topups. If empty, all topups of all assets will be returned
 }
 message ListTopupsReply {
-  repeated TopupInfo topups = 1;
+  repeated TopupDetails topups = 1;
 }
 
 
@@ -72,8 +72,6 @@ message SendToManyReply {
   bytes raw_tx = 1;
 }
 
-
-
 message AddressInfo {
   string address = 1; // Liquid address
   string derivation_path = 2; //  Derivation path of the address e.g. "m/84'/1'/0'/0/0"
@@ -100,27 +98,24 @@ message TxOut {
   // The confidential address of the output being spent.
   string address = 3;
 }
-message Topup {
-  string topup_id = 1; //random identifier of the currer topup
-  string partial = 2; // PSET signed with SIGHASH_SINGLE | ANYONECANPAY
-  string asset_hash = 3; // the asset hash used as payout for bitcoin fees
-  uint64 asset_amount = 4; // the asset denominated amount expressed in satoshis to be used as payout. It includes also the spread as taxi service fee
-  float asset_price = 5; // the price of bitcoin expressed in asset
-  int32 basis_point = 6; // the spread expressed in basis point on top the amount needed to repay for bitcoin fees
-}
-message TopupInfo {
-  Topup topup = 1;
+
+message TopupDetails {
   enum Status {
     REQUESTED = 0; // when the request for a topup has been received by the taxi
     COMPLETED = 1; // when the reply with a partially signed topup has been delivered to the client 
     SETTLED = 2; // when the topup has been included in the blockchain
   }
-  Status status = 2;
-  uint64 fee_amount = 3; // amount in satoshis of bitcoin needed to cover the fees
-  uint64 millisat_per_byte = 4; // how many millisatoshi per byte we want to spend. ie. 0.1 sat/byte is 100
-  Timestamps times = 5; // the timestamps of each status change
-  string txid = 6; // the tx hash when the topup is settled, empty otherwise
+  string topup_id = 1; //random identifier of the currer topup
+  string partial = 2; // PSET signed with SIGHASH_SINGLE | ANYONECANPAY
+  string asset_hash = 3; // the asset hash used as payout for bitcoin fees
+  uint64 asset_amount = 4; // the asset denominated amount expressed in satoshis to be used as payout. It includes also the spread as taxi service fee
+  float asset_price = 5; // the price of bitcoin expressed in asset
+  Status status = 6;
+  uint64 fee_amount = 7; // amount in satoshis of bitcoin needed to cover the fees
+  Timestamps times = 9; // the timestamps of each status change
+  string txid = 10; // the tx hash when the topup is settled, empty otherwise
 }
+
 message Timestamps {
   uint64 requested_at = 1; // the unix timestamp of when the taxi received the request of a topup from a client
   uint64 completed_at = 2; // the unix timestamp of when the taxi completed the topup and responded to client

@@ -36,9 +36,9 @@ func (a *adminServer) ListTopups(ctx context.Context, req *admin.ListTopupsReque
 		return nil, err
 	}
 
-	reply := make([]*admin.TopupInfo, 0)
+	reply := make([]*admin.TopupDetails, 0)
 	for _, t := range topups {
-		reply = append(reply, t.ToProtobufTopupInfoMessage())
+		reply = append(reply, t.ToTopupDetailsMessage())
 	}
 
 	return &admin.ListTopupsReply{

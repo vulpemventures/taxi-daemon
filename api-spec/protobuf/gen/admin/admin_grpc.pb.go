@@ -11,7 +11,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
+const _ = grpc.SupportPackageIsVersion7
 
 // AdminClient is the client API for Admin service.
 //
@@ -107,25 +107,32 @@ type AdminServer interface {
 type UnimplementedAdminServer struct {
 }
 
-func (*UnimplementedAdminServer) AddAsset(context.Context, *AddAssetRequest) (*AddAssetReply, error) {
+func (UnimplementedAdminServer) AddAsset(context.Context, *AddAssetRequest) (*AddAssetReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddAsset not implemented")
 }
-func (*UnimplementedAdminServer) ListTopups(context.Context, *ListTopupsRequest) (*ListTopupsReply, error) {
+func (UnimplementedAdminServer) ListTopups(context.Context, *ListTopupsRequest) (*ListTopupsReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTopups not implemented")
 }
-func (*UnimplementedAdminServer) ListAddresses(context.Context, *ListAddressesRequest) (*ListAddressesReply, error) {
+func (UnimplementedAdminServer) ListAddresses(context.Context, *ListAddressesRequest) (*ListAddressesReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListAddresses not implemented")
 }
-func (*UnimplementedAdminServer) Balance(context.Context, *BalanceRequest) (*BalanceReply, error) {
+func (UnimplementedAdminServer) Balance(context.Context, *BalanceRequest) (*BalanceReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Balance not implemented")
 }
-func (*UnimplementedAdminServer) SendToMany(context.Context, *SendToManyRequest) (*SendToManyReply, error) {
+func (UnimplementedAdminServer) SendToMany(context.Context, *SendToManyRequest) (*SendToManyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendToMany not implemented")
 }
-func (*UnimplementedAdminServer) mustEmbedUnimplementedAdminServer() {}
+func (UnimplementedAdminServer) mustEmbedUnimplementedAdminServer() {}
 
-func RegisterAdminServer(s *grpc.Server, srv AdminServer) {
-	s.RegisterService(&_Admin_serviceDesc, srv)
+// UnsafeAdminServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to AdminServer will
+// result in compilation errors.
+type UnsafeAdminServer interface {
+	mustEmbedUnimplementedAdminServer()
+}
+
+func RegisterAdminServer(s grpc.ServiceRegistrar, srv AdminServer) {
+	s.RegisterService(&Admin_ServiceDesc, srv)
 }
 
 func _Admin_AddAsset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -218,7 +225,10 @@ func _Admin_SendToMany_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Admin_serviceDesc = grpc.ServiceDesc{
+// Admin_ServiceDesc is the grpc.ServiceDesc for Admin service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Admin_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "Admin",
 	HandlerType: (*AdminServer)(nil),
 	Methods: []grpc.MethodDesc{
