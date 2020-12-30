@@ -11,18 +11,22 @@ import (
 )
 
 const (
+	// ExternalChain is used to built derivation path
 	ExternalChain uint = 0
-
+	// LBTCAccount is the index of the LBTC account
 	LBTCAccount uint = iota
+	// PayoutAccount is the index of the Payout account
 	PayoutAccount
 )
 
+// Account represents a wallet account
 type Account struct {
 	AccountIndex           uint
 	NextExternalIndex      uint
 	DerivationPathByScript map[string]string
 }
 
+// NewAccount a factory function for the Account type
 func NewAccount(accountIndex uint) *Account {
 	return &Account{
 		AccountIndex:           accountIndex,
@@ -49,11 +53,13 @@ func (a *Account) addDerivationPath(script, derivationPath string) {
 	}
 }
 
+// HDTree represents a HD wallet
 type HDTree struct {
 	RootDerivationPath string
 	Accounts           map[uint]*Account
 }
 
+// NewHDTree is the factory function for the HDTree domain
 func NewHDTree(rootPath wallet.DerivationPath) (*HDTree, error) {
 	if len(config.GetMnemonic()) <= 0 {
 		return nil, errors.New("mnemonic must be set in env")
@@ -64,6 +70,7 @@ func NewHDTree(rootPath wallet.DerivationPath) (*HDTree, error) {
 	}, nil
 }
 
+// AddressInfo defines all the address data
 type AddressInfo struct {
 	Address        string
 	Script         string
@@ -72,14 +79,17 @@ type AddressInfo struct {
 	PublicKey      string
 }
 
+// DeriveNextAddressForLBTCAccount returns a new address for the LBTCAccount
 func (t *HDTree) DeriveNextAddressForLBTCAccount() (*AddressInfo, error) {
 	return t.deriveNextAddressForAccount(LBTCAccount)
 }
 
+// DeriveNextAddressForPayoutAccount returns a new address for the Payout account
 func (t *HDTree) DeriveNextAddressForPayoutAccount() (*AddressInfo, error) {
 	return t.deriveNextAddressForAccount(PayoutAccount)
 }
 
+// DeriveAddressInRangeForAccount derive a set of addresses of a given account: from `start` to `start + numOfAddresses - 1`
 func (t *HDTree) DeriveAddressInRangeForAccount(account, start, numOfAddresses uint) ([]AddressInfo, error) {
 	if start == 0 && numOfAddresses == 0 {
 		return t.allDerivedAddressInfoForAccount(account)
@@ -95,6 +105,7 @@ func (t *HDTree) DeriveAddressInRangeForAccount(account, start, numOfAddresses u
 	return t.deriveAddressInRangeForAccount(account, start, numOfAddresses)
 }
 
+// DerivationPathForScript returns, if exist in HDTree accounts, the derivation path of the given script
 func (t *HDTree) DerivationPathForScript(script string) (string, bool) {
 	for _, account := range t.Accounts {
 		if derivationPath, ok := account.DerivationPathByScript[script]; ok {
@@ -104,6 +115,7 @@ func (t *HDTree) DerivationPathForScript(script string) (string, bool) {
 	return "", false
 }
 
+// DerivationPathForAddress returns, if exist in HDTree accounts, the derivation path of the given address
 func (t *HDTree) DerivationPathForAddress(addr string) (string, bool) {
 	script, err := address.ToOutputScript(addr)
 	if err != nil {
