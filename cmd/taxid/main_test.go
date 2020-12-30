@@ -15,7 +15,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/prometheus/common/log"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
@@ -67,6 +67,18 @@ func TestTaxiServer(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	faReply, err := adminClient.FundingAddress(emptyContext, &admin.FundingAddressRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := faReply.GetAddresses()[0]
+
+	if _, err := faucet(addr, config.GetString(config.ExplorerEndpointKey)); err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(2 * time.Second)
+
 	// CLIENT SIDE --->
 	// Alice connect to server
 	conn, err = g.Dial("localhost:8000", g.WithInsecure())
@@ -81,19 +93,21 @@ func TestTaxiServer(t *testing.T) {
 	reply, err := client.TopupWithAsset(emptyContext, &pb.TopupWithAssetRequest{
 		AssetHash: USDT,
 	})
-
-	assert.Nil(t, err)
-	assert.NotNil(t, reply)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	b64Tx := reply.Topup.GetPartial()
 	p, err := pset.NewPsetFromBase64(b64Tx)
-
-	assert.Nil(t, err)
-	assert.NotNil(t, p)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	signatureIsValid, err := p.ValidateAllSignatures()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	assert.Nil(t, err)
 	assert.Equal(t, true, signatureIsValid)
 
 	// Let's create our Bob
@@ -239,4 +253,25 @@ func mint(apiURL string, address string, amount int) (string, string, error) {
 	}
 
 	return respBody["txId"].(string), respBody["asset"].(string), nil
+}
+
+func faucet(address string, baseURL string) (string, error) {
+	url := baseURL + "/faucet"
+	payload := map[string]string{"address": address}
+	body, _ := json.Marshal(payload)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return "", err
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	respBody := map[string]string{}
+	err = json.Unmarshal(data, &respBody)
+	if err != nil {
+		return "", err
+	}
+
+	return respBody["txId"], nil
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"sort"
 	"testing"
 	"time"
 
@@ -13,98 +12,56 @@ import (
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
+	"github.com/vulpemventures/liquid-taxi/config"
+	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 )
 
-func TestUtxoTTLAfterTopup(t *testing.T) {
-	lockRepo := inmemory.NewInmemoryLockRepository()
-	newWords, err := generateMnemonic(256)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	newTaxiOpts := NewTaxiServiceArgs{
-		Mnemonic:        newWords,
-		Network:         regtest,
-		FixedFeeAmount:  100000000,
-		TopupRepository: inmemory.NewInmemoryTopupRepository(),
-		LockRepository:  lockRepo,
-		PriceRepository: newMockedPriceRepository(t, []string{superToken}),
-		ExplorerSvc:     explorer.NewService(explorerEndpoint),
-		UtxoTTL:         3 * time.Second,
-	}
-
-	taxiSvc, err := newTaxiService(newTaxiOpts)
-	if err != nil {
-		t.Fatal(nil)
-	}
-
-	// found taxi with LBTC
-	addr, err := taxiSvc.getFundAddress()
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = faucet(addr, explorerEndpoint)
-	if err != nil {
-		t.Fatal(nil)
-	}
-
-	topup, err := taxiSvc.TopupWithAsset(context.Background(), superToken)
-	assert.Nil(t, err)
-	assert.NotNil(t, topup)
-
-	p, err := pset.NewPsetFromBase64(topup.Partial)
-	assert.Nil(t, err)
-	assert.NotNil(t, p)
-
-	topup, err = taxiSvc.TopupWithAsset(context.Background(), superToken)
-	if err == nil {
-		t.Fatal(err)
-	}
-
-	time.Sleep(4 * time.Second)
-
-	topup, err = taxiSvc.TopupWithAsset(context.Background(), superToken)
-	assert.Nil(t, err)
-	assert.NotNil(t, topup)
-}
-
 func TestTopupWithAsset(t *testing.T) {
-	newTaxiOpts := NewTaxiServiceArgs{
-		Mnemonic:        words,
-		Network:         regtest,
-		FixedFeeAmount:  100000000,
-		TopupRepository: inmemory.NewInmemoryTopupRepository(),
-		LockRepository:  inmemory.NewInmemoryLockRepository(),
-		PriceRepository: newMockedPriceRepository(t, []string{superToken}),
-		ExplorerSvc:     explorer.NewService(explorerEndpoint),
-		UtxoTTL:         time.Minute,
-	}
+	hdTreeRepo := newMockedHDTreeRepository(0)
+	lockRepo := inmemory.NewInmemoryLockRepository()
+	topupRepo := newMockedTopupRepository(nil)
+	priceRepo := newMockedPriceRepository([]string{superToken})
+	explorerSvc := explorer.NewService(explorerEndpoint)
 
-	taxiSvc, err := newTaxiService(newTaxiOpts)
-	if err != nil {
-		t.Fatal(nil)
-	}
+	config.Set(config.MnemonicKey, mnemonic)
+	t.Cleanup(func() {
+		config.Set(config.MnemonicKey, "")
+	})
 
-	// found taxi with LBTC
-	addr, err := taxiSvc.getFundAddress()
+	taxiSvc := newTaxiService(
+		hdTreeRepo,
+		lockRepo,
+		topupRepo,
+		priceRepo,
+		explorerSvc,
+	)
+	ctx := context.Background()
+
+	addresses, err := hdTreeRepo.GetNewFundingAddresses(ctx, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = faucet(addr, explorerEndpoint)
-	if err != nil {
-		t.Fatal(nil)
-	}
 
-	topup, err := taxiSvc.TopupWithAsset(context.Background(), superToken)
-	assert.Nil(t, err)
+	// fund taxi with LBTC
+	if _, err := faucet(addresses[0], explorerEndpoint); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(2 * time.Second)
+
+	topup, err := taxiSvc.TopupWithAsset(ctx, superToken)
+	if err != nil {
+		t.Fatal(err)
+	}
 	assert.NotNil(t, topup)
 
 	p, err := pset.NewPsetFromBase64(topup.Partial)
-	assert.Nil(t, err)
-	assert.NotNil(t, p)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	assert.Equal(t, true, len(p.UnsignedTx.Outputs) >= 2)
+	assert.Equal(t, 1, len(p.UnsignedTx.Inputs))
+	assert.Equal(t, 2, len(p.UnsignedTx.Outputs))
 
 	var payoutOutput *transaction.TxOutput
 	var feeOutput *transaction.TxOutput
@@ -121,44 +78,35 @@ func TestTopupWithAsset(t *testing.T) {
 
 	assert.NotNil(t, payoutOutput)
 	assert.NotNil(t, feeOutput)
-	assert.Equal(t, 1, len(p.UnsignedTx.Inputs))
+
+	inLock := domain.Lock{
+		TxID: hex.EncodeToString(elementsutil.ReverseBytes(p.UnsignedTx.Inputs[0].Hash)),
+		Vout: p.UnsignedTx.Inputs[0].Index,
+	}
+	assert.Equal(t, true, lockRepo.IsLocked(ctx, inLock))
 }
 
 func TestListAssets(t *testing.T) {
-	type testFixture struct {
-		input    []string
-		expected []string
+	hdTreeRepo := newMockedHDTreeRepository(0)
+	lockRepo := inmemory.NewInmemoryLockRepository()
+	topupRepo := newMockedTopupRepository(nil)
+	priceRepo := newMockedPriceRepository([]string{superToken, hyperToken})
+	explorerSvc := explorer.NewService(explorerEndpoint)
+
+	taxiSvc := newTaxiService(
+		hdTreeRepo,
+		lockRepo,
+		topupRepo,
+		priceRepo,
+		explorerSvc,
+	)
+	ctx := context.Background()
+
+	assets, err := taxiSvc.ListAssets(ctx)
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	tests := []testFixture{
-		{
-			input:    []string{"bitcoin", "bobtoken", "liquidbitcoin", "solidbitcoin"},
-			expected: []string{"bitcoin", "bobtoken", "liquidbitcoin", "solidbitcoin"},
-		},
-	}
-
-	for _, test := range tests {
-		newTaxiOpts := NewTaxiServiceArgs{
-			Mnemonic:        words,
-			Network:         regtest,
-			FixedFeeAmount:  100000000,
-			TopupRepository: inmemory.NewInmemoryTopupRepository(),
-			LockRepository:  inmemory.NewInmemoryLockRepository(),
-			PriceRepository: newMockedPriceRepository(t, test.input),
-			ExplorerSvc:     explorer.NewService(explorerEndpoint),
-			UtxoTTL:         time.Minute,
-		}
-
-		taxiSvc, err := NewTaxiService(newTaxiOpts)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		assets := taxiSvc.ListAssets(context.Background())
-		sort.Strings(assets)
-		sort.Strings(test.expected)
-		assert.Equal(t, test.expected, assets)
-	}
+	assert.Equal(t, 2, len(assets))
 
 }
 

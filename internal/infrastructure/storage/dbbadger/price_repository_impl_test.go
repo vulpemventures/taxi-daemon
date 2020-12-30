@@ -27,7 +27,12 @@ var (
 )
 
 func TestUpdateOrCreatePrice(t *testing.T) {
-	dirManagementForTest(t)
+	clean, err := createTestDataDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(clean)
+
 	repo, err := NewBadgerPriceRepository(testDataDir, nil)
 
 	// should create
@@ -60,7 +65,12 @@ func TestUpdateOrCreatePrice(t *testing.T) {
 }
 
 func TestGetAllPrices(t *testing.T) {
-	dirManagementForTest(t)
+	clean, err := createTestDataDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(clean)
+
 	repo, err := NewBadgerPriceRepository(testDataDir, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -84,7 +94,12 @@ func TestGetAllPrices(t *testing.T) {
 }
 
 func TestGetPrice(t *testing.T) {
-	dirManagementForTest(t)
+	clean, err := createTestDataDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(clean)
+
 	repo, err := NewBadgerPriceRepository(testDataDir, nil)
 	if err != nil {
 		t.Fatal(err)

@@ -24,7 +24,11 @@ var (
 )
 
 func TestAddTopup(t *testing.T) {
-	dirManagementForTest(t)
+	clean, err := createTestDataDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(clean)
 
 	repo, err := NewBadgerTopupRepository(testDataDir, nil)
 	if err != nil {
@@ -49,7 +53,11 @@ func TestAddTopup(t *testing.T) {
 }
 
 func TestGetAllTopups(t *testing.T) {
-	dirManagementForTest(t)
+	clean, err := createTestDataDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(clean)
 
 	repo, err := NewBadgerTopupRepository(testDataDir, nil)
 	if err != nil {
@@ -78,7 +86,11 @@ func TestGetAllTopups(t *testing.T) {
 }
 
 func TestMarkAsCompleted(t *testing.T) {
-	dirManagementForTest(t)
+	clean, err := createTestDataDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(clean)
 
 	repo, err := NewBadgerTopupRepository(testDataDir, nil)
 	if err != nil {
@@ -114,7 +126,11 @@ func TestMarkAsCompleted(t *testing.T) {
 }
 
 func TestSetSettled(t *testing.T) {
-	dirManagementForTest(t)
+	clean, err := createTestDataDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(clean)
 
 	repo, err := NewBadgerTopupRepository(testDataDir, nil)
 	if err != nil {

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
 
@@ -14,7 +14,12 @@ const (
 )
 
 func TestLock(t *testing.T) {
-	dirManagementForTest(t)
+	clean, err := createTestDataDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(clean)
+
 	repo, err := NewBadgerLockRepository(testDataDir, nil)
 	if err != nil {
 		t.Error(err)
@@ -34,7 +39,12 @@ func TestLock(t *testing.T) {
 }
 
 func TestIsLocked(t *testing.T) {
-	dirManagementForTest(t)
+	clean, err := createTestDataDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(clean)
+
 	repo, err := NewBadgerLockRepository(testDataDir, nil)
 	if err != nil {
 		t.Error(err)
@@ -60,7 +70,12 @@ func TestIsLocked(t *testing.T) {
 }
 
 func TestUnlock(t *testing.T) {
-	dirManagementForTest(t)
+	clean, err := createTestDataDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(clean)
+
 	repo, err := NewBadgerLockRepository(testDataDir, nil)
 	if err != nil {
 		t.Error(err)

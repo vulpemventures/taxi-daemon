@@ -35,7 +35,6 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/tdex-network/tdex-daemon v0.1.2
 	github.com/timshannon/badgerhold/v2 v2.0.0-20201016201833-94bc303c76d4
-	github.com/tj/assert v0.0.3
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/vulpemventures/go-elements v0.1.1

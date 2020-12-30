@@ -30,6 +30,17 @@ func (a *adminServer) AddAsset(ctx context.Context, req *admin.AddAssetRequest) 
 	)
 }
 
+func (a *adminServer) FundingAddress(ctx context.Context, req *admin.FundingAddressRequest) (*admin.FundingAddressReply, error) {
+	addresses, err := a.adminSvc.GetFundingAddresses(ctx, uint(req.GetNumOfAddresses()))
+	if err != nil {
+		return nil, err
+	}
+
+	return &admin.FundingAddressReply{
+		Addresses: addresses,
+	}, nil
+}
+
 func (a *adminServer) ListTopups(ctx context.Context, req *admin.ListTopupsRequest) (*admin.ListTopupsReply, error) {
 	topups, err := a.adminSvc.ListTopups(ctx, req.GetAssetHash())
 	if err != nil {

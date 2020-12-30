@@ -20,7 +20,11 @@ func NewTaxiHandler(taxiSvc application.TaxiService) pb.TaxiServer {
 }
 
 func (t *taxiServer) ListAssets(ctx context.Context, _ *pb.ListAssetsRequest) (*pb.ListAssetsReply, error) {
-	assets := t.taxiSvc.ListAssets(ctx)
+	assets, err := t.taxiSvc.ListAssets(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &pb.ListAssetsReply{
 		AssetHash: assets,
 	}, nil
