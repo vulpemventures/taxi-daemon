@@ -8,8 +8,10 @@ service Admin {
   rpc FundingAddress(FundingAddressRequest) returns (FundingAddressReply);
   // ListTopups returns all the internal topups
   rpc ListTopups(ListTopupsRequest) returns (ListTopupsReply);
-  // ListAddresses returns a list of addresses of the taxi wallet with their derivation path
-  rpc ListAddresses(ListAddressesRequest) returns (ListAddressesReply);
+  // ListFundingAddresses returns a list of addresses of the taxi wallet with their derivation path
+  rpc ListFundingAddresses(ListFundingAddressesRequest) returns (ListFundingAddressesReply);
+  // LatestFundingAddressIndex returns the derivation index of the latest address derived owning LBTCs
+  rpc LatestFundingAddressIndex(LatestFundingAddressIndexRequest) returns(LatestFundingAddressIndexReply);
   // Balance returns total unspent outputs (confirmed and unconfirmed), all
   // confirmed unspent outputs and all unconfirmed unspent outputs under control
   // of the wallet.
@@ -41,13 +43,18 @@ message ListTopupsReply {
 }
 
 
-message ListAddressesRequest{
+message ListFundingAddressesRequest{
   int64 start = 1; // Which index to start from
   int64 number = 2; // Number of addresses to retrieve
   bool change = 3; // true for internal chain, false for external
 }
-message ListAddressesReply{
+message ListFundingAddressesReply{
   repeated AddressInfo addresses = 1;
+}
+
+message LatestFundingAddressIndexRequest{}
+message LatestFundingAddressIndexReply{
+  int64 index = 1;
 }
 
 message BalanceRequest {}
