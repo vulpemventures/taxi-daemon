@@ -34,7 +34,7 @@ COPY --from=builder /build/taxi /
 
 RUN install /taxi /bin
 
-# expose trader and operator interface ports
+# expose server and admin interface ports
 EXPOSE 8000
 EXPOSE 7000
 
