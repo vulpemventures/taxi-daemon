@@ -23,8 +23,10 @@ type AdminClient interface {
 	FundingAddress(ctx context.Context, in *FundingAddressRequest, opts ...grpc.CallOption) (*FundingAddressReply, error)
 	// ListTopups returns all the internal topups
 	ListTopups(ctx context.Context, in *ListTopupsRequest, opts ...grpc.CallOption) (*ListTopupsReply, error)
-	// ListAddresses returns a list of addresses of the taxi wallet with their derivation path
-	ListAddresses(ctx context.Context, in *ListAddressesRequest, opts ...grpc.CallOption) (*ListAddressesReply, error)
+	// ListFundingAddresses returns a list of addresses of the taxi wallet with their derivation path
+	ListFundingAddresses(ctx context.Context, in *ListFundingAddressesRequest, opts ...grpc.CallOption) (*ListFundingAddressesReply, error)
+	// LatestFundingAddressIndex returns the derivation index of the latest address derived owning LBTCs
+	LatestFundingAddressIndex(ctx context.Context, in *LatestFundingAddressIndexRequest, opts ...grpc.CallOption) (*LatestFundingAddressIndexReply, error)
 	// Balance returns total unspent outputs (confirmed and unconfirmed), all
 	// confirmed unspent outputs and all unconfirmed unspent outputs under control
 	// of the wallet.
@@ -68,9 +70,18 @@ func (c *adminClient) ListTopups(ctx context.Context, in *ListTopupsRequest, opt
 	return out, nil
 }
 
-func (c *adminClient) ListAddresses(ctx context.Context, in *ListAddressesRequest, opts ...grpc.CallOption) (*ListAddressesReply, error) {
-	out := new(ListAddressesReply)
-	err := c.cc.Invoke(ctx, "/Admin/ListAddresses", in, out, opts...)
+func (c *adminClient) ListFundingAddresses(ctx context.Context, in *ListFundingAddressesRequest, opts ...grpc.CallOption) (*ListFundingAddressesReply, error) {
+	out := new(ListFundingAddressesReply)
+	err := c.cc.Invoke(ctx, "/Admin/ListFundingAddresses", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminClient) LatestFundingAddressIndex(ctx context.Context, in *LatestFundingAddressIndexRequest, opts ...grpc.CallOption) (*LatestFundingAddressIndexReply, error) {
+	out := new(LatestFundingAddressIndexReply)
+	err := c.cc.Invoke(ctx, "/Admin/LatestFundingAddressIndex", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +116,10 @@ type AdminServer interface {
 	FundingAddress(context.Context, *FundingAddressRequest) (*FundingAddressReply, error)
 	// ListTopups returns all the internal topups
 	ListTopups(context.Context, *ListTopupsRequest) (*ListTopupsReply, error)
-	// ListAddresses returns a list of addresses of the taxi wallet with their derivation path
-	ListAddresses(context.Context, *ListAddressesRequest) (*ListAddressesReply, error)
+	// ListFundingAddresses returns a list of addresses of the taxi wallet with their derivation path
+	ListFundingAddresses(context.Context, *ListFundingAddressesRequest) (*ListFundingAddressesReply, error)
+	// LatestFundingAddressIndex returns the derivation index of the latest address derived owning LBTCs
+	LatestFundingAddressIndex(context.Context, *LatestFundingAddressIndexRequest) (*LatestFundingAddressIndexReply, error)
 	// Balance returns total unspent outputs (confirmed and unconfirmed), all
 	// confirmed unspent outputs and all unconfirmed unspent outputs under control
 	// of the wallet.
@@ -129,8 +142,11 @@ func (UnimplementedAdminServer) FundingAddress(context.Context, *FundingAddressR
 func (UnimplementedAdminServer) ListTopups(context.Context, *ListTopupsRequest) (*ListTopupsReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTopups not implemented")
 }
-func (UnimplementedAdminServer) ListAddresses(context.Context, *ListAddressesRequest) (*ListAddressesReply, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListAddresses not implemented")
+func (UnimplementedAdminServer) ListFundingAddresses(context.Context, *ListFundingAddressesRequest) (*ListFundingAddressesReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListFundingAddresses not implemented")
+}
+func (UnimplementedAdminServer) LatestFundingAddressIndex(context.Context, *LatestFundingAddressIndexRequest) (*LatestFundingAddressIndexReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LatestFundingAddressIndex not implemented")
 }
 func (UnimplementedAdminServer) Balance(context.Context, *BalanceRequest) (*BalanceReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Balance not implemented")
@@ -205,20 +221,38 @@ func _Admin_ListTopups_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Admin_ListAddresses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListAddressesRequest)
+func _Admin_ListFundingAddresses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListFundingAddressesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServer).ListAddresses(ctx, in)
+		return srv.(AdminServer).ListFundingAddresses(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/Admin/ListAddresses",
+		FullMethod: "/Admin/ListFundingAddresses",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServer).ListAddresses(ctx, req.(*ListAddressesRequest))
+		return srv.(AdminServer).ListFundingAddresses(ctx, req.(*ListFundingAddressesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Admin_LatestFundingAddressIndex_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LatestFundingAddressIndexRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServer).LatestFundingAddressIndex(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Admin/LatestFundingAddressIndex",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServer).LatestFundingAddressIndex(ctx, req.(*LatestFundingAddressIndexRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -276,8 +310,12 @@ var _Admin_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Admin_ListTopups_Handler,
 		},
 		{
-			MethodName: "ListAddresses",
-			Handler:    _Admin_ListAddresses_Handler,
+			MethodName: "ListFundingAddresses",
+			Handler:    _Admin_ListFundingAddresses_Handler,
+		},
+		{
+			MethodName: "LatestFundingAddressIndex",
+			Handler:    _Admin_LatestFundingAddressIndex_Handler,
 		},
 		{
 			MethodName: "Balance",

@@ -57,8 +57,34 @@ func (a *adminServer) ListTopups(ctx context.Context, req *admin.ListTopupsReque
 	}, nil
 }
 
-func (a *adminServer) ListAddresses(context.Context, *admin.ListAddressesRequest) (*admin.ListAddressesReply, error) {
-	panic("not implemented")
+func (a *adminServer) ListFundingAddresses(ctx context.Context, req *admin.ListFundingAddressesRequest) (*admin.ListFundingAddressesReply, error) {
+	list, err := a.adminSvc.ListFundingAddresses(ctx, uint(req.GetStart()), uint(req.GetNumber()))
+	if err != nil {
+		return nil, err
+	}
+
+	addrInfoList := make([]*admin.AddressInfo, len(list), len(list))
+	for i, info := range list {
+		addrInfoList[i] = &admin.AddressInfo{
+			Address:        info.Address,
+			DerivationPath: info.DerivationPath,
+			Index:          int64(info.Index),
+			PublicKey:      info.PublicKey,
+		}
+	}
+	return &admin.ListFundingAddressesReply{
+		Addresses: addrInfoList,
+	}, nil
+}
+
+func (a *adminServer) LatestFundingAddressIndex(ctx context.Context, _ *admin.LatestFundingAddressIndexRequest) (*admin.LatestFundingAddressIndexReply, error) {
+	latestIndex, err := a.adminSvc.LatestFundingAddressIndex(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &admin.LatestFundingAddressIndexReply{
+		Index: int64(latestIndex),
+	}, nil
 }
 
 func (a *adminServer) Balance(context.Context, *admin.BalanceRequest) (*admin.BalanceReply, error) {

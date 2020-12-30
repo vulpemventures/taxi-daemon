@@ -10,6 +10,8 @@ import (
 // AdminService administrates a TaxiService
 type AdminService interface {
 	GetFundingAddresses(ctx context.Context, numOfAddresses uint) ([]string, error)
+	LatestFundingAddressIndex(ctx context.Context) (int, error)
+	ListFundingAddresses(ctx context.Context, start, numOfAddresses uint) ([]domain.AddressInfo, error)
 	ListTopups(ctx context.Context, assetHashFilter string) ([]domain.Topup, error)
 	AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error
 	ChangeSpread(ctx context.Context, basisPoint uint32)
@@ -43,6 +45,25 @@ func (adminSvc *adminService) GetFundingAddresses(ctx context.Context, numOfAddr
 	}
 
 	return adminSvc.hdTreeRepository.GetNewFundingAddresses(ctx, numOfAddresses)
+}
+
+func (adminSvc *adminService) LatestFundingAddressIndex(ctx context.Context) (int, error) {
+	hdTree, err := adminSvc.hdTreeRepository.GetOrCreateHDTree(ctx)
+	if err != nil {
+		return -1, err
+	}
+
+	lastIndex := int(hdTree.Accounts[domain.LBTCAccount].NextExternalIndex) - 1
+	return lastIndex, nil
+}
+
+func (adminSvc *adminService) ListFundingAddresses(ctx context.Context, start, numOfAddresses uint) ([]domain.AddressInfo, error) {
+	hdTree, err := adminSvc.hdTreeRepository.GetOrCreateHDTree(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return hdTree.DeriveAddressInRangeForAccount(domain.LBTCAccount, start, numOfAddresses)
 }
 
 func (adminSvc *adminService) AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error {
