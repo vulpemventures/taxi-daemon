@@ -63,6 +63,7 @@ func main() {
 		hdTreeRepository,
 		topupRepository,
 		priceRepository,
+		explorerSvc,
 	)
 
 	taxiHandler := grpc.NewTaxiHandler(taxiSvc)

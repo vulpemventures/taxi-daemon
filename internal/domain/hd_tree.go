@@ -119,10 +119,12 @@ func (t *HDTree) DerivationPathForAddress(addr string) (string, bool) {
 	return "", false
 }
 
+// AllDerivedAddressInfoForLBTCAccount returns all the AddressInfo for the LBTCAccount
 func (t *HDTree) AllDerivedAddressInfoForLBTCAccount() ([]AddressInfo, error) {
 	return t.allDerivedAddressInfoForAccount(LBTCAccount)
 }
 
+// AllDerivedAddressInfoForPayoutAccount returns all the AddressInfo for the PayoutAccount
 func (t *HDTree) AllDerivedAddressInfoForPayoutAccount() ([]AddressInfo, error) {
 	return t.allDerivedAddressInfoForAccount(PayoutAccount)
 }

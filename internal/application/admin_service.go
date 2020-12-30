@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/shopspring/decimal"
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
 
@@ -14,13 +15,14 @@ type AdminService interface {
 	ListFundingAddresses(ctx context.Context, start, numOfAddresses uint) ([]domain.AddressInfo, error)
 	ListTopups(ctx context.Context, assetHashFilter string) ([]domain.Topup, error)
 	AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error
-	ChangeSpread(ctx context.Context, basisPoint uint32)
+	Balance(ctx context.Context) (map[string]BalanceInfo, error)
 }
 
 type adminService struct {
 	hdTreeRepository domain.HDTreeRepository
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
+	explorerService  explorer.Service
 }
 
 // NewAdminService is a factory function for AdminService interface
@@ -28,15 +30,17 @@ func NewAdminService(
 	hdTreeRepo domain.HDTreeRepository,
 	topupRepo domain.TopupRepository,
 	priceRepo domain.PriceRepository,
+	explorerService explorer.Service,
 ) AdminService {
-	return newAdminService(hdTreeRepo, topupRepo, priceRepo)
+	return newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerService)
 }
 func newAdminService(
 	hdTreeRepo domain.HDTreeRepository,
 	topupRepo domain.TopupRepository,
 	priceRepo domain.PriceRepository,
+	explorerService explorer.Service,
 ) AdminService {
-	return &adminService{hdTreeRepo, topupRepo, priceRepo}
+	return &adminService{hdTreeRepo, topupRepo, priceRepo, explorerService}
 }
 
 func (adminSvc *adminService) GetFundingAddresses(ctx context.Context, numOfAddresses uint) ([]string, error) {
@@ -98,7 +102,32 @@ func (adminSvc *adminService) ListTopups(ctx context.Context, assetHashFilter st
 	return filteredTopups, nil
 }
 
-// ChangeSpread sets the basisPoint of the taxiService
-func (adminSvc *adminService) ChangeSpread(_ context.Context, basisPoint uint32) {
-	panic("not implemented")
+func (adminSvc *adminService) Balance(ctx context.Context) (map[string]BalanceInfo, error) {
+	hdTree, err := adminSvc.hdTreeRepository.GetOrCreateHDTree(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	payoutAddresses, err := hdTree.AllDerivedAddressInfoForPayoutAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	fundingAddresses, err := hdTree.AllDerivedAddressInfoForLBTCAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	utxos := make([]explorer.Utxo, 0)
+
+	for _, addressInfo := range append(payoutAddresses, fundingAddresses...) {
+		unspents, err := adminSvc.explorerService.GetUnspents(addressInfo.Address, [][]byte{})
+		if err != nil {
+			return nil, err
+		}
+		utxos = append(utxos, unspents...)
+	}
+
+	balanceInfos := utxosToBalanceInfos(utxos)
+	return balanceInfos, nil
 }
