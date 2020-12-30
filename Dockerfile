@@ -22,7 +22,7 @@ WORKDIR /build
 RUN cp /taxi/taxid .
 RUN cp /taxi/taxi .
 
-# Second image, running the tdexd executable
+# Second image, running the executable
 FROM debian:buster
 
 ENV TAXI_DATADIR="/.taxid"
