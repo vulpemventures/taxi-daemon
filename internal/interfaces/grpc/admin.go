@@ -87,8 +87,25 @@ func (a *adminServer) LatestFundingAddressIndex(ctx context.Context, _ *admin.La
 	}, nil
 }
 
-func (a *adminServer) Balance(context.Context, *admin.BalanceRequest) (*admin.BalanceReply, error) {
-	panic("not implemented")
+func (a *adminServer) Balance(ctx context.Context, _ *admin.BalanceRequest) (*admin.BalanceReply, error) {
+	balanceInfosMap, err := a.adminSvc.Balance(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	protobufMap := make(map[string]*admin.BalanceInfo, len(balanceInfosMap))
+
+	for asset, balanceInfo := range balanceInfosMap {
+		protobufMap[asset] = &admin.BalanceInfo{
+			TotalBalance:       balanceInfo.TotalBalance,
+			ConfirmedBalance:   balanceInfo.ConfirmedBalance,
+			UnconfirmedBalance: balanceInfo.UnconfirmedBalance,
+		}
+	}
+
+	return &admin.BalanceReply{
+		Balance: protobufMap,
+	}, nil
 }
 
 func (a *adminServer) SendToMany(context.Context, *admin.SendToManyRequest) (*admin.SendToManyReply, error) {
