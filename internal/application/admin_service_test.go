@@ -92,3 +92,50 @@ func TestGetFundingAddresses(t *testing.T) {
 
 	assert.Equal(t, 2, len(addresses))
 }
+
+func TestLastFundingAddressIndex(t *testing.T) {
+	hdTreeRepo := newMockedHDTreeRepository(3)
+	topupRepo := newMockedTopupRepository(nil)
+	priceRepo := newMockedPriceRepository(nil)
+
+	config.Set(config.MnemonicKey, mnemonic)
+	t.Cleanup(func() {
+		config.Set(config.MnemonicKey, "")
+	})
+
+	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo)
+	ctx := context.Background()
+
+	lastIndex, err := adminSvc.LastFundingAddressIndex(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, 2, lastIndex)
+}
+
+func TestListFundingAddresses(t *testing.T) {
+	hdTreeRepo := newMockedHDTreeRepository(10)
+	topupRepo := newMockedTopupRepository(nil)
+	priceRepo := newMockedPriceRepository(nil)
+
+	config.Set(config.MnemonicKey, mnemonic)
+	t.Cleanup(func() {
+		config.Set(config.MnemonicKey, "")
+	})
+
+	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo)
+	ctx := context.Background()
+
+	addresses, err := adminSvc.ListFundingAddresses(ctx, 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, 10, len(addresses))
+
+	addresses, err = adminSvc.ListFundingAddresses(ctx, 1, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, 5, len(addresses))
+}

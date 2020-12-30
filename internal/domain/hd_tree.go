@@ -77,6 +77,21 @@ func (t *HDTree) DeriveNextAddressForPayoutAccount() (*AddressInfo, error) {
 	return t.deriveNextAddressForAccount(PayoutAccount)
 }
 
+func (t *HDTree) DeriveAddressInRangeForAccount(account, start, numOfAddresses uint) ([]AddressInfo, error) {
+	if start == 0 && numOfAddresses == 0 {
+		return t.allDerivedAddressInfoForAccount(account)
+	}
+
+	if numOfAddresses == 0 {
+		numOfAddresses := t.Accounts[account].NextExternalIndex - 1
+		if numOfAddresses < 0 {
+			return nil, nil
+		}
+	}
+
+	return t.deriveAddressInRangeForAccount(account, start, numOfAddresses)
+}
+
 func (t *HDTree) DerivationPathForScript(script string) (string, bool) {
 	for _, account := range t.Accounts {
 		if derivationPath, ok := account.DerivationPathByScript[script]; ok {
@@ -151,6 +166,21 @@ func (t *HDTree) deriveAddressInfo(
 		Address: addr,
 		Script:  script,
 	}, derivationPath, nil
+}
+
+func (t *HDTree) deriveAddressInRangeForAccount(accountIndex, start, numOfAddresses uint) ([]AddressInfo, error) {
+	addrInfoList := make([]AddressInfo, numOfAddresses, numOfAddresses)
+	j := 0
+	for i := start; i <= numOfAddresses; i++ {
+		addrInfo, _, err := t.deriveAddressInfo(accountIndex, i)
+		if err != nil {
+			return nil, err
+		}
+
+		addrInfoList[j] = *addrInfo
+		j++
+	}
+	return addrInfoList, nil
 }
 
 func (t *HDTree) allDerivedAddressInfoForAccount(accountIndex uint) ([]AddressInfo, error) {
