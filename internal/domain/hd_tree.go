@@ -65,8 +65,11 @@ func NewHDTree(rootPath wallet.DerivationPath) (*HDTree, error) {
 }
 
 type AddressInfo struct {
-	Address string
-	Script  string
+	Address        string
+	Script         string
+	DerivationPath string
+	Index          uint
+	PublicKey      string
 }
 
 func (t *HDTree) DeriveNextAddressForLBTCAccount() (*AddressInfo, error) {
@@ -162,9 +165,15 @@ func (t *HDTree) deriveAddressInfo(
 	}
 	addr, _ := p.WitnessPubKeyHash()
 	script := hex.EncodeToString(p.WitnessScript)
+	fullDerivationPath := append(rootPath, derivationPath...)
+	pubkey := hex.EncodeToString(p.PublicKey.SerializeCompressed())
+
 	return &AddressInfo{
-		Address: addr,
-		Script:  script,
+		Address:        addr,
+		Script:         script,
+		DerivationPath: fullDerivationPath.String(),
+		Index:          addressIndex,
+		PublicKey:      pubkey,
 	}, derivationPath, nil
 }
 

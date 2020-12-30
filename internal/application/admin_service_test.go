@@ -93,7 +93,7 @@ func TestGetFundingAddresses(t *testing.T) {
 	assert.Equal(t, 2, len(addresses))
 }
 
-func TestLastFundingAddressIndex(t *testing.T) {
+func TestLatestFundingAddressIndex(t *testing.T) {
 	hdTreeRepo := newMockedHDTreeRepository(3)
 	topupRepo := newMockedTopupRepository(nil)
 	priceRepo := newMockedPriceRepository(nil)
@@ -106,7 +106,7 @@ func TestLastFundingAddressIndex(t *testing.T) {
 	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo)
 	ctx := context.Background()
 
-	lastIndex, err := adminSvc.LastFundingAddressIndex(ctx)
+	lastIndex, err := adminSvc.LatestFundingAddressIndex(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
