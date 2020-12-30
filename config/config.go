@@ -140,6 +140,7 @@ func GetNetwork() *network.Network {
 	}
 }
 
+// Set modifies the value of the `key`, replace the existing value by `value`
 func Set(key string, value interface{}) {
 	vip.Set(key, value)
 }
