@@ -2,10 +2,12 @@ package grpc
 
 import (
 	"context"
+	"encoding/hex"
 
 	"github.com/shopspring/decimal"
 	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
 	"github.com/vulpemventures/liquid-taxi/internal/application"
+	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
 type adminServer struct {
@@ -91,6 +93,24 @@ func (a *adminServer) Balance(context.Context, *admin.BalanceRequest) (*admin.Ba
 	panic("not implemented")
 }
 
-func (a *adminServer) SendToMany(context.Context, *admin.SendToManyRequest) (*admin.SendToManyReply, error) {
-	panic("not implemented")
+func (a *adminServer) SendToMany(ctx context.Context, req *admin.SendToManyRequest) (*admin.SendToManyReply, error) {
+	outputs := make([]wallet.Receiver, len(req.Outputs), len(req.Outputs))
+	for i, out := range req.Outputs {
+		outputs[i] = wallet.Receiver{
+			Address: out.Address,
+			Asset:   out.Asset,
+			Amount:  uint64(out.Value),
+		}
+	}
+
+	txHex, err := a.adminSvc.SendToMany(ctx, outputs, req.MillisatPerByte, req.Push)
+	if err != nil {
+		return nil, err
+	}
+
+	bytes, err := hex.DecodeString(txHex)
+
+	return &admin.SendToManyReply{
+		RawTx: bytes,
+	}, err
 }
