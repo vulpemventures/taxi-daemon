@@ -9,6 +9,7 @@ import (
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/liquid-taxi/pkg/fees"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
@@ -59,23 +60,39 @@ func (adminSvc *adminService) SendToMany(ctx context.Context, outputs []wallet.R
 		return "", err
 	}
 
+	// first coin selection for fees estimation
 	selectedUtxos, changeOutputs, err := adminSvc.selectUtxos(ctx, outputs, w)
 	if err != nil {
 		return "", err
 	}
 
-	base64PSET, err := w.CreatePSET(
-		selectedUtxos,
-		append(outputs, changeOutputs...),
+	feeAmount := fees.CalculateFeeIncrease(
+		len(selectedUtxos),
+		len(outputs)+len(changeOutputs)+1,
+		decimal.NewFromFloat(float64(millisatPerByte)/float64(1000)),
 	)
+
+	feeOutput := wallet.Receiver{
+		Asset:  w.GetNetwork().AssetID,
+		Amount: feeAmount,
+	}
+
+	// redo the coinselection
+	selectedUtxos, changeOutputs, err = adminSvc.selectUtxos(ctx, append(outputs, feeOutput), w)
 	if err != nil {
 		return "", err
 	}
 
-	base64PSET, err = w.FundPSET(
-		base64PSET,
-		millisatPerByte,
+	outputs = append(outputs, changeOutputs...)
+	outputs = append(outputs, feeOutput)
+
+	base64PSET, err := w.CreatePSET(
+		selectedUtxos,
+		outputs,
 	)
+	if err != nil {
+		return "", err
+	}
 
 	for inputIndex, selectedUtxo := range selectedUtxos {
 		derivationPath, _ := hdTree.DerivationPathForScript(
@@ -207,6 +224,7 @@ func (adminSvc *adminService) selectUtxos(ctx context.Context, outputs []wallet.
 	coinNeedMap := make(map[string]uint64)
 	for _, output := range outputs {
 		_, ok := coinNeedMap[output.Asset]
+
 		if !ok {
 			coinNeedMap[output.Asset] = output.Amount
 			continue
@@ -226,7 +244,7 @@ func (adminSvc *adminService) selectUtxos(ctx context.Context, outputs []wallet.
 				selectedUtxos = append(selectedUtxos, utxo)
 				totalSelected += utxo.Value()
 				if totalSelected >= amount {
-					changeMap[asset] = amount - totalSelected
+					changeMap[asset] += totalSelected - amount
 					break
 				}
 			}

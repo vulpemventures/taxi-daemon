@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"errors"
+	"log"
 
 	"github.com/vulpemventures/go-elements/address"
 
@@ -19,7 +20,6 @@ type Wallet interface {
 	DerivePath(path string) (*payment.Payment, error)
 	SignInput(args SignInputArgs) (string, error)
 	CreatePSET(inputs []explorer.Utxo, outputs []Receiver) (string, error)
-	FundPSET(base64PSET string, millisatPerByte int64) (string, error)
 	FinalizeAndExtract(psetBase64 string) (string, error)
 	GetNetwork() network.Network
 }
@@ -73,36 +73,6 @@ func (a SignInputArgs) validate() error {
 	return nil
 }
 
-// FundPSET takes a base64PSET, estimate the fee amount and add a fee output
-func (w *wallet) FundPSET(base64PSET string, millisatPerByte int64) (string, error) {
-	p, err := pset.NewPsetFromBase64(base64PSET)
-	if err != nil {
-		return "", err
-	}
-
-	numberOfBytes := int64(p.UnsignedTx.SerializeSize(true, true))
-	feeAmount := uint64(numberOfBytes * millisatPerByte / 1000)
-
-	receiver := Receiver{
-		Amount: feeAmount,
-		Asset:  w.network.AssetID,
-	}
-
-	feeOutput, err := receiver.toTxOutput()
-	if err != nil {
-		return "", err
-	}
-
-	updater, err := pset.NewUpdater(p)
-	if err != nil {
-		return "", err
-	}
-
-	updater.AddOutput(feeOutput)
-
-	return p.ToBase64()
-}
-
 // FinalizeAndExtract takes a signed PSET as input, finalize it and extract the transaction hex
 func (w *wallet) FinalizeAndExtract(base64PSET string) (string, error) {
 	finalPSET, err := pset.NewPsetFromBase64(base64PSET)
@@ -129,6 +99,7 @@ func (w *wallet) FinalizeAndExtract(base64PSET string) (string, error) {
 		return "", err
 	}
 
+	log.Print(tx.ToHex())
 	return tx.ToHex()
 }
 

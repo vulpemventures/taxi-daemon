@@ -3,12 +3,14 @@ package application
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
+	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
 func TestListTopups(t *testing.T) {
@@ -144,4 +146,57 @@ func TestListFundingAddresses(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Equal(t, 5, len(addresses))
+}
+
+func TestSendToMany(t *testing.T) {
+	config.Set(config.MnemonicKey, mnemonic)
+	t.Cleanup(func() {
+		config.Set(config.MnemonicKey, "")
+	})
+
+	output := wallet.Receiver{
+		Address: "XP3vdsDLz5DojUjAqkLPqcajFtz5wzS73B",
+		Asset:   regtest.AssetID,
+		Amount:  100,
+	}
+
+	hdTreeRepo := newMockedHDTreeRepository(10)
+	topupRepo := newMockedTopupRepository(nil)
+	priceRepo := newMockedPriceRepository(nil)
+	explorerSvc := explorer.NewService(explorerEndpoint)
+
+	addrs, err := hdTreeRepo.GetNewFundingAddresses(context.Background(), 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = faucet(addrs[1], explorerEndpoint)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(5 * time.Second)
+
+	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerSvc)
+
+	_, err = adminSvc.SendToMany(context.Background(), []wallet.Receiver{output}, 1000, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(2 * time.Second)
+
+	utxos, err := explorerSvc.GetUnspents(output.Address, [][]byte{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fundsReceived := false
+	for _, utxo := range utxos {
+		if utxo.Asset() == regtest.AssetID && utxo.Value() == output.Amount {
+			fundsReceived = true
+		}
+	}
+
+	assert.Equal(t, true, fundsReceived)
 }
