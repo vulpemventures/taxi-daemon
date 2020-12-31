@@ -7,6 +7,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/shopspring/decimal"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
+	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
@@ -22,7 +23,6 @@ type AdminService interface {
 }
 
 type adminService struct {
-	wallet           wallet.Wallet
 	hdTreeRepository domain.HDTreeRepository
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
@@ -31,31 +31,40 @@ type adminService struct {
 
 // NewAdminService is a factory function for AdminService interface
 func NewAdminService(
-	wallet wallet.Wallet,
 	hdTreeRepo domain.HDTreeRepository,
 	topupRepo domain.TopupRepository,
 	priceRepo domain.PriceRepository,
 	explorerService explorer.Service,
 ) AdminService {
-	return newAdminService(wallet, hdTreeRepo, topupRepo, priceRepo, explorerService)
+	return newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerService)
 }
 func newAdminService(
-	wallet wallet.Wallet,
 	hdTreeRepo domain.HDTreeRepository,
 	topupRepo domain.TopupRepository,
 	priceRepo domain.PriceRepository,
 	explorerService explorer.Service,
 ) AdminService {
-	return &adminService{wallet, hdTreeRepo, topupRepo, priceRepo, explorerService}
+	return &adminService{hdTreeRepo, topupRepo, priceRepo, explorerService}
 }
 
 func (adminSvc *adminService) SendToMany(ctx context.Context, outputs []wallet.Receiver, millisatPerByte int64, pushTransaction bool) (string, error) {
-	selectedUtxos, changeOutputs, err := adminSvc.selectUtxos(ctx, outputs)
+	hdTree, err := adminSvc.hdTreeRepository.GetOrCreateHDTree(ctx)
+	if err != nil {
+		return "", err
+	}
+	rootPath, _ := wallet.ParseDerivationPath(hdTree.RootDerivationPath)
+
+	w, err := wallet.NewWallet(config.GetMnemonic(), rootPath, *config.GetNetwork())
 	if err != nil {
 		return "", err
 	}
 
-	base64PSET, err := adminSvc.wallet.CreatePSET(
+	selectedUtxos, changeOutputs, err := adminSvc.selectUtxos(ctx, outputs, w)
+	if err != nil {
+		return "", err
+	}
+
+	base64PSET, err := w.CreatePSET(
 		selectedUtxos,
 		append(outputs, changeOutputs...),
 	)
@@ -63,15 +72,10 @@ func (adminSvc *adminService) SendToMany(ctx context.Context, outputs []wallet.R
 		return "", err
 	}
 
-	base64PSET, err = adminSvc.wallet.FundPSET(
+	base64PSET, err = w.FundPSET(
 		base64PSET,
 		millisatPerByte,
 	)
-
-	hdTree, err := adminSvc.hdTreeRepository.GetOrCreateHDTree(ctx)
-	if err != nil {
-		return "", err
-	}
 
 	for inputIndex, selectedUtxo := range selectedUtxos {
 		derivationPath, _ := hdTree.DerivationPathForScript(
@@ -85,13 +89,25 @@ func (adminSvc *adminService) SendToMany(ctx context.Context, outputs []wallet.R
 			HashType:   txscript.SigHashAll,
 		}
 
-		base64PSET, err = adminSvc.wallet.SignInput(signOpts)
+		base64PSET, err = w.SignInput(signOpts)
 		if err != nil {
 			return "", err
 		}
 	}
 
-	return adminSvc.wallet.FinalizeAndExtract(base64PSET)
+	hex, err := w.FinalizeAndExtract(base64PSET)
+	if err != nil {
+		return "", err
+	}
+
+	if pushTransaction {
+		_, err := adminSvc.explorerService.BroadcastTransaction(hex)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return hex, nil
 }
 
 func (adminSvc *adminService) GetFundingAddresses(ctx context.Context, numOfAddresses uint) ([]string, error) {
@@ -182,7 +198,7 @@ func (adminSvc *adminService) getUnspents(ctx context.Context) ([]explorer.Utxo,
 	return utxos, nil
 }
 
-func (adminSvc *adminService) selectUtxos(ctx context.Context, outputs []wallet.Receiver) ([]explorer.Utxo, []wallet.Receiver, error) {
+func (adminSvc *adminService) selectUtxos(ctx context.Context, outputs []wallet.Receiver, w wallet.Wallet) ([]explorer.Utxo, []wallet.Receiver, error) {
 	utxos, err := adminSvc.getUnspents(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -226,7 +242,7 @@ func (adminSvc *adminService) selectUtxos(ctx context.Context, outputs []wallet.
 		if changeAmount > 0 {
 			var address string
 
-			if asset == adminSvc.wallet.GetNetwork().AssetID {
+			if asset == w.GetNetwork().AssetID {
 				addrs, err := adminSvc.hdTreeRepository.GetNewFundingAddresses(ctx, 1)
 				if err != nil {
 					return nil, nil, err

@@ -6,6 +6,7 @@ import (
 
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 )
@@ -14,8 +15,9 @@ func TestListTopups(t *testing.T) {
 	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository()
 	topupRepo := newMockedTopupRepository([]string{superToken, hyperToken})
 	priceRepo := newMockedPriceRepository(nil)
+	explorerSvc := explorer.NewService(explorerEndpoint)
 
-	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo)
+	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerSvc)
 
 	topups, err := adminSvc.ListTopups(context.Background(), "")
 	if err != nil {
@@ -35,8 +37,9 @@ func TestAddAsset(t *testing.T) {
 	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository()
 	topupRepo := newMockedTopupRepository(nil)
 	priceRepo := newMockedPriceRepository(nil)
+	explorerSvc := explorer.NewService(explorerEndpoint)
 
-	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo)
+	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerSvc)
 	ctx := context.Background()
 
 	// add asset
@@ -76,13 +79,14 @@ func TestGetFundingAddresses(t *testing.T) {
 	hdTreeRepo := newMockedHDTreeRepository(0)
 	topupRepo := newMockedTopupRepository(nil)
 	priceRepo := newMockedPriceRepository(nil)
+	explorerSvc := explorer.NewService(explorerEndpoint)
 
 	config.Set(config.MnemonicKey, mnemonic)
 	t.Cleanup(func() {
 		config.Set(config.MnemonicKey, "")
 	})
 
-	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo)
+	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerSvc)
 	ctx := context.Background()
 
 	addresses, err := adminSvc.GetFundingAddresses(ctx, 2)
@@ -97,13 +101,14 @@ func TestLatestFundingAddressIndex(t *testing.T) {
 	hdTreeRepo := newMockedHDTreeRepository(3)
 	topupRepo := newMockedTopupRepository(nil)
 	priceRepo := newMockedPriceRepository(nil)
+	explorerSvc := explorer.NewService(explorerEndpoint)
 
 	config.Set(config.MnemonicKey, mnemonic)
 	t.Cleanup(func() {
 		config.Set(config.MnemonicKey, "")
 	})
 
-	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo)
+	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerSvc)
 	ctx := context.Background()
 
 	lastIndex, err := adminSvc.LatestFundingAddressIndex(ctx)
@@ -118,13 +123,14 @@ func TestListFundingAddresses(t *testing.T) {
 	hdTreeRepo := newMockedHDTreeRepository(10)
 	topupRepo := newMockedTopupRepository(nil)
 	priceRepo := newMockedPriceRepository(nil)
+	explorerSvc := explorer.NewService(explorerEndpoint)
 
 	config.Set(config.MnemonicKey, mnemonic)
 	t.Cleanup(func() {
 		config.Set(config.MnemonicKey, "")
 	})
 
-	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo)
+	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerSvc)
 	ctx := context.Background()
 
 	addresses, err := adminSvc.ListFundingAddresses(ctx, 0, 0)
