@@ -19,6 +19,7 @@ type Wallet interface {
 	DerivePath(path string) (*payment.Payment, error)
 	SignInput(args SignInputArgs) (string, error)
 	CreatePSET(inputs []explorer.Utxo, outputs []Receiver) (string, error)
+	GetNetwork() network.Network
 }
 
 type wallet struct {
@@ -68,6 +69,10 @@ func (a SignInputArgs) validate() error {
 	}
 
 	return nil
+}
+
+func (w *wallet) GetNetwork() network.Network {
+	return w.network
 }
 
 // SignInput lets the user to sign a pset input
