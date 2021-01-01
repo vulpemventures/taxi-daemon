@@ -53,8 +53,12 @@ func (adminSvc *adminService) LatestFundingAddressIndex(ctx context.Context) (in
 		return -1, err
 	}
 
-	lastIndex := int(hdTree.Accounts[domain.LBTCAccount].NextExternalIndex) - 1
-	return lastIndex, nil
+	lbtcAccount, ok := hdTree.Accounts[domain.LBTCAccount]
+	if !ok {
+		return 0, nil
+	}
+
+	return int(lbtcAccount.NextExternalIndex) - 1, nil
 }
 
 func (adminSvc *adminService) ListFundingAddresses(ctx context.Context, start, numOfAddresses uint) ([]domain.AddressInfo, error) {

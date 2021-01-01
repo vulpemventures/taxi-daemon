@@ -180,7 +180,7 @@ func (t *HDTree) deriveAddressInfo(
 func (t *HDTree) deriveAddressInRangeForAccount(accountIndex, start, numOfAddresses uint) ([]AddressInfo, error) {
 	addrInfoList := make([]AddressInfo, numOfAddresses, numOfAddresses)
 	j := 0
-	for i := start; i <= numOfAddresses; i++ {
+	for i := start; i < start+numOfAddresses; i++ {
 		addrInfo, _, err := t.deriveAddressInfo(accountIndex, i)
 		if err != nil {
 			return nil, err
