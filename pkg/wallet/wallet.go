@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"errors"
+	"log"
 
 	"github.com/vulpemventures/go-elements/address"
 
@@ -19,6 +20,8 @@ type Wallet interface {
 	DerivePath(path string) (*payment.Payment, error)
 	SignInput(args SignInputArgs) (string, error)
 	CreatePSET(inputs []explorer.Utxo, outputs []Receiver) (string, error)
+	FinalizeAndExtract(psetBase64 string) (string, error)
+	GetNetwork() network.Network
 }
 
 type wallet struct {
@@ -68,6 +71,41 @@ func (a SignInputArgs) validate() error {
 	}
 
 	return nil
+}
+
+// FinalizeAndExtract takes a signed PSET as input, finalize it and extract the transaction hex
+func (w *wallet) FinalizeAndExtract(base64PSET string) (string, error) {
+	finalPSET, err := pset.NewPsetFromBase64(base64PSET)
+	if err != nil {
+		return "", err
+	}
+
+	valid, err := finalPSET.ValidateAllSignatures()
+	if err != nil {
+		return "", err
+	}
+
+	if !valid {
+		return "", ErrInvalidSignature
+	}
+
+	err = pset.FinalizeAll(finalPSET)
+	if err != nil {
+		return "", err
+	}
+
+	tx, err := pset.Extract(finalPSET)
+	if err != nil {
+		return "", err
+	}
+
+	log.Print(tx.ToHex())
+	return tx.ToHex()
+}
+
+// GetNetwork is a getter for the wallet's network
+func (w *wallet) GetNetwork() network.Network {
+	return w.network
 }
 
 // SignInput lets the user to sign a pset input
@@ -164,22 +202,11 @@ func (w *wallet) CreatePSET(
 
 	outputs := make([]*transaction.TxOutput, len(receivers), len(receivers))
 	for i, r := range receivers {
-		asset, err := assetHashBytes(r.Asset)
+		output, err := r.toTxOutput()
 		if err != nil {
 			return "", err
 		}
-		value, err := elementsutil.SatoshiToElementsValue(r.Amount)
-		if err != nil {
-			return "", err
-		}
-		script := make([]byte, 0)
-		if len(r.Address) > 0 {
-			script, err = address.ToOutputScript(r.Address)
-			if err != nil {
-				return "", err
-			}
-		}
-		outputs[i] = transaction.NewTxOutput(asset, value, script)
+		outputs[i] = output
 	}
 
 	partial, err := pset.New(inputs, outputs, 2, 0)
@@ -199,4 +226,24 @@ func (w *wallet) CreatePSET(
 	}
 
 	return partial.ToBase64()
+}
+
+func (r *Receiver) toTxOutput() (*transaction.TxOutput, error) {
+	asset, err := assetHashBytes(r.Asset)
+	if err != nil {
+		return nil, err
+	}
+	value, err := elementsutil.SatoshiToElementsValue(r.Amount)
+	if err != nil {
+		return nil, err
+	}
+	script := make([]byte, 0)
+	if len(r.Address) > 0 {
+		script, err = address.ToOutputScript(r.Address)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return transaction.NewTxOutput(asset, value, script), nil
 }
