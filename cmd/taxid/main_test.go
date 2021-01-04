@@ -225,9 +225,10 @@ func TestTaxiServer(t *testing.T) {
 
 	log.Info(txHex)
 
-	// TODO uncomment when crawler is implemented
-	// _, err = aliceExplorerSvc.Broadcast(txHex)
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
+	txid, err := explorerSvc.BroadcastTransaction(txHex)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	log.Info("transaction broadcasted: ", txid)
 }
