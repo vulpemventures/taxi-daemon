@@ -15,7 +15,7 @@ func Fragment(addresses []string) error {
 
 	args = append(args, addresses...)
 
-	cmd := exec.Command("python3", args...)
+	cmd := exec.Command("python", args...)
 
 	_, err := cmd.Output()
 	if err != nil {
