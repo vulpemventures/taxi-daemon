@@ -19,7 +19,6 @@ import (
 )
 
 func TestTopupWithAsset(t *testing.T) {
-
 	hdTreeRepo := newMockedHDTreeRepository(0)
 	lockRepo := inmemory.NewInmemoryLockRepository()
 	topupRepo := newMockedTopupRepository(nil)
@@ -40,7 +39,7 @@ func TestTopupWithAsset(t *testing.T) {
 	)
 	ctx := context.Background()
 
-	addresses, err := hdTreeRepo.GetNewFundingAddresses(ctx, 1)
+	addresses, err := hdTreeRepo.GetNewFundingAddresses(ctx, 3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +48,7 @@ func TestTopupWithAsset(t *testing.T) {
 	if err := testutils.Fragment(addresses); err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	topup, err := taxiSvc.TopupWithAsset(ctx, superToken)
 	if err != nil {
