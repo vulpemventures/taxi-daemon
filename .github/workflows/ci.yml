@@ -20,6 +20,11 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
 
+      - name: Install Python
+        run: |
+          apt-get update
+          apt-get install -y python3
+
       - name: Install Nigiri
         run: | 
           mkdir ~/.nigiri; cd ~/.nigiri
