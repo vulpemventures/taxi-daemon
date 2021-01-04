@@ -13,6 +13,39 @@ import (
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
+func TestBalance(t *testing.T) {
+	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository()
+	topupRepo := newMockedTopupRepository([]string{superToken, hyperToken})
+	priceRepo := newMockedPriceRepository(nil)
+	explorerSvc := explorer.NewService(explorerEndpoint)
+
+	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerSvc)
+
+	balanceInfosBefore, err := adminSvc.Balance(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	payoutAddresses, err := hdTreeRepo.GetNewPayoutAddresses(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, err = mint(payoutAddresses[0], 100, explorerEndpoint)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(5 * time.Second)
+
+	balanceInfosAfter, err := adminSvc.Balance(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, true, len(balanceInfosAfter)-len(balanceInfosBefore) >= 1)
+}
+
 func TestListTopups(t *testing.T) {
 	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository()
 	topupRepo := newMockedTopupRepository([]string{superToken, hyperToken})

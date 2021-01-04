@@ -37,6 +37,31 @@ $ make integrationtest # Run integration tests
 $ make stop # Stop and delete the containers
 ```
 
+
+## Docker
+
+Build and use `taxid` with docker.
+
+#### Build taxid docker image
+
+_At the root of the repository_
+
+```bash
+docker build --pull --rm -f "Dockerfile" -t taxid:latest "."
+```
+
+#### Run the taxi server
+
+```bash
+docker run -d -it --name taxid -p 7000:7000 -p 8000:8000 -v `pwd`/taxid:/.taxid taxid:latest
+```
+
+#### Use the CLI
+
+```bash
+alias taxi="docker exec -it taxid taxi"
+```
+
 ## Deployment 
 
 ### Fragment script
@@ -53,12 +78,6 @@ python3 scripts/fragment.py --url http://127.0.0.1:7041 \
 ```
 
 tips: use `-h` to print the script's help guide.
-
-## Requirements
-
-* Go
-* Python 3 (fragment script)
-
 
 
 

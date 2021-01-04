@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -48,6 +49,27 @@ func faucet(address string, baseURL string) (string, error) {
 	}
 
 	return respBody["txId"], nil
+}
+
+func mint(address string, amount int, baseURL string) (string, string, error) {
+	url := fmt.Sprintf("%s/mint", baseURL)
+	payload := map[string]interface{}{"address": address, "quantity": amount}
+	body, _ := json.Marshal(payload)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return "", "", err
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", err
+	}
+	respBody := map[string]interface{}{}
+	err = json.Unmarshal(data, &respBody)
+	if err != nil {
+		return "", "", err
+	}
+
+	return respBody["txId"].(string), respBody["asset"].(string), nil
 }
 
 func newMockedPriceRepository(assets []string) domain.PriceRepository {

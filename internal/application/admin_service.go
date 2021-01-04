@@ -21,6 +21,7 @@ type AdminService interface {
 	ListTopups(ctx context.Context, assetHashFilter string) ([]domain.Topup, error)
 	AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error
 	SendToMany(ctx context.Context, outputs []wallet.Receiver, millisatPerByte int64, pushTransaction bool) (string, error)
+	Balance(ctx context.Context) (map[string]BalanceInfo, error)
 }
 
 type adminService struct {
@@ -141,8 +142,12 @@ func (adminSvc *adminService) LatestFundingAddressIndex(ctx context.Context) (in
 		return -1, err
 	}
 
-	lastIndex := int(hdTree.Accounts[domain.LBTCAccount].NextExternalIndex) - 1
-	return lastIndex, nil
+	lbtcAccount, ok := hdTree.Accounts[domain.LBTCAccount]
+	if !ok {
+		return 0, nil
+	}
+
+	return int(lbtcAccount.NextExternalIndex) - 1, nil
 }
 
 func (adminSvc *adminService) ListFundingAddresses(ctx context.Context, start, numOfAddresses uint) ([]domain.AddressInfo, error) {
@@ -186,6 +191,23 @@ func (adminSvc *adminService) ListTopups(ctx context.Context, assetHashFilter st
 	return filteredTopups, nil
 }
 
+// BalanceInfo describes balance amounts for an asset
+type BalanceInfo struct {
+	TotalBalance       uint64
+	ConfirmedBalance   uint64
+	UnconfirmedBalance uint64
+}
+
+func (adminSvc *adminService) Balance(ctx context.Context) (map[string]BalanceInfo, error) {
+	utxos, err := adminSvc.getUnspents(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	balanceInfos := utxosToBalanceInfos(utxos)
+	return balanceInfos, nil
+}
+
 func (adminSvc *adminService) getUnspents(ctx context.Context) ([]explorer.Utxo, error) {
 	hdTree, err := adminSvc.hdTreeRepository.GetOrCreateHDTree(ctx)
 	if err != nil {
@@ -213,6 +235,43 @@ func (adminSvc *adminService) getUnspents(ctx context.Context) ([]explorer.Utxo,
 	}
 
 	return utxos, nil
+}
+
+func utxosToBalanceInfos(utxos []explorer.Utxo) map[string]BalanceInfo {
+	resultMap := make(map[string]BalanceInfo)
+	for _, utxo := range utxos {
+		value := utxo.Value()
+		isConfirmed := utxo.IsConfirmed()
+
+		// asset already known
+		if balanceInfo, ok := resultMap[utxo.Asset()]; ok {
+			balanceInfo.TotalBalance += value
+			if isConfirmed {
+				balanceInfo.ConfirmedBalance += value
+				continue
+			}
+
+			balanceInfo.UnconfirmedBalance += value
+			continue
+		}
+
+		// new asset = new balance
+		balanceInfo := BalanceInfo{
+			TotalBalance:       value,
+			ConfirmedBalance:   0,
+			UnconfirmedBalance: 0,
+		}
+
+		if isConfirmed {
+			balanceInfo.ConfirmedBalance = value
+		} else {
+			balanceInfo.UnconfirmedBalance = value
+		}
+
+		resultMap[utxo.Asset()] = balanceInfo
+	}
+
+	return resultMap
 }
 
 func (adminSvc *adminService) selectUtxos(ctx context.Context, outputs []wallet.Receiver, w wallet.Wallet) ([]explorer.Utxo, []wallet.Receiver, error) {
