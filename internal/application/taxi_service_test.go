@@ -45,7 +45,7 @@ func TestTopupWithAsset(t *testing.T) {
 	}
 
 	// fund taxi with LBTC
-	if _, err := faucet(addresses[0], explorerEndpoint); err != nil {
+	if _, err := explorerSvc.Faucet(addresses[0]); err != nil {
 		t.Fatal(err)
 	}
 	time.Sleep(5 * time.Second)

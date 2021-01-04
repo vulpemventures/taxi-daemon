@@ -187,12 +187,6 @@ func TestSendToMany(t *testing.T) {
 		config.Set(config.MnemonicKey, "")
 	})
 
-	output := wallet.Receiver{
-		Address: "XP3vdsDLz5DojUjAqkLPqcajFtz5wzS73B",
-		Asset:   regtest.AssetID,
-		Amount:  100,
-	}
-
 	hdTreeRepo := newMockedHDTreeRepository(10)
 	topupRepo := newMockedTopupRepository(nil)
 	priceRepo := newMockedPriceRepository(nil)
@@ -203,16 +197,38 @@ func TestSendToMany(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = faucet(addrs[1], explorerEndpoint)
+	payoutAddrs, err := hdTreeRepo.GetNewPayoutAddresses(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = explorerSvc.Faucet(addrs[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, shitcoin, err := explorerSvc.Mint(payoutAddrs[0], 100)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	time.Sleep(5 * time.Second)
 
+	output := wallet.Receiver{
+		Address: "XP3vdsDLz5DojUjAqkLPqcajFtz5wzS73B",
+		Asset:   regtest.AssetID,
+		Amount:  100,
+	}
+
+	outputBis := wallet.Receiver{
+		Address: "XP3vdsDLz5DojUjAqkLPqcajFtz5wzS73B",
+		Asset:   shitcoin,
+		Amount:  32,
+	}
+
 	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerSvc)
 
-	_, err = adminSvc.SendToMany(context.Background(), []wallet.Receiver{output}, 1000, true)
+	_, err = adminSvc.SendToMany(context.Background(), []wallet.Receiver{output, outputBis}, 1000, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,12 +240,18 @@ func TestSendToMany(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fundsReceived := false
+	btcReceived, shitcoinReceived := false, false
+
 	for _, utxo := range utxos {
-		if utxo.Asset() == regtest.AssetID && utxo.Value() == output.Amount {
-			fundsReceived = true
+		if utxo.Asset() == output.Asset && utxo.Value() == output.Amount {
+			btcReceived = true
+		}
+
+		if utxo.Asset() == outputBis.Asset && utxo.Value() == outputBis.Amount {
+			shitcoinReceived = true
 		}
 	}
 
-	assert.Equal(t, true, fundsReceived)
+	assert.Equal(t, true, btcReceived)
+	assert.Equal(t, true, shitcoinReceived)
 }
