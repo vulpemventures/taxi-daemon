@@ -57,3 +57,8 @@ servertest: fmt
 	go test -v -count=1 ./cmd/taxid;
 
 integrationtest: servertest	cleantest
+
+## create-cert: creates localhost ssl certficate and key
+create-cert:
+	chmod u+x ./scripts/sslcert
+	bash ./scripts/sslcer
