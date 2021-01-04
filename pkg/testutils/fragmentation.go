@@ -11,7 +11,7 @@ import (
 func Fragment(addresses []string) error {
 	addressesArgs := strings.Join(addresses, " ")
 	cmd := exec.Command(
-		"python3", "../../scripts/fragment.py",
+		"python", "../../scripts/fragment.py",
 		"--unsafe",
 		"--fragment_size", "0.00001",
 		"--addresses", addressesArgs,
