@@ -1,13 +1,19 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/tls"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
+	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	log "github.com/sirupsen/logrus"
+	"github.com/soheilhy/cmux"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
 	"github.com/vulpemventures/liquid-taxi/config"
@@ -15,6 +21,7 @@ import (
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/dbbadger"
 	"github.com/vulpemventures/liquid-taxi/internal/interfaces/grpc"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
+	"golang.org/x/net/http2"
 	g "google.golang.org/grpc"
 )
 
@@ -79,32 +86,15 @@ func main() {
 	taxiAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetInt(config.TaxiPortKey))
 	adminAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetInt(config.AdminPortKey))
 
-	// serve
-	lisTaxi, err := net.Listen("tcp", taxiAddress)
-	if err != nil {
-		log.Fatal("failed to listen ", err)
+	if err := serveMux(taxiAddress, true, taxiServer); err != nil {
+		log.WithError(err).Panic("error listening on taxi interface")
 	}
-
-	lisAdmin, err := net.Listen("tcp", adminAddress)
-	if err != nil {
-		log.Fatal("failed to listen ", err)
-	}
-
-	go func() {
-		err := taxiServer.Serve(lisTaxi)
-		if err != nil {
-			log.Fatal("failed to serve ", err)
-		}
-	}()
 
 	log.Info("taxi server is listening on ", taxiAddress)
 
-	go func() {
-		err := adminServer.Serve(lisAdmin)
-		if err != nil {
-			log.Fatal("failed to serve ", err)
-		}
-	}()
+	if err := serveMux(adminAddress, true, adminServer); err != nil {
+		log.WithError(err).Panic("error listening on admin interface")
+	}
 
 	log.Info("admin server is listening on ", adminAddress)
 
@@ -121,4 +111,68 @@ func main() {
 	log.Info("Taxi server stopped")
 
 	os.Exit(0)
+}
+
+func serveMux(address string, withSsl bool, grpcServer *g.Server) error {
+	lis, err := net.Listen("tcp", address)
+	if err != nil {
+		return err
+	}
+
+	if sslKey := config.GetString(config.SSLKeyPathKey); sslKey != "" && withSsl {
+		certificate, err := tls.LoadX509KeyPair(config.GetString(config.SSLCertPathKey), sslKey)
+		if err != nil {
+			return err
+		}
+
+		const requiredCipher = tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+		config := &tls.Config{
+			CipherSuites: []uint16{requiredCipher},
+			NextProtos:   []string{"http/1.1", http2.NextProtoTLS, "h2-14"}, // h2-14 is just for compatibility. will be eventually removed.
+			Certificates: []tls.Certificate{certificate},
+		}
+		config.Rand = rand.Reader
+
+		lis = tls.NewListener(lis, config)
+	}
+
+	mux := cmux.New(lis)
+	grpcL := mux.MatchWithWriters(cmux.HTTP2MatchHeaderFieldPrefixSendSettings("content-type", "application/grpc"))
+	httpL := mux.Match(cmux.HTTP1Fast())
+
+	grpcWebServer := grpcweb.WrapServer(
+		grpcServer,
+		grpcweb.WithCorsForRegisteredEndpointsOnly(false),
+		grpcweb.WithOriginFunc(func(origin string) bool { return true }),
+	)
+
+	go grpcServer.Serve(grpcL)
+	go http.Serve(httpL, http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+		if isValidRequest(req) {
+			grpcWebServer.ServeHTTP(resp, req)
+		}
+	}))
+
+	go mux.Serve()
+	return nil
+}
+
+func isValidRequest(req *http.Request) bool {
+	return isValidGrpcWebOptionRequest(req) || isValidGrpcWebRequest(req)
+}
+
+func isValidGrpcWebRequest(req *http.Request) bool {
+	return req.Method == http.MethodPost && isValidGrpcContentTypeHeader(req.Header.Get("content-type"))
+}
+
+func isValidGrpcContentTypeHeader(contentType string) bool {
+	return strings.HasPrefix(contentType, "application/grpc-web-text") ||
+		strings.HasPrefix(contentType, "application/grpc-web")
+}
+
+func isValidGrpcWebOptionRequest(req *http.Request) bool {
+	accessControlHeader := req.Header.Get("Access-Control-Request-Headers")
+	return req.Method == http.MethodOptions &&
+		strings.Contains(accessControlHeader, "x-grpc-web") &&
+		strings.Contains(accessControlHeader, "content-type")
 }

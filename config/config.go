@@ -37,6 +37,10 @@ const (
 	MaxFixedFeeAmount = 100000000
 	// DatadirKey is the path of the directory used to store the taxi's database files
 	DatadirKey = "DATADIR"
+	// SSLCertPathKey is the path to the SSL certificate
+	SSLCertPathKey = "SSL_CERT"
+	// SSLKeyPathKey is the path to the SSL private key
+	SSLKeyPathKey = "SSL_KEY"
 )
 
 var (
