@@ -18,6 +18,7 @@ require (
 	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
+	github.com/improbable-eng/grpc-web v0.13.0
 	github.com/kr/text v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.0 // indirect
@@ -27,6 +28,7 @@ require (
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/smartystreets/assertions v1.2.0 // indirect
+	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/afero v1.5.1 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
@@ -40,7 +42,7 @@ require (
 	github.com/vulpemventures/go-elements v0.1.1
 	github.com/vulpemventures/taxi-protobuf v0.0.0-20201222145221-8c736c9b646e
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
-	golang.org/x/net v0.0.0-20201216054612-986b41b23924 // indirect
+	golang.org/x/net v0.0.0-20201216054612-986b41b23924
 	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d // indirect

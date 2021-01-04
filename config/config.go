@@ -37,6 +37,10 @@ const (
 	MaxFixedFeeAmount = 100000000
 	// DatadirKey is the path of the directory used to store the taxi's database files
 	DatadirKey = "DATADIR"
+	// SSLCertPathKey is the path to the SSL certificate
+	SSLCertPathKey = "SSL_CERT"
+	// SSLKeyPathKey is the path to the SSL private key
+	SSLKeyPathKey = "SSL_KEY"
 )
 
 var (
@@ -96,6 +100,11 @@ func validate() {
 
 	if err := validatePort(pAdmin); err != nil {
 		log.Fatal("port ", p, " is not available")
+	}
+
+	certPath, keyPath := vip.GetString(SSLCertPathKey), vip.GetString(SSLKeyPathKey)
+	if (certPath != "" && keyPath == "") || (certPath == "" && keyPath != "") {
+		log.Fatalln("SSL requires both key and certificate when enabled")
 	}
 }
 
