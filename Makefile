@@ -62,4 +62,4 @@ integrationtest: servertest	cleantest
 ## create-cert: creates localhost ssl certficate and key
 create-cert:
 	chmod u+x ./scripts/sslcert
-	bash ./scripts/sslcer
+	bash ./scripts/sslcert

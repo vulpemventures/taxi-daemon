@@ -20,3 +20,7 @@ bin/
 .vscode
 
 **/test-taxi-datadir/
+
+# ssl files
+*.crt
+*.key
