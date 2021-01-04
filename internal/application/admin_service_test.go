@@ -31,7 +31,7 @@ func TestBalance(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, _, err = mint(payoutAddresses[0], 100, explorerEndpoint)
+	_, _, err = explorerSvc.Mint(payoutAddresses[0], 100)
 	if err != nil {
 		t.Fatal(err)
 	}
