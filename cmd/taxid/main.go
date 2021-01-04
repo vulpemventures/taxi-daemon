@@ -92,7 +92,7 @@ func main() {
 
 	log.Info("taxi server is listening on ", taxiAddress)
 
-	if err := serveMux(adminAddress, true, adminServer); err != nil {
+	if err := serveMux(adminAddress, false, adminServer); err != nil {
 		log.WithError(err).Panic("error listening on admin interface")
 	}
 
