@@ -33,8 +33,7 @@ const (
 	// MinFixedFeeAmount is the minimum value allowed for LBTC fees
 	MinFixedFeeAmount = 100
 	// MaxFixedFeeAmount is the maximum value allowed for LBTC fees
-	// TODO Change MAX to 10000000 sats (current / 10), max is set to 1BTC for test purpose, this will be change with the fragment script PR
-	MaxFixedFeeAmount = 100000000
+	MaxFixedFeeAmount = 10000000
 	// DatadirKey is the path of the directory used to store the taxi's database files
 	DatadirKey = "DATADIR"
 )
@@ -50,7 +49,6 @@ func init() {
 
 	vip.SetDefault(NetworkKey, "regtest")
 	vip.SetDefault(ExplorerEndpointKey, "https://nigiri.network/liquid/api")
-	// vip.SetDefault(ConfigPathKey, "./taxi.config.json")
 	vip.SetDefault(TaxiPortKey, 8000)
 	vip.SetDefault(AdminPortKey, 7000)
 	vip.SetDefault(MnemonicKey, "")

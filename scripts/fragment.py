@@ -49,7 +49,7 @@ number_of_fragments = len(addresses)
 def error(message):
     """Print an error message and exit the program."""
     print(message)
-    sys.exit(-1)
+    sys.exit(1)
 
 
 def query_yes_no(question, default="yes"):

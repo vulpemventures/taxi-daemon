@@ -37,20 +37,17 @@ proto:
 	./scripts/compile-proto
 
 run:
-	export TAXI_FIXED_FEE_AMOUNT=100000000; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
 	go run cmd/taxid/main.go
 
 test: fmt 
-	export TAXI_FIXED_FEE_AMOUNT=100000000; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
 	export TAXI_DATADIR="./test-taxi-datadir"; \
 	go test -v -short -race ./...
 
 servertest: fmt
-	export TAXI_FIXED_FEE_AMOUNT=100000000; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
 	export TAXI_DATADIR="./test-taxi-datadir"; \

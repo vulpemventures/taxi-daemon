@@ -15,6 +15,7 @@ import (
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
+	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 )
 
 func TestTopupWithAsset(t *testing.T) {
@@ -45,10 +46,10 @@ func TestTopupWithAsset(t *testing.T) {
 	}
 
 	// fund taxi with LBTC
-	if _, err := explorerSvc.Faucet(addresses[0]); err != nil {
+	if err := testutils.Fragment(addresses); err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(5 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	topup, err := taxiSvc.TopupWithAsset(ctx, superToken)
 	if err != nil {

@@ -18,6 +18,7 @@ import (
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
 	"github.com/vulpemventures/liquid-taxi/config"
+	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 	g "google.golang.org/grpc"
 )
@@ -29,10 +30,11 @@ func TestTaxiServer(t *testing.T) {
 		t.Skip("skipping test in short mode.")
 	}
 
-	explorerSvc := explorer.NewService(config.GetString(config.ExplorerEndpointKey))
-
 	// In the scenario, alice will send USDT to bob
 	// However, alice has only USDT and would like to pay fees using them.
+
+	explorerSvc := explorer.NewService(config.GetString(config.ExplorerEndpointKey))
+
 	aliceKeyPair, _ := btcec.NewPrivateKey(btcec.S256())
 	alice := payment.FromPublicKey(aliceKeyPair.PubKey(), &network.Regtest, nil)
 	aliceAddress, _ := alice.WitnessPubKeyHash()
@@ -68,9 +70,8 @@ func TestTaxiServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	addr := faReply.GetAddresses()[0]
 
-	if _, err := explorerSvc.Faucet(addr); err != nil {
+	if err := testutils.Fragment(faReply.GetAddresses()); err != nil {
 		t.Fatal(err)
 	}
 
