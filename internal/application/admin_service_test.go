@@ -10,6 +10,7 @@ import (
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
+	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
 func TestBalance(t *testing.T) {
@@ -30,7 +31,7 @@ func TestBalance(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, _, err = mint(payoutAddresses[0], 100, explorerEndpoint)
+	_, _, err = explorerSvc.Mint(payoutAddresses[0], 100)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,4 +179,79 @@ func TestListFundingAddresses(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Equal(t, 5, len(addresses))
+}
+
+func TestSendToMany(t *testing.T) {
+	config.Set(config.MnemonicKey, mnemonic)
+	t.Cleanup(func() {
+		config.Set(config.MnemonicKey, "")
+	})
+
+	hdTreeRepo := newMockedHDTreeRepository(10)
+	topupRepo := newMockedTopupRepository(nil)
+	priceRepo := newMockedPriceRepository(nil)
+	explorerSvc := explorer.NewService(explorerEndpoint)
+
+	addrs, err := hdTreeRepo.GetNewFundingAddresses(context.Background(), 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	payoutAddrs, err := hdTreeRepo.GetNewPayoutAddresses(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = explorerSvc.Faucet(addrs[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, shitcoin, err := explorerSvc.Mint(payoutAddrs[0], 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(5 * time.Second)
+
+	output := wallet.Receiver{
+		Address: "XP3vdsDLz5DojUjAqkLPqcajFtz5wzS73B",
+		Asset:   regtest.AssetID,
+		Amount:  100,
+	}
+
+	outputBis := wallet.Receiver{
+		Address: "XP3vdsDLz5DojUjAqkLPqcajFtz5wzS73B",
+		Asset:   shitcoin,
+		Amount:  32,
+	}
+
+	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerSvc)
+
+	_, err = adminSvc.SendToMany(context.Background(), []wallet.Receiver{output, outputBis}, 1000, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(2 * time.Second)
+
+	utxos, err := explorerSvc.GetUnspents(output.Address, [][]byte{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	btcReceived, shitcoinReceived := false, false
+
+	for _, utxo := range utxos {
+		if utxo.Asset() == output.Asset && utxo.Value() == output.Amount {
+			btcReceived = true
+		}
+
+		if utxo.Asset() == outputBis.Asset && utxo.Value() == outputBis.Amount {
+			shitcoinReceived = true
+		}
+	}
+
+	assert.Equal(t, true, btcReceived)
+	assert.Equal(t, true, shitcoinReceived)
 }

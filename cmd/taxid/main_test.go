@@ -1,21 +1,16 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"testing"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/prometheus/common/log"
-	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/stretchr/testify/assert"
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
@@ -34,6 +29,8 @@ func TestTaxiServer(t *testing.T) {
 		t.Skip("skipping test in short mode.")
 	}
 
+	explorerSvc := explorer.NewService(config.GetString(config.ExplorerEndpointKey))
+
 	// In the scenario, alice will send USDT to bob
 	// However, alice has only USDT and would like to pay fees using them.
 	aliceKeyPair, _ := btcec.NewPrivateKey(btcec.S256())
@@ -41,7 +38,7 @@ func TestTaxiServer(t *testing.T) {
 	aliceAddress, _ := alice.WitnessPubKeyHash()
 
 	// Let's simulate alice's USDTs
-	_, USDT, err := mint(config.GetString(config.ExplorerEndpointKey), aliceAddress, 100000)
+	_, USDT, err := explorerSvc.Mint(aliceAddress, 100000)
 
 	// start taxi
 	go main()
@@ -73,11 +70,11 @@ func TestTaxiServer(t *testing.T) {
 	}
 	addr := faReply.GetAddresses()[0]
 
-	if _, err := faucet(addr, config.GetString(config.ExplorerEndpointKey)); err != nil {
+	if _, err := explorerSvc.Faucet(addr); err != nil {
 		t.Fatal(err)
 	}
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	// CLIENT SIDE --->
 	// Alice connect to server
@@ -232,46 +229,4 @@ func TestTaxiServer(t *testing.T) {
 	// if err != nil {
 	// 	t.Fatal(err)
 	// }
-}
-
-func mint(apiURL string, address string, amount int) (string, string, error) {
-	url := fmt.Sprintf("%s/mint", apiURL)
-	payload := map[string]interface{}{"address": address, "quantity": amount}
-	body, _ := json.Marshal(payload)
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		return "", "", err
-	}
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", "", err
-	}
-	respBody := map[string]interface{}{}
-	err = json.Unmarshal(data, &respBody)
-	if err != nil {
-		return "", "", err
-	}
-
-	return respBody["txId"].(string), respBody["asset"].(string), nil
-}
-
-func faucet(address string, baseURL string) (string, error) {
-	url := baseURL + "/faucet"
-	payload := map[string]string{"address": address}
-	body, _ := json.Marshal(payload)
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		return "", err
-	}
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	respBody := map[string]string{}
-	err = json.Unmarshal(data, &respBody)
-	if err != nil {
-		return "", err
-	}
-
-	return respBody["txId"], nil
 }

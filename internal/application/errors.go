@@ -28,6 +28,18 @@ func (e ErrUtxoNotFound) Error() string {
 	return "utxo with amount = " + fmt.Sprint(e.TargetedAmount) + " and asset = " + e.TargetedAsset + " not found."
 }
 
+// ErrCoinSelection is returned as error if we do not found enough coin to fill a transaction requirement
+type ErrCoinSelection struct {
+	TargetedAmount uint64
+	TargetedAsset  string
+}
+
+var _ error = (*ErrCoinSelection)(nil)
+
+func (e ErrCoinSelection) Error() string {
+	return "not enough coin in wallet for " + fmt.Sprint(e.TargetedAmount) + " " + e.TargetedAsset
+}
+
 var (
 	// ErrUtxoNotAvailable is returned if a selected utxo is already used (i.e locked by the taxi service)
 	ErrUtxoNotAvailable = errors.New("a selected utxo is not available")
