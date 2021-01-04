@@ -19,7 +19,7 @@ my_parser = argparse.ArgumentParser(
     description='Send a fixed amount of BTC to a set of addresses')
 
 my_parser.add_argument('--url', action='store', type=str,
-                       default="http://localhost:7041/",
+                       default="http://localhost:7041",
                        help="the node RPC interface URL")
 my_parser.add_argument('--rpc_user', action='store',
                        type=str, default="admin1",
