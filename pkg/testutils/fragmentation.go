@@ -11,17 +11,19 @@ import (
 func Fragment(addresses []string) error {
 	addressesArgs := strings.Join(addresses, " ")
 	cmd := exec.Command(
+		"/bin/bash", "-c",
 		"python", "../../scripts/fragment.py",
 		"--unsafe",
 		"--fragment_size", "0.00001",
 		"--addresses", addressesArgs,
 	)
 
-	output, err := cmd.Output()
+	log.Info(cmd)
+
+	err := cmd.Run()
 	if err != nil {
 		return err
 	}
 
-	log.Info(string(output))
 	return nil
 }
