@@ -32,6 +32,8 @@ func main() {
 	log.Info("loading datadir...")
 
 	datadirPath := config.GetString(config.DatadirKey)
+	network := *config.GetNetwork()
+	mnemonic := config.GetMnemonic()
 
 	err := dbbadger.CreateDirIfNotExist(datadirPath)
 	if err != nil {
@@ -39,7 +41,7 @@ func main() {
 	}
 
 	dbLogger := log.New()
-	hdTreeRepository, err := dbbadger.NewBadgerHDTreeRepository(datadirPath, dbLogger)
+	hdTreeRepository, err := dbbadger.NewBadgerHDTreeRepository(datadirPath, network, mnemonic, dbLogger)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,9 +68,9 @@ func main() {
 		PriceRepo:      priceRepository,
 		ExplorerSvc:    explorerSvc,
 		UtxoTTL:        time.Duration(config.GetInt(config.UtxoTTLKey)) * time.Second,
-		Network:        *config.GetNetwork(),
+		Network:        network,
 		FixedFeeAmount: uint64(config.GetInt(config.FixedFeeAmountKey)),
-		Mnemonic:       config.GetMnemonic(),
+		Mnemonic:       mnemonic,
 	}
 
 	taxiSvc := application.NewTaxiService(argsTaviSvc)

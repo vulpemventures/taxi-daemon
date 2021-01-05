@@ -8,12 +8,13 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
+	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
 func TestBalance(t *testing.T) {
-	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository()
+	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(network.Regtest, words)
 	topupRepo := newMockedTopupRepository([]string{superToken, hyperToken})
 	priceRepo := newMockedPriceRepository(nil)
 	explorerSvc := explorer.NewService(explorerEndpoint)
@@ -46,7 +47,7 @@ func TestBalance(t *testing.T) {
 }
 
 func TestListTopups(t *testing.T) {
-	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository()
+	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(network.Regtest, words)
 	topupRepo := newMockedTopupRepository([]string{superToken, hyperToken})
 	priceRepo := newMockedPriceRepository(nil)
 	explorerSvc := explorer.NewService(explorerEndpoint)
@@ -68,7 +69,7 @@ func TestListTopups(t *testing.T) {
 }
 
 func TestAddAsset(t *testing.T) {
-	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository()
+	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(network.Regtest, words)
 	topupRepo := newMockedTopupRepository(nil)
 	priceRepo := newMockedPriceRepository(nil)
 	explorerSvc := explorer.NewService(explorerEndpoint)
