@@ -223,8 +223,6 @@ func TestTaxiServer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	log.Info(txHex)
-
 	txid, err := explorerSvc.BroadcastTransaction(txHex)
 	if err != nil {
 		t.Fatal(err)

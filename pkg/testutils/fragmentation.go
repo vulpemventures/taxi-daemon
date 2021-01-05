@@ -1,7 +1,6 @@
 package testutils
 
 import (
-	"log"
 	"os/exec"
 )
 
@@ -18,9 +17,7 @@ func Fragment(addresses []string) error {
 
 	cmd := exec.Command("python3", args...)
 
-	// TODO remove log
-	output, err := cmd.Output()
-	log.Print(string(output))
+	_, err := cmd.Output()
 	if err != nil {
 		return err
 	}

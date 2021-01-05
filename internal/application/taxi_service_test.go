@@ -19,6 +19,10 @@ import (
 )
 
 func TestTopupWithAsset(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
 	hdTreeRepo := newMockedHDTreeRepository(0)
 	lockRepo := inmemory.NewInmemoryLockRepository()
 	topupRepo := newMockedTopupRepository(nil)
