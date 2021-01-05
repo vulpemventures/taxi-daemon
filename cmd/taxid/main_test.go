@@ -17,7 +17,6 @@ import (
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
 	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
-	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 	g "google.golang.org/grpc"
@@ -35,7 +34,7 @@ func TestTaxiServer(t *testing.T) {
 	// In the scenario, alice will send USDT to bob
 	// However, alice has only USDT and would like to pay fees using them.
 
-	explorerSvc := explorer.NewService(config.GetString(config.ExplorerEndpointKey))
+	explorerSvc := explorer.NewService(explorerEndpoint)
 
 	aliceKeyPair, _ := btcec.NewPrivateKey(btcec.S256())
 	alice := payment.FromPublicKey(aliceKeyPair.PubKey(), &network.Regtest, nil)
