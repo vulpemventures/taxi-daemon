@@ -15,9 +15,13 @@ import (
 	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
+	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 )
 
 func TestTopupWithAsset(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	hdTreeRepo := newMockedHDTreeRepository(0)
 	lockRepo := inmemory.NewInmemoryLockRepository()
@@ -39,13 +43,13 @@ func TestTopupWithAsset(t *testing.T) {
 	)
 	ctx := context.Background()
 
-	addresses, err := hdTreeRepo.GetNewFundingAddresses(ctx, 1)
+	addresses, err := hdTreeRepo.GetNewFundingAddresses(ctx, 3)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// fund taxi with LBTC
-	if _, err := explorerSvc.Faucet(addresses[0]); err != nil {
+	if err := testutils.Fragment(addresses); err != nil {
 		t.Fatal(err)
 	}
 	time.Sleep(5 * time.Second)

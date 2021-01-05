@@ -20,6 +20,14 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
 
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      
+      - name: Install Python dependencies
+        run: python3 -m pip install --upgrade pip requests argparse
+
       - name: Install Nigiri
         run: | 
           mkdir ~/.nigiri; cd ~/.nigiri

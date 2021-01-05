@@ -35,14 +35,19 @@ proto:
 
 ## run the service (for tests)
 run:
-	export TAXI_FIXED_FEE_AMOUNT=100000000; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
 	go run cmd/taxid/main.go
 
+## run all the tests
+alltest: fmt 
+	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
+	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
+	export TAXI_DATADIR="./test-taxi-datadir"; \
+	go test -v -race ./...
+
 ## run the short tests
 test: fmt 
-	export TAXI_FIXED_FEE_AMOUNT=100000000; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
 	export TAXI_DATADIR="./test-taxi-datadir"; \
@@ -50,7 +55,6 @@ test: fmt
 
 ## integration test
 servertest: fmt
-	export TAXI_FIXED_FEE_AMOUNT=100000000; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
 	export TAXI_DATADIR="./test-taxi-datadir"; \
