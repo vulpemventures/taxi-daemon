@@ -21,6 +21,7 @@ func main() {
 		&config,
 		&fundingAddress,
 		&listTopups,
+		&balance,
 	)
 
 	err := app.Run(os.Args)
