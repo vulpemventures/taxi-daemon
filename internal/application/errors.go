@@ -3,17 +3,19 @@ package application
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // ErrAssetNotSupported is returned as error if the taxi service does not handle the given assetHash
 type ErrAssetNotSupported struct {
-	AssetHash string
+	AssetHash     string
+	AssetsAllowed []string
 }
 
 var _ error = (*ErrAssetNotSupported)(nil)
 
 func (e ErrAssetNotSupported) Error() string {
-	return "Asset not supported by taxi: " + e.AssetHash
+	return "taxi does not support the asset:" + e.AssetHash + ". Please choose one of the following: " + strings.Join(e.AssetsAllowed, ", ")
 }
 
 // ErrUtxoNotFound is returned as error if the Utxo with value = targetedAmount and asset = targetedAsset is not found
@@ -25,7 +27,7 @@ type ErrUtxoNotFound struct {
 var _ error = (*ErrUtxoNotFound)(nil)
 
 func (e ErrUtxoNotFound) Error() string {
-	return "utxo with amount = " + fmt.Sprint(e.TargetedAmount) + " and asset = " + e.TargetedAsset + " not found."
+	return "utxo with amount = " + fmt.Sprint(e.TargetedAmount) + " and asset = " + e.TargetedAsset + " not found"
 }
 
 // ErrCoinSelection is returned as error if we do not found enough coin to fill a transaction requirement

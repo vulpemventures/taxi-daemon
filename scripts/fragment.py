@@ -4,11 +4,22 @@ import sys
 import argparse
 
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 my_parser = argparse.ArgumentParser(
     description='Send a fixed amount of BTC to a set of addresses')
 
 my_parser.add_argument('--url', action='store', type=str,
-                       default="http://127.0.0.1:7041/",
+                       default="http://localhost:7041",
                        help="the node RPC interface URL")
 my_parser.add_argument('--rpc_user', action='store',
                        type=str, default="admin1",
@@ -21,6 +32,8 @@ my_parser.add_argument('--fragment_size', action='store',
                        help="the amount to send as fragment to each addresses")
 my_parser.add_argument('--addresses', nargs='+',
                        help="a set of addresses (determine the number of fragment), all addresses must be different", required=True)
+my_parser.add_argument("--unsafe", type=str2bool, nargs='?',
+                       const=True, default=False, help="unsafe mode don't ask the user before broadcasting the transaction")
 
 args = my_parser.parse_args()
 
@@ -29,13 +42,14 @@ rpc_user = args.rpc_user
 rpc_pass = args.rpc_pass
 addresses = args.addresses
 fragment_size = args.fragment_size
+isSafe = not args.unsafe
 number_of_fragments = len(addresses)
 
 
 def error(message):
     """Print an error message and exit the program."""
     print(message)
-    sys.exit(-1)
+    sys.exit(1)
 
 
 def query_yes_no(question, default="yes"):
@@ -120,16 +134,16 @@ def signTx(hex):
     Use signrawtransactionwithwallet RPC to sign the transaction.
     """
     print('the following transaction will be broadcasted.')
-    isYes = query_yes_no('Are you sure to sign and broadcast the tx?')
 
-    if isYes:
-        sign_result = call('signrawtransactionwithwallet', [hex])
-        if sign_result['complete'] == False:
-            error('Error signTx: the wallet is not able to sign the transaction')
+    if isSafe:
+        isYes = query_yes_no('Are you sure to sign and broadcast the tx?')
+        if isYes == False:
+            error('abort')
 
-        return sign_result['hex']
-
-    error('abort')
+    sign_result = call('signrawtransactionwithwallet', [hex])
+    if sign_result['complete'] == False:
+        error('Error signTx: the wallet is not able to sign the transaction')
+    return sign_result['hex']
 
 
 def sendTx(hex):

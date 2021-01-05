@@ -40,6 +40,9 @@ func (r *badgerPriceRepository) UpdateOrCreatePrice(ctx context.Context, price d
 func (r *badgerPriceRepository) GetPrice(ctx context.Context, assetHash string) (*domain.Price, error) {
 	var result domain.Price
 	err := r.store.Get(assetHash, &result)
+	if err == badgerhold.ErrNotFound {
+		return nil, nil
+	}
 	return &result, err
 }
 

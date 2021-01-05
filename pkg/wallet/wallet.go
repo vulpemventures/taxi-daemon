@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"errors"
-	"log"
 
 	"github.com/vulpemventures/go-elements/address"
 
@@ -99,7 +98,6 @@ func (w *wallet) FinalizeAndExtract(base64PSET string) (string, error) {
 		return "", err
 	}
 
-	log.Print(tx.ToHex())
 	return tx.ToHex()
 }
 
