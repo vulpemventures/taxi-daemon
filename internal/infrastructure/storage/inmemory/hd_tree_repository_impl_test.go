@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/vulpemventures/liquid-taxi/config"
+	"github.com/vulpemventures/go-elements/network"
 )
 
 const (
@@ -13,7 +13,7 @@ const (
 )
 
 func TestGetOrCreateHDTree(t *testing.T) {
-	repo := newInmemoryHDTreeRepository()
+	repo := newInmemoryHDTreeRepository(network.Regtest, words)
 	ctx := context.Background()
 
 	assert.Nil(t, repo.hdTree)
@@ -24,13 +24,8 @@ func TestGetOrCreateHDTree(t *testing.T) {
 }
 
 func TestGetNewFundingAddresses(t *testing.T) {
-	repo := newInmemoryHDTreeRepository()
+	repo := newInmemoryHDTreeRepository(network.Regtest, words)
 	ctx := context.Background()
-
-	config.Set(config.MnemonicKey, mnemonic)
-	t.Cleanup(func() {
-		config.Set(config.MnemonicKey, "")
-	})
 
 	if _, err := repo.GetOrCreateHDTree(ctx); err != nil {
 		t.Fatal(err)
@@ -44,13 +39,8 @@ func TestGetNewFundingAddresses(t *testing.T) {
 }
 
 func TestGetNewPayoutAddresses(t *testing.T) {
-	repo := newInmemoryHDTreeRepository()
+	repo := newInmemoryHDTreeRepository(network.Regtest, words)
 	ctx := context.Background()
-
-	config.Set(config.MnemonicKey, mnemonic)
-	t.Cleanup(func() {
-		config.Set(config.MnemonicKey, "")
-	})
 
 	if _, err := repo.GetOrCreateHDTree(ctx); err != nil {
 		t.Fatal(err)

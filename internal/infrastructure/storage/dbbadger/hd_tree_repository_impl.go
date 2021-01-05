@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/timshannon/badgerhold/v2"
+	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
@@ -14,18 +15,22 @@ import (
 const HDTreeStoreKey = "hdtree"
 
 type badgerHDTreeRepository struct {
-	store *badgerhold.Store
+	store    *badgerhold.Store
+	network  network.Network
+	mnemonic []string
 }
 
 // NewBadgerHDTreeRepository is a factory function for Badger HDTreeRepository implementation
-func NewBadgerHDTreeRepository(baseDirPath string, logger badger.Logger) (domain.HDTreeRepository, error) {
+func NewBadgerHDTreeRepository(baseDirPath string, network network.Network, mnemonic []string, logger badger.Logger) (domain.HDTreeRepository, error) {
 	hdTreeStore, err := createDb(filepath.Join(baseDirPath, HDTreeStoreKey), logger)
 	if err != nil {
 		return nil, err
 	}
 
 	return &badgerHDTreeRepository{
-		store: hdTreeStore,
+		store:    hdTreeStore,
+		network:  network,
+		mnemonic: mnemonic,
 	}, nil
 }
 
@@ -86,7 +91,7 @@ func (r *badgerHDTreeRepository) getOrCreateHDTree(ctx context.Context) (*domain
 		return hdTree, nil
 	}
 
-	hdTree, err = domain.NewHDTree(wallet.DefaultBaseDerivationPath)
+	hdTree, err = domain.NewHDTree(r.mnemonic, wallet.DefaultBaseDerivationPath, r.network)
 	if err != nil {
 		return nil, err
 	}

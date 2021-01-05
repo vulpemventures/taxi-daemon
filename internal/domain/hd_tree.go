@@ -6,7 +6,7 @@ import (
 
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/vulpemventures/go-elements/address"
-	"github.com/vulpemventures/liquid-taxi/config"
+	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
@@ -55,16 +55,20 @@ func (a *Account) addDerivationPath(script, derivationPath string) {
 
 // HDTree represents a HD wallet
 type HDTree struct {
+	Mnemonic           []string
 	RootDerivationPath string
 	Accounts           map[uint]*Account
+	Network            network.Network
 }
 
 // NewHDTree is the factory function for the HDTree domain
-func NewHDTree(rootPath wallet.DerivationPath) (*HDTree, error) {
-	if len(config.GetMnemonic()) <= 0 {
+func NewHDTree(mnemonic []string, rootPath wallet.DerivationPath, network network.Network) (*HDTree, error) {
+	if len(mnemonic) <= 0 {
 		return nil, errors.New("mnemonic must be set in env")
 	}
 	return &HDTree{
+		Mnemonic:           mnemonic,
+		Network:            network,
 		RootDerivationPath: rootPath.String(),
 		Accounts:           make(map[uint]*Account, 0),
 	}, nil
@@ -159,9 +163,9 @@ func (t *HDTree) deriveAddressInfo(
 ) (*AddressInfo, wallet.DerivationPath, error) {
 	rootPath, _ := wallet.ParseDerivationPath(t.RootDerivationPath)
 	w, err := wallet.NewWallet(
-		config.GetMnemonic(),
+		t.Mnemonic,
 		rootPath,
-		*config.GetNetwork(),
+		t.Network,
 	)
 	if err != nil {
 		return nil, nil, err
