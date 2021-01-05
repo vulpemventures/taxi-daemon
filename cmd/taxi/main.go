@@ -20,6 +20,7 @@ func main() {
 		&addAsset,
 		&config,
 		&fundingAddress,
+		&listTopups,
 	)
 
 	err := app.Run(os.Args)

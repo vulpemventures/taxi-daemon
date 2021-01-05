@@ -10,14 +10,10 @@ import (
 
 	"github.com/btcsuite/btcutil"
 	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
-	"google.golang.org/grpc"
+	"github.com/vulpemventures/liquid-taxi/pkg/client"
 )
 
 var (
-	// maxMsgRecvSize is the largest message our client will receive. We
-	// set this to 200MiB atm.
-	maxMsgRecvSize = grpc.MaxCallRecvMsgSize(1 * 1024 * 1024 * 200)
-
 	dataDir   = btcutil.AppDataDir("taxi-admin-cli", false)
 	statePath = path.Join(dataDir, "state.json")
 )
@@ -79,32 +75,15 @@ func merge(maps ...map[string]string) map[string]string {
 }
 
 func getAdminClient() (admin.AdminClient, func() error, error) {
-	conn, err := getClientConn()
+	state, err := getState()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return admin.NewAdminClient(conn), conn.Close, nil
-}
-
-func getClientConn() (*grpc.ClientConn, error) {
-	state, err := getState()
-	if err != nil {
-		return nil, err
-	}
-
 	address, ok := state["rpcserver"]
 	if !ok {
-		return nil, errors.New("set rpcserver with `config set rpcserver`")
+		return nil, nil, errors.New("set rpcserver with `config set rpcserver`")
 	}
 
-	opts := []grpc.DialOption{grpc.WithDefaultCallOptions(maxMsgRecvSize), grpc.WithInsecure()}
-
-	conn, err := grpc.Dial(address, opts...)
-	if err != nil {
-		return nil, fmt.Errorf("unable to connect to RPC server: %v",
-			err)
-	}
-
-	return conn, nil
+	return client.NewAdminClient(address)
 }
