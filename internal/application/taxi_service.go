@@ -62,7 +62,11 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 	if price == nil {
-		return nil, ErrAssetNotSupported{AssetHash: assetHash}
+		assets, _ := taxi.ListAssets(ctx)
+		return nil, ErrAssetNotSupported{
+			AssetHash:     assetHash,
+			AssetsAllowed: assets,
+		}
 	}
 
 	// retrieve only the utxos that are not locked by other topups
