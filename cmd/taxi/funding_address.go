@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/urfave/cli/v2"
 	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
@@ -32,7 +33,7 @@ func fundingAddressAction(ctx *cli.Context) error {
 	defer close()
 
 	nbOfAddresses := ctx.Int64("nb_addresses")
-	addresses, err := adminClient.FundingAddress(
+	reply, err := adminClient.FundingAddress(
 		context.Background(),
 		&admin.FundingAddressRequest{
 			NumOfAddresses: nbOfAddresses,
@@ -45,9 +46,7 @@ func fundingAddressAction(ctx *cli.Context) error {
 
 	fmt.Println()
 	fmt.Println("Send LBTC to the following address(es):")
-	for _, addr := range addresses.Addresses {
-		fmt.Println(addr)
-	}
+	fmt.Println(strings.Join(reply.GetAddresses(), " "))
 
 	return nil
 }
