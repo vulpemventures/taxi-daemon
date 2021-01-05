@@ -10,7 +10,7 @@ import (
 
 	"github.com/btcsuite/btcutil"
 	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
-	"github.com/vulpemventures/liquid-taxi/pkg/client"
+	"github.com/vulpemventures/liquid-taxi/pkg/taxiclient"
 )
 
 var (
@@ -85,5 +85,5 @@ func getAdminClient() (admin.AdminClient, func() error, error) {
 		return nil, nil, errors.New("set rpcserver with `config set rpcserver`")
 	}
 
-	return client.NewAdminClient(address)
+	return taxiclient.NewAdminClient(address)
 }
