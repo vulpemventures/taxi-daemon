@@ -23,6 +23,8 @@ import (
 	g "google.golang.org/grpc"
 )
 
+const explorerEndpoint = "http://localhost:3001"
+
 var emptyContext = context.Background()
 
 func TestTaxiServer(t *testing.T) {
@@ -114,7 +116,7 @@ func TestTaxiServer(t *testing.T) {
 	// bobAddress, _ := bob.WitnessPubKeyHash()
 
 	// Now, alice adds his own inputs and outputs
-	aliceExplorerSvc := explorer.NewService(config.GetString(config.ExplorerEndpointKey))
+	aliceExplorerSvc := explorer.NewService(explorerEndpoint)
 	time.Sleep(3 * time.Second)
 	utxos, err := aliceExplorerSvc.GetUnspents(aliceAddress, [][]byte{})
 
