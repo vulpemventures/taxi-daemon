@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	log "github.com/sirupsen/logrus"
@@ -58,19 +59,27 @@ func main() {
 
 	log.Info("Taxi server is starting...")
 
-	taxiSvc := application.NewTaxiService(
-		hdTreeRepository,
-		lockRepository,
-		topupRepository,
-		priceRepository,
-		explorerSvc,
-	)
+	argsTaviSvc := application.NewTaxiServiceArgs{
+		HdTreeRepo:     hdTreeRepository,
+		LockRepo:       lockRepository,
+		TopupRepo:      topupRepository,
+		PriceRepo:      priceRepository,
+		ExplorerSvc:    explorerSvc,
+		UtxoTTL:        time.Duration(config.GetInt(config.UtxoTTLKey)) * time.Second,
+		Network:        *config.GetNetwork(),
+		FixedFeeAmount: uint64(config.GetInt(config.FixedFeeAmountKey)),
+		Mnemonic:       config.GetMnemonic(),
+	}
+
+	taxiSvc := application.NewTaxiService(argsTaviSvc)
 
 	adminSvc := application.NewAdminService(
 		hdTreeRepository,
 		topupRepository,
 		priceRepository,
 		explorerSvc,
+		config.GetMnemonic(),
+		*config.GetNetwork(),
 	)
 
 	taxiHandler := grpc.NewTaxiHandler(taxiSvc)

@@ -16,6 +16,7 @@ const (
 	explorerEndpoint = "http://localhost:3001"
 	superToken       = "2e4c430667f861d010b6c78ce6a3943d35d84ca77ca1898031b8799c4798bc4f"
 	hyperToken       = "6666430667f861d010b6c78ce6a3943d35d84ca77ca1898031b8799c47986666"
+	fixedFeeAmount   = 1000
 )
 
 var (
@@ -23,6 +24,7 @@ var (
 	words               = strings.Split(mnemonic, " ")
 	defaultSatsPerByte  = decimal.NewFromFloat(0.1)
 	doesnotmatterAmount = decimal.NewFromFloat(66.6)
+	utxoTTL             = time.Minute
 )
 
 func newMockedPriceRepository(assets []string) domain.PriceRepository {
