@@ -64,7 +64,7 @@ type HDTree struct {
 // NewHDTree is the factory function for the HDTree domain
 func NewHDTree(mnemonic []string, rootPath wallet.DerivationPath, network network.Network) (*HDTree, error) {
 	if len(mnemonic) <= 0 {
-		return nil, errors.New("mnemonic must be set in env")
+		return nil, errors.New("mnemonic can't be zero length string")
 	}
 	return &HDTree{
 		Mnemonic:           mnemonic,

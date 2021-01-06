@@ -104,5 +104,7 @@ func (r *inmemoryHDTreeRepository) getOrCreateHDTree(_ context.Context) (*domain
 	return &domain.HDTree{
 		RootDerivationPath: r.hdTree.RootDerivationPath,
 		Accounts:           r.hdTree.Accounts,
+		Mnemonic:           r.mnemonic,
+		Network:            r.network,
 	}, nil
 }
