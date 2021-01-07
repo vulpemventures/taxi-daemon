@@ -22,6 +22,7 @@ type AdminService interface {
 	AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error
 	SendToMany(ctx context.Context, outputs []wallet.Receiver, millisatPerByte int64, pushTransaction bool) (string, error)
 	Balance(ctx context.Context) (map[string]BalanceInfo, error)
+	ListLocks(ctx context.Context) ([]domain.Lock, error)
 }
 
 type adminService struct {
@@ -47,6 +48,10 @@ func newAdminService(
 	explorerService explorer.Service,
 ) AdminService {
 	return &adminService{hdTreeRepo, topupRepo, priceRepo, explorerService}
+}
+
+func (adminSvc *adminService) ListLocks(ctx context.Context) ([]domain.Lock, error) {
+
 }
 
 func (adminSvc *adminService) SendToMany(ctx context.Context, outputs []wallet.Receiver, millisatPerByte int64, pushTransaction bool) (string, error) {
