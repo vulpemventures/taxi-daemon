@@ -18,6 +18,17 @@ service Admin {
   rpc Balance(BalanceRequest) returns (BalanceReply);
   // SendToMany sends funds to many outputs out of taxi wallet
   rpc SendToMany(SendToManyRequest) returns (SendToManyReply);
+  rpc ListLocks(ListLocksRequest) returns (ListLocksReply);
+}
+
+message ListLocksRequest {}
+message ListLocksReply {
+  repeated UtxoKey locks = 1;
+}
+
+message UtxoKey {
+  string txid = 1;
+  uint64 vout = 2;
 }
 
 message AddAssetRequest {

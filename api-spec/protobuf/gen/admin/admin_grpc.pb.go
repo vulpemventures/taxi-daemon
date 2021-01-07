@@ -33,6 +33,7 @@ type AdminClient interface {
 	Balance(ctx context.Context, in *BalanceRequest, opts ...grpc.CallOption) (*BalanceReply, error)
 	// SendToMany sends funds to many outputs out of taxi wallet
 	SendToMany(ctx context.Context, in *SendToManyRequest, opts ...grpc.CallOption) (*SendToManyReply, error)
+	ListLocks(ctx context.Context, in *ListLocksRequest, opts ...grpc.CallOption) (*ListLocksReply, error)
 }
 
 type adminClient struct {
@@ -106,6 +107,15 @@ func (c *adminClient) SendToMany(ctx context.Context, in *SendToManyRequest, opt
 	return out, nil
 }
 
+func (c *adminClient) ListLocks(ctx context.Context, in *ListLocksRequest, opts ...grpc.CallOption) (*ListLocksReply, error) {
+	out := new(ListLocksReply)
+	err := c.cc.Invoke(ctx, "/Admin/ListLocks", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServer is the server API for Admin service.
 // All implementations must embed UnimplementedAdminServer
 // for forward compatibility
@@ -126,6 +136,7 @@ type AdminServer interface {
 	Balance(context.Context, *BalanceRequest) (*BalanceReply, error)
 	// SendToMany sends funds to many outputs out of taxi wallet
 	SendToMany(context.Context, *SendToManyRequest) (*SendToManyReply, error)
+	ListLocks(context.Context, *ListLocksRequest) (*ListLocksReply, error)
 	mustEmbedUnimplementedAdminServer()
 }
 
@@ -154,6 +165,9 @@ func (UnimplementedAdminServer) Balance(context.Context, *BalanceRequest) (*Bala
 func (UnimplementedAdminServer) SendToMany(context.Context, *SendToManyRequest) (*SendToManyReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendToMany not implemented")
 }
+func (UnimplementedAdminServer) ListLocks(context.Context, *ListLocksRequest) (*ListLocksReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListLocks not implemented")
+}
 func (UnimplementedAdminServer) mustEmbedUnimplementedAdminServer() {}
 
 // UnsafeAdminServer may be embedded to opt out of forward compatibility for this service.
@@ -164,7 +178,7 @@ type UnsafeAdminServer interface {
 }
 
 func RegisterAdminServer(s grpc.ServiceRegistrar, srv AdminServer) {
-	s.RegisterService(&_Admin_serviceDesc, srv)
+	s.RegisterService(&Admin_ServiceDesc, srv)
 }
 
 func _Admin_AddAsset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -293,7 +307,28 @@ func _Admin_SendToMany_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Admin_serviceDesc = grpc.ServiceDesc{
+func _Admin_ListLocks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListLocksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServer).ListLocks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Admin/ListLocks",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServer).ListLocks(ctx, req.(*ListLocksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// Admin_ServiceDesc is the grpc.ServiceDesc for Admin service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Admin_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "Admin",
 	HandlerType: (*AdminServer)(nil),
 	Methods: []grpc.MethodDesc{
@@ -324,6 +359,10 @@ var _Admin_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendToMany",
 			Handler:    _Admin_SendToMany_Handler,
+		},
+		{
+			MethodName: "ListLocks",
+			Handler:    _Admin_ListLocks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
