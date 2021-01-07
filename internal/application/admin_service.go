@@ -7,7 +7,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/shopspring/decimal"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
-	"github.com/vulpemventures/liquid-taxi/config"
+	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/pkg/fees"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
@@ -29,6 +29,8 @@ type adminService struct {
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
 	explorerService  explorer.Service
+	mnemonic         []string
+	network          network.Network
 }
 
 // NewAdminService is a factory function for AdminService interface
@@ -37,16 +39,20 @@ func NewAdminService(
 	topupRepo domain.TopupRepository,
 	priceRepo domain.PriceRepository,
 	explorerService explorer.Service,
+	mnemonic []string,
+	network network.Network,
 ) AdminService {
-	return newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerService)
+	return newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerService, mnemonic, network)
 }
 func newAdminService(
 	hdTreeRepo domain.HDTreeRepository,
 	topupRepo domain.TopupRepository,
 	priceRepo domain.PriceRepository,
 	explorerService explorer.Service,
+	mnemonic []string,
+	network network.Network,
 ) AdminService {
-	return &adminService{hdTreeRepo, topupRepo, priceRepo, explorerService}
+	return &adminService{hdTreeRepo, topupRepo, priceRepo, explorerService, mnemonic, network}
 }
 
 func (adminSvc *adminService) SendToMany(ctx context.Context, outputs []wallet.Receiver, millisatPerByte int64, pushTransaction bool) (string, error) {
@@ -56,7 +62,7 @@ func (adminSvc *adminService) SendToMany(ctx context.Context, outputs []wallet.R
 	}
 	rootPath, _ := wallet.ParseDerivationPath(hdTree.RootDerivationPath)
 
-	w, err := wallet.NewWallet(config.GetMnemonic(), rootPath, *config.GetNetwork())
+	w, err := wallet.NewWallet(adminSvc.mnemonic, rootPath, adminSvc.network)
 	if err != nil {
 		return "", err
 	}

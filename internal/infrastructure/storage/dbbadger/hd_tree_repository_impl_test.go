@@ -2,10 +2,11 @@ package dbbadger
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/vulpemventures/liquid-taxi/config"
+	"github.com/vulpemventures/go-elements/network"
 )
 
 const (
@@ -19,7 +20,7 @@ func TestGetOrCreateHDTree(t *testing.T) {
 	}
 	t.Cleanup(clean)
 
-	repo, err := NewBadgerHDTreeRepository(testDataDir, nil)
+	repo, err := NewBadgerHDTreeRepository(testDataDir, strings.Split(mnemonic, " "), network.Regtest, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,13 +39,11 @@ func TestGetNewFundingAddresses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	config.Set(config.MnemonicKey, mnemonic)
 	t.Cleanup(func() {
 		clean()
-		config.Set(config.MnemonicKey, "")
 	})
 
-	repo, err := NewBadgerHDTreeRepository(testDataDir, nil)
+	repo, err := NewBadgerHDTreeRepository(testDataDir, strings.Split(mnemonic, " "), network.Regtest, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,16 +62,12 @@ func TestGetNewPayoutAddresses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	config.Set(config.MnemonicKey, mnemonic)
 
 	t.Cleanup(func() {
 		clean()
-		config.Set(config.MnemonicKey, "")
 	})
 
-	config.Set(config.MnemonicKey, mnemonic)
-
-	repo, err := NewBadgerHDTreeRepository(testDataDir, nil)
+	repo, err := NewBadgerHDTreeRepository(testDataDir, strings.Split(mnemonic, " "), network.Regtest, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
