@@ -14,7 +14,7 @@ import (
 )
 
 func TestBalance(t *testing.T) {
-	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(network.Regtest, words)
+	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(words, network.Regtest)
 	topupRepo := newMockedTopupRepository([]string{superToken, hyperToken})
 	priceRepo := newMockedPriceRepository(nil)
 	explorerSvc := explorer.NewService(explorerEndpoint)
@@ -47,7 +47,7 @@ func TestBalance(t *testing.T) {
 }
 
 func TestListTopups(t *testing.T) {
-	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(network.Regtest, words)
+	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(words, network.Regtest)
 	topupRepo := newMockedTopupRepository([]string{superToken, hyperToken})
 	priceRepo := newMockedPriceRepository(nil)
 	explorerSvc := explorer.NewService(explorerEndpoint)
@@ -69,7 +69,7 @@ func TestListTopups(t *testing.T) {
 }
 
 func TestAddAsset(t *testing.T) {
-	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(network.Regtest, words)
+	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(words, network.Regtest)
 	topupRepo := newMockedTopupRepository(nil)
 	priceRepo := newMockedPriceRepository(nil)
 	explorerSvc := explorer.NewService(explorerEndpoint)

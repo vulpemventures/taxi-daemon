@@ -21,7 +21,7 @@ type badgerHDTreeRepository struct {
 }
 
 // NewBadgerHDTreeRepository is a factory function for Badger HDTreeRepository implementation
-func NewBadgerHDTreeRepository(baseDirPath string, network network.Network, mnemonic []string, logger badger.Logger) (domain.HDTreeRepository, error) {
+func NewBadgerHDTreeRepository(baseDirPath string, mnemonic []string, network network.Network, logger badger.Logger) (domain.HDTreeRepository, error) {
 	hdTreeStore, err := createDb(filepath.Join(baseDirPath, HDTreeStoreKey), logger)
 	if err != nil {
 		return nil, err

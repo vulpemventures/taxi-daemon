@@ -27,11 +27,11 @@ type inmemoryHDTreeRepository struct {
 
 // NewInmemoryHDTreeRepository creates an inmemory implementatoin of the
 // HDTreeRepository interface
-func NewInmemoryHDTreeRepository(network network.Network, mnemonic []string) domain.HDTreeRepository {
-	return newInmemoryHDTreeRepository(network, mnemonic)
+func NewInmemoryHDTreeRepository(mnemonic []string, network network.Network) domain.HDTreeRepository {
+	return newInmemoryHDTreeRepository(mnemonic, network)
 }
 
-func newInmemoryHDTreeRepository(network network.Network, mnemonic []string) *inmemoryHDTreeRepository {
+func newInmemoryHDTreeRepository(mnemonic []string, network network.Network) *inmemoryHDTreeRepository {
 	return &inmemoryHDTreeRepository{
 		locker:   &sync.Mutex{},
 		network:  network,

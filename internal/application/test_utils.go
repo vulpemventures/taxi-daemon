@@ -66,7 +66,7 @@ func newMockedTopupRepository(assets []string) domain.TopupRepository {
 }
 
 func newMockedHDTreeRepository(numOfAddresses uint) domain.HDTreeRepository {
-	repo := inmemory.NewInmemoryHDTreeRepository(network.Regtest, words)
+	repo := inmemory.NewInmemoryHDTreeRepository(words, network.Regtest)
 	ctx := context.Background()
 
 	repo.GetOrCreateHDTree(ctx)

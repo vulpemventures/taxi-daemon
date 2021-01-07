@@ -20,7 +20,7 @@ func TestGetOrCreateHDTree(t *testing.T) {
 	}
 	t.Cleanup(clean)
 
-	repo, err := NewBadgerHDTreeRepository(testDataDir, network.Regtest, strings.Split(mnemonic, " "), nil)
+	repo, err := NewBadgerHDTreeRepository(testDataDir, strings.Split(mnemonic, " "), network.Regtest, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,7 +43,7 @@ func TestGetNewFundingAddresses(t *testing.T) {
 		clean()
 	})
 
-	repo, err := NewBadgerHDTreeRepository(testDataDir, network.Regtest, strings.Split(mnemonic, " "), nil)
+	repo, err := NewBadgerHDTreeRepository(testDataDir, strings.Split(mnemonic, " "), network.Regtest, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func TestGetNewPayoutAddresses(t *testing.T) {
 		clean()
 	})
 
-	repo, err := NewBadgerHDTreeRepository(testDataDir, network.Regtest, strings.Split(mnemonic, " "), nil)
+	repo, err := NewBadgerHDTreeRepository(testDataDir, strings.Split(mnemonic, " "), network.Regtest, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

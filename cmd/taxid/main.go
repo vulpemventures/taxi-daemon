@@ -41,7 +41,7 @@ func main() {
 	}
 
 	dbLogger := log.New()
-	hdTreeRepository, err := dbbadger.NewBadgerHDTreeRepository(datadirPath, network, mnemonic, dbLogger)
+	hdTreeRepository, err := dbbadger.NewBadgerHDTreeRepository(datadirPath, mnemonic, network, dbLogger)
 	if err != nil {
 		log.Fatal(err)
 	}

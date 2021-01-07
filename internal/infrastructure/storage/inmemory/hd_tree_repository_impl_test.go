@@ -13,7 +13,7 @@ const (
 )
 
 func TestGetOrCreateHDTree(t *testing.T) {
-	repo := newInmemoryHDTreeRepository(network.Regtest, words)
+	repo := newInmemoryHDTreeRepository(words, network.Regtest)
 	ctx := context.Background()
 
 	assert.Nil(t, repo.hdTree)
@@ -24,7 +24,7 @@ func TestGetOrCreateHDTree(t *testing.T) {
 }
 
 func TestGetNewFundingAddresses(t *testing.T) {
-	repo := newInmemoryHDTreeRepository(network.Regtest, words)
+	repo := newInmemoryHDTreeRepository(words, network.Regtest)
 	ctx := context.Background()
 
 	if _, err := repo.GetOrCreateHDTree(ctx); err != nil {
@@ -39,7 +39,7 @@ func TestGetNewFundingAddresses(t *testing.T) {
 }
 
 func TestGetNewPayoutAddresses(t *testing.T) {
-	repo := newInmemoryHDTreeRepository(network.Regtest, words)
+	repo := newInmemoryHDTreeRepository(words, network.Regtest)
 	ctx := context.Background()
 
 	if _, err := repo.GetOrCreateHDTree(ctx); err != nil {
