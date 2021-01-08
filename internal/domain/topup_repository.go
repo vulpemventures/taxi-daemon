@@ -15,5 +15,6 @@ type MarkAsCompletedOpts struct {
 	TopupID            string
 	Partial            string
 	BlindingPrivateKey string
+	BlindingPublicKey  string
 	AssetAmount        uint64
 }

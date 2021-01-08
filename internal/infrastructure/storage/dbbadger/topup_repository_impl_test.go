@@ -108,6 +108,7 @@ func TestMarkAsCompleted(t *testing.T) {
 		TopupID:            topupToCreate.ID,
 		Partial:            "fakepsetbase64",
 		BlindingPrivateKey: "fakeKEY",
+		BlindingPublicKey:  "fakeKEY",
 		AssetAmount:        120,
 	}
 

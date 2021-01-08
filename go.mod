@@ -40,11 +40,11 @@ require (
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/vulpemventures/go-elements v0.1.1
-	github.com/vulpemventures/taxi-protobuf v0.0.0-20210108111527-35be15e3f202
+	github.com/vulpemventures/taxi-protobuf v0.0.0-20210108153455-5b4ce4d487f4
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
 	golang.org/x/sys v0.0.0-20210105210732-16f7687f5001 // indirect
-	golang.org/x/text v0.3.4 // indirect
+	golang.org/x/text v0.3.5 // indirect
 	google.golang.org/genproto v0.0.0-20210106152847-07624b53cd92 // indirect
 	google.golang.org/grpc v1.34.0
 	google.golang.org/grpc/examples v0.0.0-20210107225343-0bd76be2bb6b // indirect

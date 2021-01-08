@@ -37,8 +37,9 @@ func TestTaxiServer(t *testing.T) {
 	explorerSvc := explorer.NewService(explorerEndpoint)
 
 	aliceKeyPair, _ := btcec.NewPrivateKey(btcec.S256())
-	alice := payment.FromPublicKey(aliceKeyPair.PubKey(), &network.Regtest, nil)
-	aliceAddress, _ := alice.WitnessPubKeyHash()
+	aliceBlindingPrivKey, _ := btcec.NewPrivateKey(btcec.S256())
+	alice := payment.FromPublicKey(aliceKeyPair.PubKey(), &network.Regtest, aliceBlindingPrivKey.PubKey())
+	aliceAddress, _ := alice.ConfidentialWitnessPubKeyHash()
 
 	// Let's simulate alice's USDTs
 	_, USDT, err := explorerSvc.Mint(aliceAddress, 100000)
@@ -111,13 +112,14 @@ func TestTaxiServer(t *testing.T) {
 
 	// Let's create our Bob
 	bobKeyPair, _ := btcec.NewPrivateKey(btcec.S256())
-	bob := payment.FromPublicKey(bobKeyPair.PubKey(), &network.Regtest, nil)
+	bobBlindingPrivKey, _ := btcec.NewPrivateKey(btcec.S256())
+	bob := payment.FromPublicKey(bobKeyPair.PubKey(), &network.Regtest, bobBlindingPrivKey.PubKey())
 	// bobAddress, _ := bob.WitnessPubKeyHash()
 
 	// Now, alice adds his own inputs and outputs
 	aliceExplorerSvc := explorer.NewService(explorerEndpoint)
 	time.Sleep(3 * time.Second)
-	utxos, err := aliceExplorerSvc.GetUnspents(aliceAddress, [][]byte{})
+	utxos, err := aliceExplorerSvc.GetUnspents(aliceAddress, [][]byte{aliceBlindingPrivKey.Serialize()})
 
 	aliceUpdater, err := pset.NewUpdater(p)
 	if err != nil {

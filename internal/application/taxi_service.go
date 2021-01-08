@@ -8,6 +8,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/shopspring/decimal"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
+	"github.com/vulpemventures/go-elements/address"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
@@ -96,6 +97,17 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
+	utxoScript := hex.EncodeToString(utxo.Script())
+	hdTree, err := taxi.hdTreeRepository.GetOrCreateHDTree(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	utxoPrivateBlindingKey, err := hdTree.DeriveScriptToPrivateBlindingKey(utxoScript)
+	if err != nil {
+		return nil, err
+	}
+
 	expireAt := time.Now().Add(taxi.utxoTTL)
 
 	topup := domain.NewTopup(assetHash, taxi.fixedFeeAmount, price.Amount, expireAt)
@@ -112,11 +124,19 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
+	payoutAddress := payouts[0]
+	confAddress, err := address.FromConfidential(payoutAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	blindingPubKey := hex.EncodeToString(confAddress.BlindingKey)
+
 	psetBase64, err := taxi.createAndSignTopupTx(createAndSignTopupTxArgs{
 		unspent:       utxo,
 		assetHash:     assetHash,
 		assetAmount:   assetAmount,
-		payoutAddress: payouts[0],
+		payoutAddress: payoutAddress,
 	})
 	if err != nil {
 		return nil, err
@@ -126,7 +146,8 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		TopupID:            topup.ID,
 		Partial:            psetBase64,
 		AssetAmount:        assetAmount,
-		BlindingPrivateKey: "",
+		BlindingPrivateKey: utxoPrivateBlindingKey,
+		BlindingPublicKey:  blindingPubKey,
 	}
 
 	topupCompleted, err := taxi.topupRepository.MarkAsCompleted(ctx, markAsCompletedOptions)

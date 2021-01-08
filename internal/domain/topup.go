@@ -34,6 +34,8 @@ type Topup struct {
 	Partial string
 	// BlindingPrivateKey is the hex of the input blinding private key
 	BlindingPrivateKey string
+	// BlindingPublicKey is the hex of the output blinding public key
+	BlindingPublicKey string
 	// AssetHash is the asset used by the user to pay the fee
 	AssetHash string
 	// AssetAmount is the total amount of AssetHash to provide for the topup
@@ -72,12 +74,13 @@ func NewTopup(
 }
 
 // Complete sets partial and assetAmount field + timestamp the complete time + update the status
-func (t *Topup) Complete(partial string, assetAmount uint64, blindingPrivateKey string) error {
+func (t *Topup) Complete(partial string, assetAmount uint64, blindingPrivateKey string, blindingPublicKey string) error {
 	if t.Status == Requested {
 		t.CompletedAt = time.Now()
 		t.Status = Completed
 		t.Partial = partial
 		t.BlindingPrivateKey = blindingPrivateKey
+		t.BlindingPublicKey = blindingPublicKey
 		t.AssetAmount = assetAmount
 		return nil
 	}

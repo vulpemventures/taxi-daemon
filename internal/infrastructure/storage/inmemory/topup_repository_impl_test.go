@@ -63,6 +63,7 @@ func TestMarkAsCompleted(t *testing.T) {
 		TopupID:            topup0.ID,
 		Partial:            "PSETbase64",
 		BlindingPrivateKey: "fakeprivatekeyhex",
+		BlindingPublicKey:  "fakeprivatekeyhex",
 		AssetAmount:        100,
 	}
 

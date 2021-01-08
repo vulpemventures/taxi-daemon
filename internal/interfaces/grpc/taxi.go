@@ -37,7 +37,9 @@ func (t *taxiServer) TopupWithAsset(ctx context.Context, req *pb.TopupWithAssetR
 	}
 
 	return &pb.TopupWithAssetReply{
-		Topup:  topup.ToTopupMessage(),
-		Expiry: uint64(topup.ExpireAt.Unix()),
+		Topup:              topup.ToTopupMessage(),
+		Expiry:             uint64(topup.ExpireAt.Unix()),
+		PrivateBlindingKey: topup.BlindingPrivateKey,
+		PublicBlindingKey:  topup.BlindingPublicKey,
 	}, nil
 }

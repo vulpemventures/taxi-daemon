@@ -49,7 +49,7 @@ func (r *badgerTopupRepository) MarkAsCompleted(ctx context.Context, opts domain
 			return errors.New("record isn't the correct type! Need domain.Topup type")
 		}
 
-		update.Complete(opts.Partial, opts.AssetAmount, opts.BlindingPrivateKey)
+		update.Complete(opts.Partial, opts.AssetAmount, opts.BlindingPrivateKey, opts.BlindingPublicKey)
 
 		topupUpdated = update
 		return nil

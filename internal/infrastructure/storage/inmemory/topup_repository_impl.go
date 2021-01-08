@@ -55,7 +55,7 @@ func (r *inmemoryTopupRepository) MarkAsCompleted(ctx context.Context, opts doma
 		return nil, errors.New("Topup does not exist")
 	}
 
-	err := topup.Complete(opts.Partial, opts.AssetAmount, opts.BlindingPrivateKey)
+	err := topup.Complete(opts.Partial, opts.AssetAmount, opts.BlindingPrivateKey, opts.BlindingPublicKey)
 	if err != nil {
 		return nil, err
 	}
