@@ -10,7 +10,16 @@ import (
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/tyler-smith/go-bip39"
 	"github.com/vulpemventures/go-elements/elementsutil"
+	"github.com/vulpemventures/go-elements/slip77"
 )
+
+func generateBlindingMasterKey(seed []byte) ([]byte, error) {
+	slip77Node, err := slip77.FromSeed(seed)
+	if err != nil {
+		return nil, err
+	}
+	return slip77Node.MasterKey, nil
+}
 
 func generateSeedFromMnemonic(mnemonic []string) []byte {
 	m := strings.Join(mnemonic, " ")

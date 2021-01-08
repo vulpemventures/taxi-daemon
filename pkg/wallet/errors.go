@@ -14,4 +14,8 @@ var (
 	ErrInvalidDerivationPath = errors.New("invalid derivation path")
 	// ErrInvalidSignature is returned if there is at least one invalid signature in a given PSET
 	ErrInvalidSignature = errors.New("at least one signature is invalid")
+	// ErrNullOutputScript ...
+	ErrNullOutputScript = errors.New("output script must not be null")
+	// ErrNullBlindingMasterKey ...
+	ErrNullBlindingMasterKey = errors.New("blinding master key is null")
 )

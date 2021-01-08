@@ -4,7 +4,9 @@ import (
 	"errors"
 
 	"github.com/vulpemventures/go-elements/address"
+	"github.com/vulpemventures/go-elements/slip77"
 
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/go-elements/elementsutil"
@@ -16,17 +18,32 @@ import (
 
 // Wallet represents the user, it is able to derive new addresses and sign an input
 type Wallet interface {
-	DerivePath(path string) (*payment.Payment, error)
+	DerivePath(path string, confidential bool) (*PaymentInfo, error)
+	DeriveBlindingKeyPair(script []byte) (*btcec.PrivateKey, *btcec.PublicKey, error)
 	SignInput(args SignInputArgs) (string, error)
 	CreatePSET(inputs []explorer.Utxo, outputs []Receiver) (string, error)
 	FinalizeAndExtract(psetBase64 string) (string, error)
 	GetNetwork() network.Network
 }
 
+// PaymentInfo is the return type of DerivePath, it describes a payment (confidential or not)
+type PaymentInfo struct {
+	DerivationPath     string
+	Payment            *payment.Payment
+	BlindingPrivateKey *btcec.PrivateKey
+}
+
+// Receiver is the abstraction of a transaction output
+type Receiver struct {
+	Address string
+	Asset   string
+	Amount  uint64
+}
+
 type wallet struct {
-	mnemonic  []string
-	masterKey []byte
-	network   network.Network
+	masterKey         []byte
+	masterBlindingKey []byte
+	network           network.Network
 }
 
 // NewWallet is a factory function for Wallet interface
@@ -41,10 +58,15 @@ func NewWallet(
 		return nil, err
 	}
 
+	masterBlindingKey, err := generateBlindingMasterKey(seed)
+	if err != nil {
+		return nil, err
+	}
+
 	return &wallet{
-		mnemonic:  words,
-		masterKey: masterKey,
-		network:   network,
+		masterKey:         masterKey,
+		masterBlindingKey: masterBlindingKey,
+		network:           network,
 	}, nil
 }
 
@@ -165,22 +187,58 @@ func (w *wallet) SignInput(args SignInputArgs) (string, error) {
 	return p.ToBase64()
 }
 
+// DeriveBlindingKeyPair derives the SLIP77 blinding key pair from the provided
+// output script
+func (w *wallet) DeriveBlindingKeyPair(script []byte) (
+	*btcec.PrivateKey,
+	*btcec.PublicKey,
+	error,
+) {
+	if len(script) <= 0 {
+		return nil, nil, ErrNullOutputScript
+	}
+
+	if len(w.masterBlindingKey) <= 0 {
+		return nil, nil, ErrNullBlindingMasterKey
+	}
+
+	slip77Node, err := slip77.FromMasterKey(w.masterBlindingKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return slip77Node.DeriveKey(script)
+}
+
 // DerivePath gets a derivation path and return a payment.Payment pointer
-func (w *wallet) DerivePath(path string) (*payment.Payment, error) {
+func (w *wallet) DerivePath(path string, confidential bool) (*PaymentInfo, error) {
 	_, pubkey, err := deriveSigningKeyPair(w.masterKey, path)
 	if err != nil {
 		return nil, err
 	}
 
 	p2wpkh := payment.FromPublicKey(pubkey, &w.network, nil)
-	return p2wpkh, nil
-}
 
-// Receiver is the abstraction of a transaction output
-type Receiver struct {
-	Address string
-	Asset   string
-	Amount  uint64
+	if !confidential {
+		return &PaymentInfo{
+			DerivationPath:     path,
+			Payment:            p2wpkh,
+			BlindingPrivateKey: nil,
+		}, nil
+	}
+
+	blindingPrivKey, blindingPubKey, err := w.DeriveBlindingKeyPair(p2wpkh.WitnessScript)
+	if err != nil {
+		return nil, err
+	}
+
+	confP2wpkh := payment.FromPublicKey(pubkey, &w.network, blindingPubKey)
+
+	return &PaymentInfo{
+		DerivationPath:     path,
+		Payment:            confP2wpkh,
+		BlindingPrivateKey: blindingPrivKey,
+	}, nil
 }
 
 // CreatePset is an util function used to generate taxi transaction
