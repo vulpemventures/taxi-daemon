@@ -97,6 +97,22 @@ func TestTaxiServer(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	blindingPrivKeyTaxi, err := hex.DecodeString(reply.PrivateBlindingKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	blindingPubKeyTaxi, err := hex.DecodeString(reply.PublicBlindingKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	privateBlindingKeys := make([][]byte, 0)
+	privateBlindingKeys = append(privateBlindingKeys, blindingPrivKeyTaxi)
+
+	publicBlindingKeys := make([][]byte, 0)
+	publicBlindingKeys = append(publicBlindingKeys, blindingPubKeyTaxi)
+
 	b64Tx := reply.Topup.GetPartial()
 	p, err := pset.NewPsetFromBase64(b64Tx)
 	if err != nil {
@@ -148,12 +164,17 @@ func TestTaxiServer(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			privateBlindingKeys = append(privateBlindingKeys, aliceBlindingPrivKey.Serialize())
+
 			break
 		}
 	}
 
 	USDTbuf, _ := hex.DecodeString(USDT)
 	USDTasset := append([]byte{0x01}, elementsutil.ReverseBytes(USDTbuf)...)
+
+	LBTCbuf, _ := hex.DecodeString(network.Regtest.AssetID)
+	LBTCasset := append([]byte{0x01}, elementsutil.ReverseBytes(LBTCbuf)...)
 
 	value, err := elementsutil.SatoshiToElementsValue(bobWant)
 	if err != nil {
@@ -163,6 +184,8 @@ func TestTaxiServer(t *testing.T) {
 	sendToBobOutput := transaction.NewTxOutput(USDTasset, value, bob.WitnessScript)
 	aliceUpdater.AddOutput(sendToBobOutput)
 
+	publicBlindingKeys = append(publicBlindingKeys, bobBlindingPrivKey.PubKey().SerializeCompressed())
+
 	if change > 0 {
 		value, err := elementsutil.SatoshiToElementsValue(change)
 		if err != nil {
@@ -171,9 +194,24 @@ func TestTaxiServer(t *testing.T) {
 
 		changeOutput := transaction.NewTxOutput(USDTasset, value, alice.WitnessScript)
 		aliceUpdater.AddOutput(changeOutput)
+		publicBlindingKeys = append(publicBlindingKeys, aliceBlindingPrivKey.PubKey().SerializeCompressed())
 	}
 
-	// Now alice sign the input
+	// add the fee output
+	feeOutput := transaction.NewTxOutput(LBTCasset, p.Inputs[0].WitnessUtxo.Value, []byte{})
+	aliceUpdater.AddOutput(feeOutput)
+
+	err = testutils.BlindTransaction(p, privateBlindingKeys, publicBlindingKeys)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	aliceUpdater, err = pset.NewUpdater(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Now alice signs the input
 	if err := aliceUpdater.AddInSighashType(txscript.SigHashAll, 1); err != nil {
 		t.Fatal(err)
 	}

@@ -66,23 +66,17 @@ func TestTopupWithAsset(t *testing.T) {
 	}
 
 	assert.Equal(t, 1, len(p.UnsignedTx.Inputs))
-	assert.Equal(t, 2, len(p.UnsignedTx.Outputs))
+	assert.Equal(t, 1, len(p.UnsignedTx.Outputs))
 
 	var payoutOutput *transaction.TxOutput
-	var feeOutput *transaction.TxOutput
 
 	for _, out := range p.UnsignedTx.Outputs {
 		if bytes.Equal(assetHashBytes(superToken), out.Asset) {
 			payoutOutput = out
 		}
-
-		if bytes.Equal(out.Script, []byte{}) {
-			feeOutput = out
-		}
 	}
 
 	assert.NotNil(t, payoutOutput)
-	assert.NotNil(t, feeOutput)
 
 	inLock := domain.Lock{
 		TxID: hex.EncodeToString(elementsutil.ReverseBytes(p.UnsignedTx.Inputs[0].Hash)),

@@ -136,7 +136,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		unspent:       utxo,
 		assetHash:     assetHash,
 		assetAmount:   assetAmount,
-		payoutAddress: payoutAddress,
+		payoutAddress: confAddress.Address,
 	})
 	if err != nil {
 		return nil, err
@@ -230,7 +230,7 @@ func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Ut
 
 func selectOneUtxo(utxos []explorer.Utxo, targetAmount uint64, targetAsset string) (explorer.Utxo, error) {
 	for _, utxo := range utxos {
-		if utxo.IsConfidential() && utxo.Asset() == targetAsset && utxo.Value() == targetAmount {
+		if utxo.Asset() == targetAsset && utxo.Value() == targetAmount {
 			return utxo, nil
 		}
 	}
@@ -266,10 +266,10 @@ func (taxi *taxiService) createAndSignTopupTx(args createAndSignTopupTxArgs) (st
 			Asset:   args.assetHash,
 			Amount:  args.assetAmount,
 		},
-		{
-			Asset:  taxi.network.AssetID,
-			Amount: taxi.fixedFeeAmount,
-		},
+		// {
+		// 	Asset:  taxi.network.AssetID,
+		// 	Amount: taxi.fixedFeeAmount,
+		// },
 	}
 	psetBase64, err := w.CreatePSET(
 		[]explorer.Utxo{args.unspent},

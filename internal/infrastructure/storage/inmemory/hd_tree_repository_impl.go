@@ -92,6 +92,7 @@ func (r *inmemoryHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, nu
 
 		if confidential {
 			addresses[i] = addrInfo.ConfidentialAddress
+			continue
 		}
 
 		addresses[i] = addrInfo.Address
