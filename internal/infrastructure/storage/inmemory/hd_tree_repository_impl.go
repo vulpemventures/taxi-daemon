@@ -64,6 +64,7 @@ func (r *inmemoryHDTreeRepository) GetNewFundingAddresses(ctx context.Context, n
 
 		if confidential {
 			addresses[i] = addrInfo.ConfidentialAddress
+			continue
 		}
 
 		addresses[i] = addrInfo.Address

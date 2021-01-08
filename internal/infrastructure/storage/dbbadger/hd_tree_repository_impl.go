@@ -81,6 +81,7 @@ func (r *badgerHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, numO
 
 		if confidential {
 			addresses[i] = addrInfo.ConfidentialAddress
+			continue
 		}
 
 		addresses[i] = addrInfo.Address
