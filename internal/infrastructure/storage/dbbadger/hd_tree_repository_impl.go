@@ -60,6 +60,15 @@ func (r *badgerHDTreeRepository) GetNewFundingAddresses(ctx context.Context, num
 	return addresses, nil
 }
 
+func (r *badgerHDTreeRepository) GetBlindingPrivateKey(ctx context.Context, witnessScript string) (string, error) {
+	hdTree, err := r.getOrCreateHDTree(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return hdTree.DeriveScriptToPrivateBlindingKey(witnessScript)
+}
+
 func (r *badgerHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, numOfAddresses uint) ([]string, error) {
 	hdTree, err := r.getOrCreateHDTree(ctx)
 	if err != nil {

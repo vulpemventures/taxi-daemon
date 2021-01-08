@@ -76,11 +76,13 @@ func NewHDTree(mnemonic []string, rootPath wallet.DerivationPath, network networ
 
 // AddressInfo defines all the address data
 type AddressInfo struct {
-	Address        string
-	Script         string
-	DerivationPath string
-	Index          uint
-	PublicKey      string
+	ConfidentialAddress string
+	Address             string
+	Script              string
+	DerivationPath      string
+	Index               uint
+	PublicKey           string
+	BlindingPublicKey   string
 }
 
 // DeriveNextAddressForLBTCAccount returns a new address for the LBTCAccount
@@ -158,15 +160,30 @@ func (t *HDTree) deriveNextAddressForAccount(accountIndex uint) (*AddressInfo, e
 	return addrInfo, nil
 }
 
+// DeriveScriptToPrivateBlindingKey takes a script and use the SLIP77 node to return the blinding key (hex encoded)
+func (t *HDTree) DeriveScriptToPrivateBlindingKey(script string) (string, error) {
+	scriptBytes, err := hex.DecodeString(script)
+	if err != nil {
+		return "", err
+	}
+
+	w, err := t.getWallet()
+	if err != nil {
+		return "", err
+	}
+
+	privKey, _, err := w.DeriveBlindingKeyPair(scriptBytes)
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(privKey.Serialize()), nil
+}
+
 func (t *HDTree) deriveAddressInfo(
 	accountIndex, addressIndex uint,
 ) (*AddressInfo, wallet.DerivationPath, error) {
-	rootPath, _ := wallet.ParseDerivationPath(t.RootDerivationPath)
-	w, err := wallet.NewWallet(
-		t.Mnemonic,
-		rootPath,
-		t.Network,
-	)
+	w, err := t.getWallet()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -177,21 +194,35 @@ func (t *HDTree) deriveAddressInfo(
 		uint32(addressIndex),
 	}
 
-	p, err := w.DerivePath(derivationPath.String())
+	paymentInfo, err := w.DerivePath(derivationPath.String(), true)
 	if err != nil {
 		return nil, nil, err
 	}
-	addr, _ := p.WitnessPubKeyHash()
-	script := hex.EncodeToString(p.WitnessScript)
+
+	addr, err := paymentInfo.Payment.WitnessPubKeyHash()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	confAddr, err := paymentInfo.Payment.ConfidentialWitnessPubKeyHash()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	rootPath, _ := wallet.ParseDerivationPath(t.RootDerivationPath)
+	script := hex.EncodeToString(paymentInfo.Payment.WitnessScript)
 	fullDerivationPath := append(rootPath, derivationPath...)
-	pubkey := hex.EncodeToString(p.PublicKey.SerializeCompressed())
+	pubkey := hex.EncodeToString(paymentInfo.Payment.PublicKey.SerializeCompressed())
+	pubBlindingKey := hex.EncodeToString(paymentInfo.Payment.BlindingKey.SerializeCompressed())
 
 	return &AddressInfo{
-		Address:        addr,
-		Script:         script,
-		DerivationPath: fullDerivationPath.String(),
-		Index:          addressIndex,
-		PublicKey:      pubkey,
+		Address:             addr,
+		Script:              script,
+		DerivationPath:      fullDerivationPath.String(),
+		Index:               addressIndex,
+		PublicKey:           pubkey,
+		ConfidentialAddress: confAddr,
+		BlindingPublicKey:   pubBlindingKey,
 	}, derivationPath, nil
 }
 
@@ -232,4 +263,17 @@ func (t *HDTree) initOrGetAccount(accountIndex uint) *Account {
 		t.Accounts[accountIndex] = account
 	}
 	return account
+}
+
+func (t *HDTree) getWallet() (wallet.Wallet, error) {
+	rootPath, err := wallet.ParseDerivationPath(t.RootDerivationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return wallet.NewWallet(
+		t.Mnemonic,
+		rootPath,
+		t.Network,
+	)
 }
