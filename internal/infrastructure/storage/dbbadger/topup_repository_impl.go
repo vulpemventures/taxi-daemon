@@ -39,17 +39,17 @@ func (r *badgerTopupRepository) GetAllTopups(ctx context.Context) ([]domain.Topu
 	return topups, err
 }
 
-func (r *badgerTopupRepository) MarkAsCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
+func (r *badgerTopupRepository) MarkAsCompleted(ctx context.Context, opts domain.MarkAsCompletedOpts) (*domain.Topup, error) {
 	var topupUpdated *domain.Topup
 
-	query := badgerhold.Where("ID").Eq(topupID)
+	query := badgerhold.Where("ID").Eq(opts.TopupID)
 	err := r.store.UpdateMatching(&domain.Topup{}, query, func(record interface{}) error {
 		update, ok := record.(*domain.Topup)
 		if !ok {
 			return errors.New("record isn't the correct type! Need domain.Topup type")
 		}
 
-		update.Complete(partial, assetAmount)
+		update.Complete(opts.Partial, opts.AssetAmount, opts.BlindingPrivateKey)
 
 		topupUpdated = update
 		return nil

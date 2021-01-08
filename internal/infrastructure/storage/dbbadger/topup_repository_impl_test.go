@@ -104,9 +104,14 @@ func TestMarkAsCompleted(t *testing.T) {
 		t.Error(err)
 	}
 
-	fakeAssetAmount := uint64(100)
-	fakePset := "fakepartialbase64"
-	topup, err := repo.MarkAsCompleted(context.Background(), topupToCreate.ID, fakePset, fakeAssetAmount)
+	opts := domain.MarkAsCompletedOpts{
+		TopupID:            topupToCreate.ID,
+		Partial:            "fakepsetbase64",
+		BlindingPrivateKey: "fakeKEY",
+		AssetAmount:        120,
+	}
+
+	topup, err := repo.MarkAsCompleted(context.Background(), opts)
 	assert.Nil(t, err)
 
 	topups, err := repo.GetAllTopups(context.Background())
@@ -116,13 +121,13 @@ func TestMarkAsCompleted(t *testing.T) {
 
 	assert.Equal(t, domain.Completed, topup.Status)
 	assert.Equal(t, false, topup.CompletedAt.IsZero())
-	assert.Equal(t, fakeAssetAmount, topup.AssetAmount)
-	assert.Equal(t, fakePset, topup.Partial)
+	assert.Equal(t, opts.AssetAmount, topup.AssetAmount)
+	assert.Equal(t, opts.Partial, topup.Partial)
 
 	assert.Equal(t, domain.Completed, topups[0].Status)
 	assert.Equal(t, false, topups[0].CompletedAt.IsZero())
-	assert.Equal(t, fakeAssetAmount, topups[0].AssetAmount)
-	assert.Equal(t, fakePset, topups[0].Partial)
+	assert.Equal(t, opts.AssetAmount, topups[0].AssetAmount)
+	assert.Equal(t, opts.Partial, topups[0].Partial)
 }
 
 func TestSetSettled(t *testing.T) {

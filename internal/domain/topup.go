@@ -32,6 +32,8 @@ type Topup struct {
 	// A taxi PSET = 1 LBTC input from taxi account + 2 outputs (payout to taxi + fee)
 	// the transaction MUST be signed
 	Partial string
+	// BlindingPrivateKey is the hex of the input blinding private key
+	BlindingPrivateKey string
 	// AssetHash is the asset used by the user to pay the fee
 	AssetHash string
 	// AssetAmount is the total amount of AssetHash to provide for the topup
@@ -70,11 +72,12 @@ func NewTopup(
 }
 
 // Complete sets partial and assetAmount field + timestamp the complete time + update the status
-func (t *Topup) Complete(partial string, assetAmount uint64) error {
+func (t *Topup) Complete(partial string, assetAmount uint64, blindingPrivateKey string) error {
 	if t.Status == Requested {
 		t.CompletedAt = time.Now()
 		t.Status = Completed
 		t.Partial = partial
+		t.BlindingPrivateKey = blindingPrivateKey
 		t.AssetAmount = assetAmount
 		return nil
 	}
