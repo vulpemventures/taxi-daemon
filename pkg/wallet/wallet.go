@@ -28,7 +28,6 @@ type Wallet interface {
 
 // PaymentInfo is the return type of DerivePath, it describes a payment (confidential or not)
 type PaymentInfo struct {
-	DerivationPath     string
 	Payment            *payment.Payment
 	BlindingPrivateKey *btcec.PrivateKey
 }
@@ -221,7 +220,6 @@ func (w *wallet) DerivePath(path string, confidential bool) (*PaymentInfo, error
 
 	if !confidential {
 		return &PaymentInfo{
-			DerivationPath:     path,
 			Payment:            p2wpkh,
 			BlindingPrivateKey: nil,
 		}, nil
@@ -235,7 +233,6 @@ func (w *wallet) DerivePath(path string, confidential bool) (*PaymentInfo, error
 	confP2wpkh := payment.FromPublicKey(pubkey, &w.network, blindingPubKey)
 
 	return &PaymentInfo{
-		DerivationPath:     path,
 		Payment:            confP2wpkh,
 		BlindingPrivateKey: blindingPrivKey,
 	}, nil
