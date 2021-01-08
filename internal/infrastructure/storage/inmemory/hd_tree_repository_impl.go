@@ -108,12 +108,3 @@ func (r *inmemoryHDTreeRepository) getOrCreateHDTree(_ context.Context) (*domain
 		Network:            r.network,
 	}, nil
 }
-
-func (r *inmemoryHDTreeRepository) GetBlindingPrivateKey(ctx context.Context, witnessScript string) (string, error) {
-	hdTree, err := r.getOrCreateHDTree(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return hdTree.DeriveScriptToPrivateBlindingKey(witnessScript)
-}
