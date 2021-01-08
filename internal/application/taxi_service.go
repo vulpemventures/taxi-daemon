@@ -176,9 +176,22 @@ func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Ut
 		return nil, err
 	}
 
+	// get all the blindingPrivateKey
+	privateBlindingKeys := make([][]byte, 0)
+	for _, addrInfo := range addrInfoList {
+		if len(addrInfo.BlindingPrivateKey) > 0 {
+			bytes, err := hex.DecodeString(addrInfo.BlindingPrivateKey)
+			if err != nil {
+				return nil, err
+			}
+
+			privateBlindingKeys = append(privateBlindingKeys, bytes)
+		}
+	}
+
 	availableUtxos := make([]explorer.Utxo, 0)
 	for _, addrInfo := range addrInfoList {
-		utxos, err := taxi.explorer.GetUnspents(addrInfo.Address, [][]byte{})
+		utxos, err := taxi.explorer.GetUnspents(addrInfo.Address, privateBlindingKeys)
 		if err != nil {
 			return nil, err
 		}
@@ -196,7 +209,7 @@ func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Ut
 
 func selectOneUtxo(utxos []explorer.Utxo, targetAmount uint64, targetAsset string) (explorer.Utxo, error) {
 	for _, utxo := range utxos {
-		if !utxo.IsConfidential() && utxo.Asset() == targetAsset && utxo.Value() == targetAmount {
+		if utxo.IsConfidential() && utxo.Asset() == targetAsset && utxo.Value() == targetAmount {
 			return utxo, nil
 		}
 	}
