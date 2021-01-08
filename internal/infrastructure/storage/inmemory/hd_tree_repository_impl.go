@@ -46,7 +46,7 @@ func (r *inmemoryHDTreeRepository) GetOrCreateHDTree(ctx context.Context) (*doma
 	return r.getOrCreateHDTree(ctx)
 }
 
-func (r *inmemoryHDTreeRepository) GetNewFundingAddresses(ctx context.Context, numOfAddresses uint) ([]string, error) {
+func (r *inmemoryHDTreeRepository) GetNewFundingAddresses(ctx context.Context, numOfAddresses uint, confidential bool) ([]string, error) {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
@@ -61,6 +61,11 @@ func (r *inmemoryHDTreeRepository) GetNewFundingAddresses(ctx context.Context, n
 		if err != nil {
 			return nil, err
 		}
+
+		if confidential {
+			addresses[i] = addrInfo.ConfidentialAddress
+		}
+
 		addresses[i] = addrInfo.Address
 	}
 
@@ -69,7 +74,7 @@ func (r *inmemoryHDTreeRepository) GetNewFundingAddresses(ctx context.Context, n
 	return addresses, nil
 }
 
-func (r *inmemoryHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, numOfAddresses uint) ([]string, error) {
+func (r *inmemoryHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, numOfAddresses uint, confidential bool) ([]string, error) {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
@@ -84,6 +89,11 @@ func (r *inmemoryHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, nu
 		if err != nil {
 			return nil, err
 		}
+
+		if confidential {
+			addresses[i] = addrInfo.ConfidentialAddress
+		}
+
 		addresses[i] = addrInfo.Address
 	}
 

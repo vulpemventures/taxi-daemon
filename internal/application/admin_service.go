@@ -139,7 +139,7 @@ func (adminSvc *adminService) GetFundingAddresses(ctx context.Context, numOfAddr
 		numOfAddresses = 1
 	}
 
-	return adminSvc.hdTreeRepository.GetNewFundingAddresses(ctx, numOfAddresses)
+	return adminSvc.hdTreeRepository.GetNewFundingAddresses(ctx, numOfAddresses, true)
 }
 
 func (adminSvc *adminService) LatestFundingAddressIndex(ctx context.Context) (int, error) {
@@ -326,13 +326,13 @@ func (adminSvc *adminService) selectUtxos(ctx context.Context, outputs []wallet.
 			var address string
 
 			if asset == w.GetNetwork().AssetID {
-				addrs, err := adminSvc.hdTreeRepository.GetNewFundingAddresses(ctx, 1)
+				addrs, err := adminSvc.hdTreeRepository.GetNewFundingAddresses(ctx, 1, true)
 				if err != nil {
 					return nil, nil, err
 				}
 				address = addrs[0]
 			} else {
-				addrs, err := adminSvc.hdTreeRepository.GetNewPayoutAddresses(ctx, 1)
+				addrs, err := adminSvc.hdTreeRepository.GetNewPayoutAddresses(ctx, 1, true)
 				if err != nil {
 					return nil, nil, err
 				}

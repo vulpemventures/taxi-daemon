@@ -83,6 +83,7 @@ type AddressInfo struct {
 	Index               uint
 	PublicKey           string
 	BlindingPublicKey   string
+	BlindingPrivateKey  string
 }
 
 // DeriveNextAddressForLBTCAccount returns a new address for the LBTCAccount
@@ -214,6 +215,7 @@ func (t *HDTree) deriveAddressInfo(
 	fullDerivationPath := append(rootPath, derivationPath...)
 	pubkey := hex.EncodeToString(paymentInfo.Payment.PublicKey.SerializeCompressed())
 	pubBlindingKey := hex.EncodeToString(paymentInfo.Payment.BlindingKey.SerializeCompressed())
+	privBlindingKey := hex.EncodeToString(paymentInfo.BlindingPrivateKey.Serialize())
 
 	return &AddressInfo{
 		Address:             addr,
@@ -223,6 +225,7 @@ func (t *HDTree) deriveAddressInfo(
 		PublicKey:           pubkey,
 		ConfidentialAddress: confAddr,
 		BlindingPublicKey:   pubBlindingKey,
+		BlindingPrivateKey:  privBlindingKey,
 	}, derivationPath, nil
 }
 

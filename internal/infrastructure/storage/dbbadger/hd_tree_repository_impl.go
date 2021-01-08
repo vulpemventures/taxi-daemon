@@ -38,7 +38,7 @@ func (r *badgerHDTreeRepository) GetOrCreateHDTree(ctx context.Context) (*domain
 	return r.getOrCreateHDTree(ctx)
 }
 
-func (r *badgerHDTreeRepository) GetNewFundingAddresses(ctx context.Context, numOfAddresses uint) ([]string, error) {
+func (r *badgerHDTreeRepository) GetNewFundingAddresses(ctx context.Context, numOfAddresses uint, confidential bool) ([]string, error) {
 	hdTree, err := r.getOrCreateHDTree(ctx)
 	if err != nil {
 		return nil, err
@@ -50,6 +50,12 @@ func (r *badgerHDTreeRepository) GetNewFundingAddresses(ctx context.Context, num
 		if err != nil {
 			return nil, err
 		}
+
+		if confidential {
+			addresses[i] = addrInfo.ConfidentialAddress
+			continue
+		}
+
 		addresses[i] = addrInfo.Address
 	}
 
@@ -60,7 +66,7 @@ func (r *badgerHDTreeRepository) GetNewFundingAddresses(ctx context.Context, num
 	return addresses, nil
 }
 
-func (r *badgerHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, numOfAddresses uint) ([]string, error) {
+func (r *badgerHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, numOfAddresses uint, confidential bool) ([]string, error) {
 	hdTree, err := r.getOrCreateHDTree(ctx)
 	if err != nil {
 		return nil, err
@@ -72,6 +78,11 @@ func (r *badgerHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, numO
 		if err != nil {
 			return nil, err
 		}
+
+		if confidential {
+			addresses[i] = addrInfo.ConfidentialAddress
+		}
+
 		addresses[i] = addrInfo.Address
 	}
 
