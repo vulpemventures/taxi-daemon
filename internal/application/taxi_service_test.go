@@ -43,7 +43,7 @@ func TestTopupWithAsset(t *testing.T) {
 	taxiSvc := newTaxiService(args)
 	ctx := context.Background()
 
-	addresses, err := hdTreeRepo.GetNewFundingAddresses(ctx, 3)
+	addresses, err := hdTreeRepo.GetNewFundingAddresses(ctx, 3, false)
 	if err != nil {
 		t.Fatal(err)
 	}
