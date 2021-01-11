@@ -8,8 +8,8 @@ import (
 )
 
 type inmemoryLockRepository struct {
-	utxosKeys map[domain.Lock]bool
-	locker    sync.Locker
+	locks  map[domain.Lock]bool
+	locker sync.Locker
 }
 
 // NewInmemoryLockRepository creates a LockRepository implementation
@@ -19,9 +19,21 @@ func NewInmemoryLockRepository() domain.LockRepository {
 
 func newInmemoryLockRepository() *inmemoryLockRepository {
 	return &inmemoryLockRepository{
-		utxosKeys: make(map[domain.Lock]bool),
-		locker:    &sync.Mutex{},
+		locks:  make(map[domain.Lock]bool),
+		locker: &sync.Mutex{},
 	}
+}
+
+func (r *inmemoryLockRepository) GetLocks(ctx context.Context) ([]domain.Lock, error) {
+	locks := make([]domain.Lock, len(r.locks), len(r.locks))
+
+	index := 0
+	for lock := range r.locks {
+		locks[index] = lock
+		index++
+	}
+
+	return locks, nil
 }
 
 func (r *inmemoryLockRepository) Lock(ctx context.Context, locks []domain.Lock) error {
@@ -29,7 +41,7 @@ func (r *inmemoryLockRepository) Lock(ctx context.Context, locks []domain.Lock) 
 	defer r.locker.Unlock()
 
 	for _, k := range locks {
-		r.utxosKeys[k] = true
+		r.locks[k] = true
 	}
 
 	return nil
@@ -39,7 +51,7 @@ func (r *inmemoryLockRepository) IsLocked(ctx context.Context, lock domain.Lock)
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
-	_, ok := r.utxosKeys[lock]
+	_, ok := r.locks[lock]
 	return ok
 }
 
@@ -47,6 +59,6 @@ func (r *inmemoryLockRepository) Unlock(ctx context.Context, lock domain.Lock) e
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
-	delete(r.utxosKeys, lock)
+	delete(r.locks, lock)
 	return nil
 }

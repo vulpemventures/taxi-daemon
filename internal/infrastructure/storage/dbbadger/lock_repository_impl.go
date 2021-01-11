@@ -28,6 +28,12 @@ func NewBadgerLockRepository(baseDirPath string, logger badger.Logger) (domain.L
 	}, nil
 }
 
+func (r *badgerLockRepository) GetLocks(ctx context.Context) ([]domain.Lock, error) {
+	var locks []domain.Lock = []domain.Lock{}
+	err := r.store.Find(&locks, nil)
+	return locks, err
+}
+
 func (r *badgerLockRepository) Lock(ctx context.Context, keys []domain.Lock) error {
 	for _, lock := range keys {
 		err := r.store.Insert(lock.String(), lock)

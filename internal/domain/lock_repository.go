@@ -7,4 +7,5 @@ type LockRepository interface {
 	Lock(ctx context.Context, keys []Lock) error
 	IsLocked(ctx context.Context, key Lock) bool
 	Unlock(ctx context.Context, key Lock) error
+	GetLocks(ctx context.Context) ([]Lock, error)
 }
