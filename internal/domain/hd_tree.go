@@ -95,7 +95,6 @@ type AddressInfo struct {
 	Address        string
 	Script         string
 	DerivationPath string
-	Chain          uint
 	Index          uint
 	PublicKey      string
 }
@@ -112,15 +111,17 @@ func (t *HDTree) DeriveNextAddressForPayoutAccount(isChange bool) (*AddressInfo,
 
 // DeriveAddressInRangeForAccount derive a set of addresses of a given account: from `start` to `start + numOfAddresses - 1`
 func (t *HDTree) DeriveAddressInRangeForAccount(account, start, numOfAddresses uint, isChange bool) ([]AddressInfo, error) {
-	if start == 0 && numOfAddresses == 0 {
-		return t.allDerivedAddressInfoForAccount(account)
-	}
-
 	if numOfAddresses == 0 {
-		numOfAddresses := t.Accounts[account].NextExternalIndex - 1
-		if numOfAddresses < 0 {
+		next := t.Accounts[account].NextExternalIndex
+		if isChange {
+			next = t.Accounts[account].NextInternalIndex
+		}
+
+		if next < 1 {
 			return nil, nil
 		}
+
+		return t.deriveAddressInRangeForAccount(account, start, next, isChange)
 	}
 
 	return t.deriveAddressInRangeForAccount(account, start, numOfAddresses, isChange)
