@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	log "github.com/sirupsen/logrus"
@@ -31,6 +32,8 @@ func main() {
 	log.Info("loading datadir...")
 
 	datadirPath := config.GetString(config.DatadirKey)
+	network := *config.GetNetwork()
+	mnemonic := config.GetMnemonic()
 
 	err := dbbadger.CreateDirIfNotExist(datadirPath)
 	if err != nil {
@@ -38,7 +41,7 @@ func main() {
 	}
 
 	dbLogger := log.New()
-	hdTreeRepository, err := dbbadger.NewBadgerHDTreeRepository(datadirPath, dbLogger)
+	hdTreeRepository, err := dbbadger.NewBadgerHDTreeRepository(datadirPath, mnemonic, network, dbLogger)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,13 +61,19 @@ func main() {
 
 	log.Info("Taxi server is starting...")
 
-	taxiSvc := application.NewTaxiService(
-		hdTreeRepository,
-		lockRepository,
-		topupRepository,
-		priceRepository,
-		explorerSvc,
-	)
+	argsTaviSvc := application.NewTaxiServiceArgs{
+		HdTreeRepo:     hdTreeRepository,
+		LockRepo:       lockRepository,
+		TopupRepo:      topupRepository,
+		PriceRepo:      priceRepository,
+		ExplorerSvc:    explorerSvc,
+		UtxoTTL:        time.Duration(config.GetInt(config.UtxoTTLKey)) * time.Second,
+		Network:        network,
+		FixedFeeAmount: uint64(config.GetInt(config.FixedFeeAmountKey)),
+		Mnemonic:       mnemonic,
+	}
+
+	taxiSvc := application.NewTaxiService(argsTaviSvc)
 
 	adminSvc := application.NewAdminService(
 		hdTreeRepository,
@@ -72,6 +81,8 @@ func main() {
 		priceRepository,
 		lockRepository,
 		explorerSvc,
+		config.GetMnemonic(),
+		*config.GetNetwork(),
 	)
 
 	taxiHandler := grpc.NewTaxiHandler(taxiSvc)

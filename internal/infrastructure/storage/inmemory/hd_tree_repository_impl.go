@@ -2,26 +2,40 @@ package inmemory
 
 import (
 	"context"
+	"strings"
 	"sync"
 
+	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
+const (
+	sentence = "clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act soccer drive year mask"
+)
+
+var (
+	words = strings.Split(sentence, " ")
+)
+
 type inmemoryHDTreeRepository struct {
-	hdTree *domain.HDTree
-	locker sync.Locker
+	hdTree   *domain.HDTree
+	locker   sync.Locker
+	network  network.Network
+	mnemonic []string
 }
 
 // NewInmemoryHDTreeRepository creates an inmemory implementatoin of the
 // HDTreeRepository interface
-func NewInmemoryHDTreeRepository() domain.HDTreeRepository {
-	return newInmemoryHDTreeRepository()
+func NewInmemoryHDTreeRepository(mnemonic []string, network network.Network) domain.HDTreeRepository {
+	return newInmemoryHDTreeRepository(mnemonic, network)
 }
 
-func newInmemoryHDTreeRepository() *inmemoryHDTreeRepository {
+func newInmemoryHDTreeRepository(mnemonic []string, network network.Network) *inmemoryHDTreeRepository {
 	return &inmemoryHDTreeRepository{
-		locker: &sync.Mutex{},
+		locker:   &sync.Mutex{},
+		network:  network,
+		mnemonic: mnemonic,
 	}
 }
 
@@ -80,7 +94,7 @@ func (r *inmemoryHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, nu
 
 func (r *inmemoryHDTreeRepository) getOrCreateHDTree(_ context.Context) (*domain.HDTree, error) {
 	if r.hdTree == nil {
-		hdTree, err := domain.NewHDTree(wallet.DefaultBaseDerivationPath)
+		hdTree, err := domain.NewHDTree(r.mnemonic, wallet.DefaultBaseDerivationPath, r.network)
 		if err != nil {
 			return nil, err
 		}
@@ -90,5 +104,7 @@ func (r *inmemoryHDTreeRepository) getOrCreateHDTree(_ context.Context) (*domain
 	return &domain.HDTree{
 		RootDerivationPath: r.hdTree.RootDerivationPath,
 		Accounts:           r.hdTree.Accounts,
+		Mnemonic:           r.mnemonic,
+		Network:            r.network,
 	}, nil
 }

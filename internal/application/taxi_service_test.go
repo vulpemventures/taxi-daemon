@@ -12,7 +12,6 @@ import (
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
-	"github.com/vulpemventures/liquid-taxi/config"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
@@ -29,18 +28,19 @@ func TestTopupWithAsset(t *testing.T) {
 	priceRepo := newMockedPriceRepository([]string{superToken})
 	explorerSvc := explorer.NewService(explorerEndpoint)
 
-	config.Set(config.MnemonicKey, mnemonic)
-	t.Cleanup(func() {
-		config.Set(config.MnemonicKey, "")
-	})
-
-	taxiSvc := newTaxiService(
+	args := NewTaxiServiceArgs{
 		hdTreeRepo,
 		lockRepo,
 		topupRepo,
 		priceRepo,
 		explorerSvc,
-	)
+		utxoTTL,
+		regtest,
+		fixedFeeAmount,
+		words,
+	}
+
+	taxiSvc := newTaxiService(args)
 	ctx := context.Background()
 
 	addresses, err := hdTreeRepo.GetNewFundingAddresses(ctx, 3)
@@ -98,13 +98,19 @@ func TestListAssets(t *testing.T) {
 	priceRepo := newMockedPriceRepository([]string{superToken, hyperToken})
 	explorerSvc := explorer.NewService(explorerEndpoint)
 
-	taxiSvc := newTaxiService(
+	args := NewTaxiServiceArgs{
 		hdTreeRepo,
 		lockRepo,
 		topupRepo,
 		priceRepo,
 		explorerSvc,
-	)
+		utxoTTL,
+		regtest,
+		fixedFeeAmount,
+		words,
+	}
+
+	taxiSvc := newTaxiService(args)
 	ctx := context.Background()
 
 	assets, err := taxiSvc.ListAssets(ctx)

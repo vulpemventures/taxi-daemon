@@ -8,7 +8,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/shopspring/decimal"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
-	"github.com/vulpemventures/liquid-taxi/config"
+	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
@@ -30,32 +30,46 @@ type taxiService struct {
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
 	explorer         explorer.Service
+	utxoTTL          time.Duration
+	network          network.Network
+	fixedFeeAmount   uint64
+	mnemonic         []string
+}
+
+// NewTaxiServiceArgs is a struct defining the arguments used to create a taxi service
+type NewTaxiServiceArgs struct {
+	HdTreeRepo     domain.HDTreeRepository
+	LockRepo       domain.LockRepository
+	TopupRepo      domain.TopupRepository
+	PriceRepo      domain.PriceRepository
+	ExplorerSvc    explorer.Service
+	UtxoTTL        time.Duration
+	Network        network.Network
+	FixedFeeAmount uint64
+	Mnemonic       []string
 }
 
 // NewTaxiService returns a TaxiService interface
-func NewTaxiService(
-	hdTreeRepo domain.HDTreeRepository,
-	lockRepo domain.LockRepository,
-	topupRepo domain.TopupRepository,
-	priceRepo domain.PriceRepository,
-	explorerSvc explorer.Service,
-) TaxiService {
-	return newTaxiService(hdTreeRepo, lockRepo, topupRepo, priceRepo, explorerSvc)
+func NewTaxiService(args NewTaxiServiceArgs) TaxiService {
+	return newTaxiService(args)
 }
 
-func newTaxiService(
-	hdTreeRepo domain.HDTreeRepository,
-	lockRepo domain.LockRepository,
-	topupRepo domain.TopupRepository,
-	priceRepo domain.PriceRepository,
-	explorerSvc explorer.Service,
-) *taxiService {
-	return &taxiService{hdTreeRepo, lockRepo, topupRepo, priceRepo, explorerSvc}
+func newTaxiService(args NewTaxiServiceArgs) *taxiService {
+	return &taxiService{
+		args.HdTreeRepo,
+		args.LockRepo,
+		args.TopupRepo,
+		args.PriceRepo,
+		args.ExplorerSvc,
+		args.UtxoTTL,
+		args.Network,
+		args.FixedFeeAmount,
+		args.Mnemonic,
+	}
 }
 
 // TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
 func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (*domain.Topup, error) {
-	utxoTTL := time.Duration(config.GetInt(config.UtxoTTLKey)) * time.Second
 	// check if asset is available
 	price, err := taxi.priceRepository.GetPrice(ctx, assetHash)
 	if err != nil {
@@ -75,23 +89,22 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	feeAmount := uint64(config.GetInt(config.FixedFeeAmountKey))
-	lbtcAsset := config.GetNetwork().AssetID
+	lbtcAsset := taxi.network.AssetID
 
-	utxo, err := selectOneUtxo(utxos, feeAmount, lbtcAsset)
+	utxo, err := selectOneUtxo(utxos, taxi.fixedFeeAmount, lbtcAsset)
 	if err != nil {
 		return nil, err
 	}
 
-	expireAt := time.Now().Add(utxoTTL)
+	expireAt := time.Now().Add(taxi.utxoTTL)
 
-	topup := domain.NewTopup(assetHash, feeAmount, price.Amount, expireAt)
+	topup := domain.NewTopup(assetHash, taxi.fixedFeeAmount, price.Amount, expireAt)
 	err = taxi.topupRepository.AddTopup(ctx, topup)
 	if err != nil {
 		return nil, err
 	}
 
-	amountAsDecimal := decimal.NewFromInt(int64(feeAmount))
+	amountAsDecimal := decimal.NewFromInt(int64(taxi.fixedFeeAmount))
 	assetAmount := uint64(price.Amount.Mul(amountAsDecimal).IntPart())
 
 	payouts, err := taxi.hdTreeRepository.GetNewPayoutAddresses(ctx, 1)
@@ -121,7 +134,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	}
 
 	go func() {
-		time.Sleep(utxoTTL)
+		time.Sleep(taxi.utxoTTL)
 		taxi.lockRepository.Unlock(ctx, utxoKey)
 	}()
 
@@ -201,7 +214,7 @@ func (taxi *taxiService) createAndSignTopupTx(args createAndSignTopupTxArgs) (st
 		return "", err
 	}
 	rootPath, _ := wallet.ParseDerivationPath(hdTree.RootDerivationPath)
-	w, err := wallet.NewWallet(config.GetMnemonic(), rootPath, *config.GetNetwork())
+	w, err := wallet.NewWallet(taxi.mnemonic, rootPath, taxi.network)
 	if err != nil {
 		return "", err
 	}
@@ -213,8 +226,8 @@ func (taxi *taxiService) createAndSignTopupTx(args createAndSignTopupTxArgs) (st
 			Amount:  args.assetAmount,
 		},
 		{
-			Asset:  config.GetNetwork().AssetID,
-			Amount: uint64(config.GetInt(config.FixedFeeAmountKey)),
+			Asset:  taxi.network.AssetID,
+			Amount: taxi.fixedFeeAmount,
 		},
 	}
 	psetBase64, err := w.CreatePSET(
