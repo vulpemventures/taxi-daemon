@@ -29,6 +29,7 @@ type adminService struct {
 	hdTreeRepository domain.HDTreeRepository
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
+	lockRepository   domain.LockRepository
 	explorerService  explorer.Service
 }
 
@@ -37,21 +38,23 @@ func NewAdminService(
 	hdTreeRepo domain.HDTreeRepository,
 	topupRepo domain.TopupRepository,
 	priceRepo domain.PriceRepository,
+	lockRepo domain.LockRepository,
 	explorerService explorer.Service,
 ) AdminService {
-	return newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerService)
+	return newAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerService)
 }
 func newAdminService(
 	hdTreeRepo domain.HDTreeRepository,
 	topupRepo domain.TopupRepository,
 	priceRepo domain.PriceRepository,
+	lockRepo domain.LockRepository,
 	explorerService explorer.Service,
 ) AdminService {
-	return &adminService{hdTreeRepo, topupRepo, priceRepo, explorerService}
+	return &adminService{hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerService}
 }
 
 func (adminSvc *adminService) ListLocks(ctx context.Context) ([]domain.Lock, error) {
-
+	return adminSvc.lockRepository.GetLocks(ctx)
 }
 
 func (adminSvc *adminService) SendToMany(ctx context.Context, outputs []wallet.Receiver, millisatPerByte int64, pushTransaction bool) (string, error) {
