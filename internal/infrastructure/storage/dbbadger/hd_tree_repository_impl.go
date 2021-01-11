@@ -38,7 +38,7 @@ func (r *badgerHDTreeRepository) GetOrCreateHDTree(ctx context.Context) (*domain
 	return r.getOrCreateHDTree(ctx)
 }
 
-func (r *badgerHDTreeRepository) GetNewFundingAddresses(ctx context.Context, numOfAddresses uint) ([]string, error) {
+func (r *badgerHDTreeRepository) GetNewFundingAddresses(ctx context.Context, numOfAddresses uint, isChange bool) ([]string, error) {
 	hdTree, err := r.getOrCreateHDTree(ctx)
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (r *badgerHDTreeRepository) GetNewFundingAddresses(ctx context.Context, num
 
 	addresses := make([]string, numOfAddresses, numOfAddresses)
 	for i := uint(0); i < numOfAddresses; i++ {
-		addrInfo, err := hdTree.DeriveNextAddressForLBTCAccount()
+		addrInfo, err := hdTree.DeriveNextAddressForLBTCAccount(isChange)
 		if err != nil {
 			return nil, err
 		}
@@ -60,7 +60,7 @@ func (r *badgerHDTreeRepository) GetNewFundingAddresses(ctx context.Context, num
 	return addresses, nil
 }
 
-func (r *badgerHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, numOfAddresses uint) ([]string, error) {
+func (r *badgerHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, numOfAddresses uint, isChange bool) ([]string, error) {
 	hdTree, err := r.getOrCreateHDTree(ctx)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (r *badgerHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, numO
 
 	addresses := make([]string, numOfAddresses, numOfAddresses)
 	for i := uint(0); i < numOfAddresses; i++ {
-		addrInfo, err := hdTree.DeriveNextAddressForPayoutAccount()
+		addrInfo, err := hdTree.DeriveNextAddressForPayoutAccount(isChange)
 		if err != nil {
 			return nil, err
 		}
