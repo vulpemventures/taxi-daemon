@@ -252,7 +252,7 @@ func (t *HDTree) allDerivedAddressInfoForAccount(accountIndex uint) ([]AddressIn
 	addrInfoList := make([]AddressInfo, size, size)
 
 	for i := uint(0); i < account.NextExternalIndex; i++ {
-		addrInfo, _, err := t.deriveAddressInfo(accountIndex, i, true)
+		addrInfo, _, err := t.deriveAddressInfo(accountIndex, i, false)
 		if err != nil {
 			return nil, err
 		}
@@ -260,7 +260,7 @@ func (t *HDTree) allDerivedAddressInfoForAccount(accountIndex uint) ([]AddressIn
 	}
 
 	for i := uint(0); i < account.NextInternalIndex; i++ {
-		addrInfo, _, err := t.deriveAddressInfo(accountIndex, i, false)
+		addrInfo, _, err := t.deriveAddressInfo(accountIndex, i, true)
 		if err != nil {
 			return nil, err
 		}
