@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,6 +18,12 @@ import (
 
 const (
 	explorerEndpoint = "http://localhost:3001"
+	mnemonic         = "clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act soccer drive year mask"
+)
+
+var (
+	words   = strings.Split(mnemonic, " ")
+	regtest = network.Regtest
 )
 
 func newMockedTopupRepository(assets []string) domain.TopupRepository {
@@ -39,12 +46,13 @@ func newMockedTopupRepository(assets []string) domain.TopupRepository {
 }
 
 func newMockAdminHandler() admin.AdminServer {
-	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository()
+	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(words, regtest)
 	topupRepo := newMockedTopupRepository([]string{network.Liquid.AssetID})
 	priceRepo := inmemory.NewInmemoryPriceRepository()
+	lockRepo := inmemory.NewInmemoryLockRepository()
 	explorerSvc := explorer.NewService(explorerEndpoint)
 
-	adminSvc := application.NewAdminService(hdTreeRepo, topupRepo, priceRepo, explorerSvc)
+	adminSvc := application.NewAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerSvc, words, regtest)
 
 	return NewAdminHandler(adminSvc)
 }

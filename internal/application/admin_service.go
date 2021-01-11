@@ -55,7 +55,7 @@ func newAdminService(
 	explorerService explorer.Service,
 	mnemonic []string,
 	network network.Network,
-) AdminService {
+) *adminService {
 	return &adminService{hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerService, mnemonic, network}
 }
 

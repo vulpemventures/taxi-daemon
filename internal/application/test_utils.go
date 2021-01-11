@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
+	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
@@ -66,7 +67,7 @@ func newMockedTopupRepository(assets []string) domain.TopupRepository {
 }
 
 func newMockedHDTreeRepository(numOfAddresses uint) domain.HDTreeRepository {
-	repo := inmemory.NewInmemoryHDTreeRepository(words, network.Regtest)
+	repo := inmemory.NewInmemoryHDTreeRepository(words, regtest)
 	ctx := context.Background()
 
 	repo.GetOrCreateHDTree(ctx)
@@ -80,4 +81,14 @@ func newMockedHDTreeRepository(numOfAddresses uint) domain.HDTreeRepository {
 
 func newMockedLockRepository() domain.LockRepository {
 	return inmemory.NewInmemoryLockRepository()
+}
+
+func newMockedAdminService(numberOfAddresses uint) *adminService {
+	hdTreeRepo := newMockedHDTreeRepository(numberOfAddresses)
+	topupRepo := newMockedTopupRepository([]string{superToken, hyperToken})
+	priceRepo := newMockedPriceRepository(nil)
+	lockRepo := inmemory.NewInmemoryLockRepository()
+	explorerSvc := explorer.NewService(explorerEndpoint)
+
+	return newAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerSvc, words, regtest)
 }

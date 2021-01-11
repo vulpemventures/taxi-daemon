@@ -7,23 +7,14 @@ import (
 
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
-	"github.com/tdex-network/tdex-daemon/pkg/explorer"
-	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
-	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
 func TestListLocks(t *testing.T) {
-	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(words, regtest)
-	topupRepo := newMockedTopupRepository([]string{superToken, hyperToken})
-	priceRepo := newMockedPriceRepository(nil)
-	lockRepo := inmemory.NewInmemoryLockRepository()
-	explorerSvc := explorer.NewService(explorerEndpoint)
+	adminSvc := newMockedAdminService(0)
 
-	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerSvc, words, regtest)
-
-	lockRepo.Lock(context.Background(), []domain.Lock{
+	adminSvc.lockRepository.Lock(context.Background(), []domain.Lock{
 		domain.Lock{
 			TxID: "123456789",
 			Vout: 1,
@@ -43,25 +34,19 @@ func TestListLocks(t *testing.T) {
 }
 
 func TestBalance(t *testing.T) {
-	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(words, network.Regtest)
-	topupRepo := newMockedTopupRepository([]string{superToken, hyperToken})
-	priceRepo := newMockedPriceRepository(nil)
-	lockRepo := inmemory.NewInmemoryLockRepository()
-	explorerSvc := explorer.NewService(explorerEndpoint)
-
-	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerSvc, words, regtest)
+	adminSvc := newMockedAdminService(0)
 
 	balanceInfosBefore, err := adminSvc.Balance(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	payoutAddresses, err := hdTreeRepo.GetNewPayoutAddresses(context.Background(), 1)
+	payoutAddresses, err := adminSvc.hdTreeRepository.GetNewPayoutAddresses(context.Background(), 1)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, _, err = explorerSvc.Mint(payoutAddresses[0], 100)
+	_, _, err = adminSvc.explorerService.Mint(payoutAddresses[0], 100)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,13 +62,7 @@ func TestBalance(t *testing.T) {
 }
 
 func TestListTopups(t *testing.T) {
-	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(words, network.Regtest)
-	topupRepo := newMockedTopupRepository([]string{superToken, hyperToken})
-	priceRepo := newMockedPriceRepository(nil)
-	lockRepo := inmemory.NewInmemoryLockRepository()
-	explorerSvc := explorer.NewService(explorerEndpoint)
-
-	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerSvc, words, regtest)
+	adminSvc := newMockedAdminService(0)
 
 	topups, err := adminSvc.ListTopups(context.Background(), "")
 	if err != nil {
@@ -100,13 +79,8 @@ func TestListTopups(t *testing.T) {
 }
 
 func TestAddAsset(t *testing.T) {
-	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(words, network.Regtest)
-	topupRepo := newMockedTopupRepository(nil)
-	priceRepo := newMockedPriceRepository(nil)
-	lockRepo := inmemory.NewInmemoryLockRepository()
-	explorerSvc := explorer.NewService(explorerEndpoint)
+	adminSvc := newMockedAdminService(0)
 
-	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerSvc, words, regtest)
 	ctx := context.Background()
 
 	// add asset
@@ -118,7 +92,7 @@ func TestAddAsset(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	all, err := priceRepo.GetAllPrices(ctx)
+	all, err := adminSvc.priceRepository.GetAllPrices(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +108,7 @@ func TestAddAsset(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	all, err = priceRepo.GetAllPrices(ctx)
+	all, err = adminSvc.priceRepository.GetAllPrices(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,13 +117,8 @@ func TestAddAsset(t *testing.T) {
 }
 
 func TestGetFundingAddresses(t *testing.T) {
-	hdTreeRepo := newMockedHDTreeRepository(0)
-	topupRepo := newMockedTopupRepository(nil)
-	priceRepo := newMockedPriceRepository(nil)
-	lockRepo := inmemory.NewInmemoryLockRepository()
-	explorerSvc := explorer.NewService(explorerEndpoint)
+	adminSvc := newMockedAdminService(0)
 
-	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerSvc, words, regtest)
 	ctx := context.Background()
 
 	addresses, err := adminSvc.GetFundingAddresses(ctx, 2)
@@ -161,13 +130,8 @@ func TestGetFundingAddresses(t *testing.T) {
 }
 
 func TestLatestFundingAddressIndex(t *testing.T) {
-	hdTreeRepo := newMockedHDTreeRepository(3)
-	topupRepo := newMockedTopupRepository(nil)
-	priceRepo := newMockedPriceRepository(nil)
-	lockRepo := inmemory.NewInmemoryLockRepository()
-	explorerSvc := explorer.NewService(explorerEndpoint)
+	adminSvc := newMockedAdminService(3)
 
-	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerSvc, words, regtest)
 	ctx := context.Background()
 
 	lastIndex, err := adminSvc.LatestFundingAddressIndex(ctx)
@@ -179,13 +143,8 @@ func TestLatestFundingAddressIndex(t *testing.T) {
 }
 
 func TestListFundingAddresses(t *testing.T) {
-	hdTreeRepo := newMockedHDTreeRepository(10)
-	topupRepo := newMockedTopupRepository(nil)
-	priceRepo := newMockedPriceRepository(nil)
-	lockRepo := inmemory.NewInmemoryLockRepository()
-	explorerSvc := explorer.NewService(explorerEndpoint)
+	adminSvc := newMockedAdminService(10)
 
-	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerSvc, words, regtest)
 	ctx := context.Background()
 
 	addresses, err := adminSvc.ListFundingAddresses(ctx, 0, 0)
@@ -202,28 +161,24 @@ func TestListFundingAddresses(t *testing.T) {
 }
 
 func TestSendToMany(t *testing.T) {
-	hdTreeRepo := newMockedHDTreeRepository(10)
-	topupRepo := newMockedTopupRepository(nil)
-	priceRepo := newMockedPriceRepository(nil)
-	lockRepo := inmemory.NewInmemoryLockRepository()
-	explorerSvc := explorer.NewService(explorerEndpoint)
+	adminSvc := newMockedAdminService(0)
 
-	addrs, err := hdTreeRepo.GetNewFundingAddresses(context.Background(), 2)
+	addrs, err := adminSvc.hdTreeRepository.GetNewFundingAddresses(context.Background(), 2)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	payoutAddrs, err := hdTreeRepo.GetNewPayoutAddresses(context.Background(), 1)
+	payoutAddrs, err := adminSvc.hdTreeRepository.GetNewPayoutAddresses(context.Background(), 1)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = explorerSvc.Faucet(addrs[1])
+	_, err = adminSvc.explorerService.Faucet(addrs[1])
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, shitcoin, err := explorerSvc.Mint(payoutAddrs[0], 100)
+	_, shitcoin, err := adminSvc.explorerService.Mint(payoutAddrs[0], 100)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,8 +197,6 @@ func TestSendToMany(t *testing.T) {
 		Amount:  32,
 	}
 
-	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerSvc, words, regtest)
-
 	_, err = adminSvc.SendToMany(context.Background(), []wallet.Receiver{output, outputBis}, 1000, true)
 	if err != nil {
 		t.Fatal(err)
@@ -251,7 +204,7 @@ func TestSendToMany(t *testing.T) {
 
 	time.Sleep(2 * time.Second)
 
-	utxos, err := explorerSvc.GetUnspents(output.Address, [][]byte{})
+	utxos, err := adminSvc.explorerService.GetUnspents(output.Address, [][]byte{})
 	if err != nil {
 		t.Fatal(err)
 	}
