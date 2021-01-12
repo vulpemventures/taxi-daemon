@@ -22,12 +22,14 @@ type AdminService interface {
 	AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error
 	SendToMany(ctx context.Context, outputs []wallet.Receiver, millisatPerByte int64, pushTransaction bool) (string, error)
 	Balance(ctx context.Context) (map[string]BalanceInfo, error)
+	ListLocks(ctx context.Context) ([]domain.Lock, error)
 }
 
 type adminService struct {
 	hdTreeRepository domain.HDTreeRepository
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
+	lockRepository   domain.LockRepository
 	explorerService  explorer.Service
 	mnemonic         []string
 	network          network.Network
@@ -38,21 +40,27 @@ func NewAdminService(
 	hdTreeRepo domain.HDTreeRepository,
 	topupRepo domain.TopupRepository,
 	priceRepo domain.PriceRepository,
+	lockRepo domain.LockRepository,
 	explorerService explorer.Service,
 	mnemonic []string,
 	network network.Network,
 ) AdminService {
-	return newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerService, mnemonic, network)
+	return newAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerService, mnemonic, network)
 }
 func newAdminService(
 	hdTreeRepo domain.HDTreeRepository,
 	topupRepo domain.TopupRepository,
 	priceRepo domain.PriceRepository,
+	lockRepo domain.LockRepository,
 	explorerService explorer.Service,
 	mnemonic []string,
 	network network.Network,
-) AdminService {
-	return &adminService{hdTreeRepo, topupRepo, priceRepo, explorerService, mnemonic, network}
+) *adminService {
+	return &adminService{hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerService, mnemonic, network}
+}
+
+func (adminSvc *adminService) ListLocks(ctx context.Context) ([]domain.Lock, error) {
+	return adminSvc.lockRepository.GetLocks(ctx)
 }
 
 func (adminSvc *adminService) SendToMany(ctx context.Context, outputs []wallet.Receiver, millisatPerByte int64, pushTransaction bool) (string, error) {

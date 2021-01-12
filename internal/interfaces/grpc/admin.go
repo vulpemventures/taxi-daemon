@@ -22,6 +22,25 @@ func NewAdminHandler(adminSvc application.AdminService) admin.AdminServer {
 	}
 }
 
+func (a *adminServer) ListLocks(ctx context.Context, req *admin.ListLocksRequest) (*admin.ListLocksReply, error) {
+	locks, err := a.adminSvc.ListLocks(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	utxoKeys := make([]*admin.Outpoint, len(locks), len(locks))
+	for i, lock := range locks {
+		utxoKeys[i] = &admin.Outpoint{
+			Txid: lock.TxID,
+			Vout: uint64(lock.Vout),
+		}
+	}
+
+	return &admin.ListLocksReply{
+		Locks: utxoKeys,
+	}, nil
+}
+
 func (a *adminServer) AddAsset(ctx context.Context, req *admin.AddAssetRequest) (*admin.AddAssetReply, error) {
 	priceAmountAsDecimal := decimal.NewFromFloat(float64(req.GetPrice()))
 

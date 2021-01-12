@@ -22,8 +22,8 @@ const (
 )
 
 var (
-	regtest = network.Regtest
 	words   = strings.Split(mnemonic, " ")
+	regtest = network.Regtest
 )
 
 func newMockedTopupRepository(assets []string) domain.TopupRepository {
@@ -49,9 +49,10 @@ func newMockAdminHandler() admin.AdminServer {
 	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(words, regtest)
 	topupRepo := newMockedTopupRepository([]string{network.Liquid.AssetID})
 	priceRepo := inmemory.NewInmemoryPriceRepository()
+	lockRepo := inmemory.NewInmemoryLockRepository()
 	explorerSvc := explorer.NewService(explorerEndpoint)
 
-	adminSvc := application.NewAdminService(hdTreeRepo, topupRepo, priceRepo, explorerSvc, words, regtest)
+	adminSvc := application.NewAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerSvc, words, regtest)
 
 	return NewAdminHandler(adminSvc)
 }

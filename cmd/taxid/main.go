@@ -79,6 +79,7 @@ func main() {
 		hdTreeRepository,
 		topupRepository,
 		priceRepository,
+		lockRepository,
 		explorerSvc,
 		config.GetMnemonic(),
 		*config.GetNetwork(),

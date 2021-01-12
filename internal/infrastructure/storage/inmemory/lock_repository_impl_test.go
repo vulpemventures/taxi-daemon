@@ -25,7 +25,7 @@ func TestLock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, hasBeenAddedToRepoMap := repo.utxosKeys[lock]
+	_, hasBeenAddedToRepoMap := repo.locks[lock]
 
 	assert.Equal(t, true, hasBeenAddedToRepoMap)
 }
@@ -67,4 +67,25 @@ func TestUnlock(t *testing.T) {
 	}
 
 	assert.Equal(t, false, repo.IsLocked(context.Background(), lock))
+}
+
+func TestGetLocks(t *testing.T) {
+	repo := newInmemoryLockRepository()
+
+	lock := domain.Lock{
+		TxID: txID,
+		Vout: 1,
+	}
+
+	err := repo.Lock(context.Background(), []domain.Lock{lock})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	locks, err := repo.GetLocks(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, 1, len(locks))
 }
