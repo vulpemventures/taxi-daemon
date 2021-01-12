@@ -30,7 +30,7 @@ var listFundingAddresses = cli.Command{
 		&cli.Int64Flag{
 			Name:        "nb_addresses",
 			Aliases:     []string{"n"},
-			Usage:       "optional. The number of addresses to print",
+			Usage:       "optional. The number of addresses to fetch. 0 = all addresses.",
 			DefaultText: "0",
 			Value:       0,
 		},
