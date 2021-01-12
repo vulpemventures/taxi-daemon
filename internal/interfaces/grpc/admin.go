@@ -60,7 +60,9 @@ func (a *adminServer) ListTopups(ctx context.Context, req *admin.ListTopupsReque
 }
 
 func (a *adminServer) ListFundingAddresses(ctx context.Context, req *admin.ListFundingAddressesRequest) (*admin.ListFundingAddressesReply, error) {
-	list, err := a.adminSvc.ListFundingAddresses(ctx, uint(req.GetStart()), uint(req.GetNumber()))
+	startIndex := uint(req.GetStart())
+	numOfAddrs := uint(req.GetNumber())
+	list, err := a.adminSvc.ListFundingAddresses(ctx, startIndex, numOfAddrs, req.GetChange())
 	if err != nil {
 		return nil, err
 	}

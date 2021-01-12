@@ -71,8 +71,8 @@ func newMockedHDTreeRepository(numOfAddresses uint) domain.HDTreeRepository {
 
 	repo.GetOrCreateHDTree(ctx)
 	if numOfAddresses > 0 {
-		repo.GetNewFundingAddresses(ctx, numOfAddresses)
-		repo.GetNewPayoutAddresses(ctx, numOfAddresses)
+		repo.GetNewFundingAddresses(ctx, numOfAddresses, false)
+		repo.GetNewPayoutAddresses(ctx, numOfAddresses, false)
 	}
 
 	return repo

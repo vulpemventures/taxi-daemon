@@ -26,7 +26,7 @@ func TestBalance(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	payoutAddresses, err := hdTreeRepo.GetNewPayoutAddresses(context.Background(), 1)
+	payoutAddresses, err := hdTreeRepo.GetNewPayoutAddresses(context.Background(), 1, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,13 +153,13 @@ func TestListFundingAddresses(t *testing.T) {
 	adminSvc := newAdminService(hdTreeRepo, topupRepo, priceRepo, explorerSvc, words, regtest)
 	ctx := context.Background()
 
-	addresses, err := adminSvc.ListFundingAddresses(ctx, 0, 0)
+	addresses, err := adminSvc.ListFundingAddresses(ctx, 0, 0, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert.Equal(t, 10, len(addresses))
 
-	addresses, err = adminSvc.ListFundingAddresses(ctx, 1, 5)
+	addresses, err = adminSvc.ListFundingAddresses(ctx, 1, 5, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,12 +172,12 @@ func TestSendToMany(t *testing.T) {
 	priceRepo := newMockedPriceRepository(nil)
 	explorerSvc := explorer.NewService(explorerEndpoint)
 
-	addrs, err := hdTreeRepo.GetNewFundingAddresses(context.Background(), 2)
+	addrs, err := hdTreeRepo.GetNewFundingAddresses(context.Background(), 2, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	payoutAddrs, err := hdTreeRepo.GetNewPayoutAddresses(context.Background(), 1)
+	payoutAddrs, err := hdTreeRepo.GetNewPayoutAddresses(context.Background(), 1, false)
 	if err != nil {
 		t.Fatal(err)
 	}
