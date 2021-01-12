@@ -24,8 +24,8 @@ var config = cli.Command{
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:  "rpcserver",
-					Usage: "tdexd daemon address host:port",
-					Value: "localhost:9000",
+					Usage: "taxi daemon address host:port",
+					Value: "localhost:7000",
 				},
 			},
 		},
