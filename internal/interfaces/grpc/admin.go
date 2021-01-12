@@ -28,9 +28,9 @@ func (a *adminServer) ListLocks(ctx context.Context, req *admin.ListLocksRequest
 		return nil, err
 	}
 
-	utxoKeys := make([]*admin.UtxoKey, len(locks), len(locks))
+	utxoKeys := make([]*admin.Outpoint, len(locks), len(locks))
 	for i, lock := range locks {
-		utxoKeys[i] = &admin.UtxoKey{
+		utxoKeys[i] = &admin.Outpoint{
 			Txid: lock.TxID,
 			Vout: uint64(lock.Vout),
 		}

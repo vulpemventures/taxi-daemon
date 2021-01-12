@@ -23,10 +23,10 @@ service Admin {
 
 message ListLocksRequest {}
 message ListLocksReply {
-  repeated UtxoKey locks = 1;
+  repeated Outpoint locks = 1;
 }
 
-message UtxoKey {
+message Outpoint {
   string txid = 1;
   uint64 vout = 2;
 }
