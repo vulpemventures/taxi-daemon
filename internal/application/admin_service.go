@@ -17,7 +17,7 @@ import (
 type AdminService interface {
 	GetFundingAddresses(ctx context.Context, numOfAddresses uint) ([]string, error)
 	LatestFundingAddressIndex(ctx context.Context) (int, error)
-	ListFundingAddresses(ctx context.Context, start, numOfAddresses uint) ([]domain.AddressInfo, error)
+	ListFundingAddresses(ctx context.Context, start, numOfAddresses uint, change bool) ([]domain.AddressInfo, error)
 	ListTopups(ctx context.Context, assetHashFilter string) ([]domain.Topup, error)
 	AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error
 	SendToMany(ctx context.Context, outputs []wallet.Receiver, millisatPerByte int64, pushTransaction bool) (string, error)
@@ -147,7 +147,7 @@ func (adminSvc *adminService) GetFundingAddresses(ctx context.Context, numOfAddr
 		numOfAddresses = 1
 	}
 
-	return adminSvc.hdTreeRepository.GetNewFundingAddresses(ctx, numOfAddresses)
+	return adminSvc.hdTreeRepository.GetNewFundingAddresses(ctx, numOfAddresses, false)
 }
 
 func (adminSvc *adminService) LatestFundingAddressIndex(ctx context.Context) (int, error) {
@@ -164,13 +164,13 @@ func (adminSvc *adminService) LatestFundingAddressIndex(ctx context.Context) (in
 	return int(lbtcAccount.NextExternalIndex) - 1, nil
 }
 
-func (adminSvc *adminService) ListFundingAddresses(ctx context.Context, start, numOfAddresses uint) ([]domain.AddressInfo, error) {
+func (adminSvc *adminService) ListFundingAddresses(ctx context.Context, start, numOfAddresses uint, change bool) ([]domain.AddressInfo, error) {
 	hdTree, err := adminSvc.hdTreeRepository.GetOrCreateHDTree(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return hdTree.DeriveAddressInRangeForAccount(domain.LBTCAccount, start, numOfAddresses)
+	return hdTree.DeriveAddressInRangeForAccount(domain.LBTCAccount, start, numOfAddresses, change)
 }
 
 func (adminSvc *adminService) AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error {
@@ -334,13 +334,13 @@ func (adminSvc *adminService) selectUtxos(ctx context.Context, outputs []wallet.
 			var address string
 
 			if asset == w.GetNetwork().AssetID {
-				addrs, err := adminSvc.hdTreeRepository.GetNewFundingAddresses(ctx, 1)
+				addrs, err := adminSvc.hdTreeRepository.GetNewFundingAddresses(ctx, 1, true)
 				if err != nil {
 					return nil, nil, err
 				}
 				address = addrs[0]
 			} else {
-				addrs, err := adminSvc.hdTreeRepository.GetNewPayoutAddresses(ctx, 1)
+				addrs, err := adminSvc.hdTreeRepository.GetNewPayoutAddresses(ctx, 1, true)
 				if err != nil {
 					return nil, nil, err
 				}

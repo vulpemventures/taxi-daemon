@@ -31,7 +31,7 @@ func TestGetNewFundingAddresses(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	addresses, err := repo.GetNewFundingAddresses(ctx, 3)
+	addresses, err := repo.GetNewFundingAddresses(ctx, 3, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestGetNewPayoutAddresses(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	addresses, err := repo.GetNewPayoutAddresses(ctx, 3)
+	addresses, err := repo.GetNewPayoutAddresses(ctx, 3, true)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -7,14 +7,6 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var (
-	rpcFlag = cli.StringFlag{
-		Name:  "rpcserver",
-		Usage: "tdexd daemon address host:port",
-		Value: "localhost:9000",
-	}
-)
-
 var config = cli.Command{
 	Name:   "config",
 	Usage:  "Print local configuration of the tdex CLI",
@@ -30,7 +22,11 @@ var config = cli.Command{
 			Usage:  "initialize the local state with flags",
 			Action: configInitAction,
 			Flags: []cli.Flag{
-				&rpcFlag,
+				&cli.StringFlag{
+					Name:  "rpcserver",
+					Usage: "taxi daemon address host:port",
+					Value: "localhost:7000",
+				},
 			},
 		},
 	},

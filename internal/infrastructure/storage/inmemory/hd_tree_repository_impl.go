@@ -46,7 +46,7 @@ func (r *inmemoryHDTreeRepository) GetOrCreateHDTree(ctx context.Context) (*doma
 	return r.getOrCreateHDTree(ctx)
 }
 
-func (r *inmemoryHDTreeRepository) GetNewFundingAddresses(ctx context.Context, numOfAddresses uint) ([]string, error) {
+func (r *inmemoryHDTreeRepository) GetNewFundingAddresses(ctx context.Context, numOfAddresses uint, isChange bool) ([]string, error) {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
@@ -57,7 +57,7 @@ func (r *inmemoryHDTreeRepository) GetNewFundingAddresses(ctx context.Context, n
 
 	addresses := make([]string, numOfAddresses, numOfAddresses)
 	for i := uint(0); i < numOfAddresses; i++ {
-		addrInfo, err := hdTree.DeriveNextAddressForLBTCAccount()
+		addrInfo, err := hdTree.DeriveNextAddressForLBTCAccount(isChange)
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +69,7 @@ func (r *inmemoryHDTreeRepository) GetNewFundingAddresses(ctx context.Context, n
 	return addresses, nil
 }
 
-func (r *inmemoryHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, numOfAddresses uint) ([]string, error) {
+func (r *inmemoryHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, numOfAddresses uint, isChange bool) ([]string, error) {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
@@ -80,7 +80,7 @@ func (r *inmemoryHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, nu
 
 	addresses := make([]string, numOfAddresses, numOfAddresses)
 	for i := uint(0); i < numOfAddresses; i++ {
-		addrInfo, err := hdTree.DeriveNextAddressForPayoutAccount()
+		addrInfo, err := hdTree.DeriveNextAddressForPayoutAccount(isChange)
 		if err != nil {
 			return nil, err
 		}

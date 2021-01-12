@@ -107,7 +107,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	amountAsDecimal := decimal.NewFromInt(int64(taxi.fixedFeeAmount))
 	assetAmount := uint64(price.Amount.Mul(amountAsDecimal).IntPart())
 
-	payouts, err := taxi.hdTreeRepository.GetNewPayoutAddresses(ctx, 1)
+	payouts, err := taxi.hdTreeRepository.GetNewPayoutAddresses(ctx, 1, false)
 	if err != nil {
 		return nil, err
 	}
