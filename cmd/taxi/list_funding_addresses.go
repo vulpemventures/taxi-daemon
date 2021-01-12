@@ -28,7 +28,7 @@ var listFundingAddresses = cli.Command{
 			Value:       0,
 		},
 		&cli.Int64Flag{
-			Name:        "nb_addresses",
+			Name:        "number",
 			Aliases:     []string{"n"},
 			Usage:       "optional. The number of addresses to fetch. 0 = all addresses.",
 			DefaultText: "0",
@@ -46,7 +46,7 @@ func listFundingAddressesAction(ctx *cli.Context) error {
 
 	defer close()
 
-	nbOfAddresses := ctx.Int64("nb_addresses")
+	nbOfAddresses := ctx.Int64("number")
 	startIndex := ctx.Int64("start_index")
 	isChange := ctx.Bool("change")
 
@@ -64,7 +64,7 @@ func listFundingAddressesAction(ctx *cli.Context) error {
 	fmt.Println()
 
 	if len(addressesInfos) == 0 {
-		fmt.Println("no addresses. Try the `fund` command to generate new ones.")
+		fmt.Println("no funding addresses.")
 		return nil
 	}
 
