@@ -58,11 +58,11 @@ type SignInputArgs struct {
 
 func (a SignInputArgs) validate() error {
 	if _, err := pset.NewPsetFromBase64(a.PsetBase64); err != nil {
-		return errors.New("invalid partial transaction")
+		return errors.New("invalid partial transaction: " + err.Error())
 	}
 
 	if _, err := ParseDerivationPath(a.Path); err != nil {
-		return err
+		return errors.New("invalid derivation path: " + err.Error())
 	}
 
 	if a.InputIndex < 0 {

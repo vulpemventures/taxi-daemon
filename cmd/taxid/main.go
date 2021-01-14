@@ -29,12 +29,11 @@ import (
 func main() {
 	log.Info("---- Liquid Taxi ----")
 
-	log.Info("loading datadir...")
-
 	datadirPath := config.GetString(config.DatadirKey)
 	network := *config.GetNetwork()
 	mnemonic := config.GetMnemonic()
 
+	log.Info("loading datadir... ", datadirPath)
 	err := dbbadger.CreateDirIfNotExist(datadirPath)
 	if err != nil {
 		log.Fatal(err)
@@ -59,7 +58,7 @@ func main() {
 	}
 	explorerSvc := explorer.NewService(config.GetString(config.ExplorerEndpointKey))
 
-	log.Info("Taxi server is starting...")
+	log.Info("taxi server is starting...")
 
 	argsTaviSvc := application.NewTaxiServiceArgs{
 		HdTreeRepo:     hdTreeRepository,
@@ -116,11 +115,11 @@ func main() {
 
 	<-interrupt
 	fmt.Println("")
-	log.Info("Shutting down Taxi service...")
+	log.Info("shutting down Taxi service...")
 	adminServer.Stop()
-	log.Info("Admin server stopped")
+	log.Info("admin server stopped")
 	taxiServer.Stop()
-	log.Info("Taxi server stopped")
+	log.Info("taxi server stopped")
 
 	os.Exit(0)
 }

@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"encoding/hex"
+	"math/rand"
 	"time"
 
 	"github.com/btcsuite/btcd/txscript"
@@ -84,17 +85,21 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	}
 
 	// retrieve only the utxos that are not locked by other topups
-	utxos, err := taxi.fetchAvailableUtxos(ctx)
+	utxo, err := taxi.fetchFragmentUtxo(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	lbtcAsset := taxi.network.AssetID
-
-	utxo, err := selectOneUtxo(utxos, taxi.fixedFeeAmount, lbtcAsset)
-	if err != nil {
+	// Lock the utxo used for this topup to avoid other ones to use it
+	utxoKey := domain.UtxoToLock(utxo)
+	if err = taxi.lockRepository.Lock(ctx, []domain.Lock{utxoKey}); err != nil {
 		return nil, err
 	}
+
+	go func() {
+		time.Sleep(taxi.utxoTTL)
+		taxi.lockRepository.Unlock(ctx, utxoKey)
+	}()
 
 	expireAt := time.Now().Add(taxi.utxoTTL)
 
@@ -127,17 +132,6 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	// Lock the utxo used for this topup to avoid other ones to use it
-	utxoKey := domain.UtxoToLock(utxo)
-	if err = taxi.lockRepository.Lock(ctx, []domain.Lock{utxoKey}); err != nil {
-		return nil, err
-	}
-
-	go func() {
-		time.Sleep(taxi.utxoTTL)
-		taxi.lockRepository.Unlock(ctx, utxoKey)
-	}()
-
 	return topupCompleted, nil
 }
 
@@ -156,7 +150,7 @@ func (taxi *taxiService) ListAssets(ctx context.Context) ([]string, error) {
 	return assets, nil
 }
 
-func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Utxo, error) {
+func (taxi *taxiService) fetchFragmentUtxo(ctx context.Context) (explorer.Utxo, error) {
 	// retrieve root path of the hd tree and instantiate the inmemory wallet
 	hdTree, err := taxi.hdTreeRepository.GetOrCreateHDTree(ctx)
 	if err != nil {
@@ -169,35 +163,38 @@ func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Ut
 		return nil, err
 	}
 
-	availableUtxos := make([]explorer.Utxo, 0)
-	for _, addrInfo := range addrInfoList {
+	// randomly shuffle addr array
+	shuffledAddrInfoList := shuffleAddresses(addrInfoList)
+
+	for _, addrInfo := range shuffledAddrInfoList {
 		utxos, err := taxi.explorer.GetUnspents(addrInfo.Address, [][]byte{})
 		if err != nil {
 			return nil, err
 		}
 
 		for _, utxo := range utxos {
-			utxoKey := domain.UtxoToLock(utxo)
-			if !taxi.lockRepository.IsLocked(ctx, utxoKey) {
-				availableUtxos = append(availableUtxos, utxo)
+			lock := domain.UtxoToLock(utxo)
+			if !taxi.lockRepository.IsLocked(ctx, lock) {
+				return utxo, nil
 			}
 		}
 	}
 
-	return availableUtxos, nil
+	return nil, ErrUtxoNotFound{
+		TargetedAmount: taxi.fixedFeeAmount,
+		TargetedAsset:  taxi.network.AssetID,
+	}
 }
 
-func selectOneUtxo(utxos []explorer.Utxo, targetAmount uint64, targetAsset string) (explorer.Utxo, error) {
-	for _, utxo := range utxos {
-		if !utxo.IsConfidential() && utxo.Asset() == targetAsset && utxo.Value() == targetAmount {
-			return utxo, nil
-		}
+func shuffleAddresses(addrs []domain.AddressInfo) []domain.AddressInfo {
+	rand.Seed(time.Now().UnixNano())
+	length := len(addrs)
+	for i := length - 1; i > 0; i-- {
+		j := rand.Intn(i + 1)
+		addrs[i], addrs[j] = addrs[j], addrs[i]
 	}
 
-	return nil, ErrUtxoNotFound{
-		TargetedAmount: targetAmount,
-		TargetedAsset:  targetAsset,
-	}
+	return addrs
 }
 
 type createAndSignTopupTxArgs struct {
