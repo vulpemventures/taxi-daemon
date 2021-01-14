@@ -11,6 +11,6 @@ asset=$(nigiri rpc --liquid issueasset 1 1 | jq -r '.asset')
 
 ghz --insecure --proto taxi.proto --call Taxi.ListAssets localhost:8000 --total 800
 
-ghz --insecure --proto taxi.proto --call Taxi.TopupWithAsset -d '{"asset_hash": "'"$asset"'"}' localhost:8000 -t 0 --total 2
+ghz --insecure --proto taxi.proto --call Taxi.TopupWithAsset -d '{"asset_hash": "'"$asset"'"}' localhost:8000 -t 0 --total 20
 
 rm taxi.proto
