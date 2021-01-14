@@ -29,14 +29,20 @@ func NewBadgerLockRepository(baseDirPath string, logger badger.Logger) (domain.L
 }
 
 func (r *badgerLockRepository) GetLocks(ctx context.Context) ([]domain.Lock, error) {
-	var locks []domain.Lock = []domain.Lock{}
-	err := r.store.Find(&locks, nil)
-	return locks, err
+	handler := func() (interface{}, error) {
+		var locks []domain.Lock = []domain.Lock{}
+		err := r.store.Find(&locks, nil)
+		return locks, err
+	}
+
+	result, err := runTransaction(handler)
+
+	return result.([]domain.Lock), err
 }
 
 func (r *badgerLockRepository) Lock(ctx context.Context, keys []domain.Lock) error {
-	for _, lock := range keys {
-		err := r.store.Insert(lock.String(), lock)
+	for _, k := range keys {
+		err := r.lock(k)
 		if err != nil {
 			return err
 		}
@@ -45,17 +51,37 @@ func (r *badgerLockRepository) Lock(ctx context.Context, keys []domain.Lock) err
 	return nil
 }
 
+func (r *badgerLockRepository) lock(key domain.Lock) error {
+	handler := func() (interface{}, error) {
+		return nil, r.store.Insert(key.String(), key)
+	}
+
+	_, err := runTransaction(handler)
+	return err
+}
+
 func (r *badgerLockRepository) Unlock(ctx context.Context, key domain.Lock) error {
-	return r.store.Delete(key.String(), key)
+	txHandler := func() (interface{}, error) {
+		err := r.store.Delete(key.String(), key)
+		return nil, err
+	}
+
+	_, err := runTransaction(txHandler)
+	return err
 }
 
 func (r *badgerLockRepository) IsLocked(ctx context.Context, key domain.Lock) bool {
 	query := badgerhold.Where("TxID").Eq(key.TxID).And("Vout").Eq(key.Vout)
 
-	err := r.store.FindOne(&domain.Lock{}, query)
-	if err != nil {
-		return false
+	handler := func() (interface{}, error) {
+		err := r.store.FindOne(&domain.Lock{}, query)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, nil
 	}
 
-	return true
+	_, err := runTransaction(handler)
+	return err == nil
 }

@@ -58,3 +58,28 @@ func CreateDirIfNotExist(path string) error {
 
 	return err
 }
+
+// isTransactionConflict returns wheter the error occured when commiting a
+// transacton is a conflict
+func isTransactionConflict(err error) bool {
+	return err == badger.ErrConflict
+}
+
+func sleep30ms() {
+	time.Sleep(30 * time.Millisecond)
+}
+
+func runTransaction(handler func() (interface{}, error)) (interface{}, error) {
+	for {
+		res, err := handler()
+		if err != nil {
+			if isTransactionConflict(err) {
+				sleep30ms()
+				continue
+			}
+
+			return nil, err
+		}
+		return res, nil
+	}
+}

@@ -53,7 +53,7 @@ func (r *badgerHDTreeRepository) GetNewFundingAddresses(ctx context.Context, num
 		addresses[i] = addrInfo.Address
 	}
 
-	if err := r.store.Update(HDTreeStoreKey, hdTree); err != nil {
+	if err := r.update(hdTree); err != nil {
 		return nil, err
 	}
 
@@ -75,11 +75,24 @@ func (r *badgerHDTreeRepository) GetNewPayoutAddresses(ctx context.Context, numO
 		addresses[i] = addrInfo.Address
 	}
 
-	if err := r.store.Update(HDTreeStoreKey, hdTree); err != nil {
+	err = r.update(hdTree)
+	if err != nil {
 		return nil, err
 	}
-
 	return addresses, nil
+}
+
+func (r *badgerHDTreeRepository) update(hdTree *domain.HDTree) error {
+	handler := func() (interface{}, error) {
+		if err := r.store.Update(HDTreeStoreKey, hdTree); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}
+
+	_, err := runTransaction(handler)
+	return err
 }
 
 func (r *badgerHDTreeRepository) getOrCreateHDTree(ctx context.Context) (*domain.HDTree, error) {
@@ -96,7 +109,15 @@ func (r *badgerHDTreeRepository) getOrCreateHDTree(ctx context.Context) (*domain
 		return nil, err
 	}
 
-	if err := r.store.Insert(HDTreeStoreKey, hdTree); err != nil {
+	handler := func() (interface{}, error) {
+		if err := r.store.Insert(HDTreeStoreKey, hdTree); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	_, err = runTransaction(handler)
+	if err != nil {
 		return nil, err
 	}
 
@@ -104,12 +125,22 @@ func (r *badgerHDTreeRepository) getOrCreateHDTree(ctx context.Context) (*domain
 }
 
 func (r *badgerHDTreeRepository) getHDTree(_ context.Context) (*domain.HDTree, error) {
-	var hdTree domain.HDTree
-	if err := r.store.Get(HDTreeStoreKey, &hdTree); err != nil {
+	handler := func() (interface{}, error) {
+		var hdTree domain.HDTree
+		if err := r.store.Get(HDTreeStoreKey, &hdTree); err != nil {
+			return nil, err
+		}
+		return hdTree, nil
+	}
+
+	res, err := runTransaction(handler)
+	if err != nil {
 		if err == badgerhold.ErrNotFound {
 			return nil, nil
 		}
 		return nil, err
 	}
+
+	hdTree := res.(domain.HDTree)
 	return &hdTree, nil
 }

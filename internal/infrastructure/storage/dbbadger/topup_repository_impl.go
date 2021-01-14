@@ -30,50 +30,86 @@ func NewBadgerTopupRepository(baseDirPath string, logger badger.Logger) (domain.
 }
 
 func (r *badgerTopupRepository) AddTopup(ctx context.Context, topup domain.Topup) error {
-	return r.store.Insert(topup.ID, topup)
+	handler := func() (interface{}, error) {
+		return nil, r.store.Insert(topup.ID, topup)
+	}
+
+	_, err := runTransaction(handler)
+	return err
 }
 
 func (r *badgerTopupRepository) GetAllTopups(ctx context.Context) ([]domain.Topup, error) {
-	var topups []domain.Topup = []domain.Topup{}
-	err := r.store.Find(&topups, nil)
+	handler := func() (interface{}, error) {
+		var topups []domain.Topup = []domain.Topup{}
+		err := r.store.Find(&topups, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		return topups, nil
+	}
+
+	res, err := runTransaction(handler)
+	if err != nil {
+		return nil, err
+	}
+
+	topups := res.([]domain.Topup)
 	return topups, err
 }
 
 func (r *badgerTopupRepository) MarkAsCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
-	var topupUpdated *domain.Topup
+	handler := func() (interface{}, error) {
+		var topupUpdated *domain.Topup
+		query := badgerhold.Where("ID").Eq(topupID)
+		err := r.store.UpdateMatching(&domain.Topup{}, query, func(record interface{}) error {
+			update, ok := record.(*domain.Topup)
+			if !ok {
+				return errors.New("record isn't the correct type! Need domain.Topup type")
+			}
 
-	query := badgerhold.Where("ID").Eq(topupID)
-	err := r.store.UpdateMatching(&domain.Topup{}, query, func(record interface{}) error {
-		update, ok := record.(*domain.Topup)
-		if !ok {
-			return errors.New("record isn't the correct type! Need domain.Topup type")
-		}
+			update.Complete(partial, assetAmount)
 
-		update.Complete(partial, assetAmount)
+			topupUpdated = update
+			return nil
+		})
+		return topupUpdated, err
+	}
 
-		topupUpdated = update
-		return nil
-	})
+	res, err := runTransaction(handler)
+	if err != nil {
+		return nil, err
+	}
 
-	return topupUpdated, err
+	topupUpdated := res.(*domain.Topup)
+
+	return topupUpdated, nil
 }
 
 func (r *badgerTopupRepository) MarkAsSettled(ctx context.Context, topupID string, txID string) (*domain.Topup, error) {
-	var topupUpdated *domain.Topup
+	handler := func() (interface{}, error) {
+		var topupUpdated *domain.Topup
+		query := badgerhold.Where("ID").Eq(topupID)
+		err := r.store.UpdateMatching(&domain.Topup{}, query, func(record interface{}) error {
+			update, ok := record.(*domain.Topup)
+			if !ok {
+				return errors.New("record isn't the correct type! Need domain.Topup type")
+			}
 
-	query := badgerhold.Where("ID").Eq(topupID)
-	err := r.store.UpdateMatching(&domain.Topup{}, query, func(record interface{}) error {
-		update, ok := record.(*domain.Topup)
-		if !ok {
-			return errors.New("record isn't the correct type! Need domain.Topup type")
-		}
+			update.Settle()
+			// TODO txid ??
 
-		update.Settle()
-		// TODO txid ??
+			topupUpdated = update
+			return nil
+		})
+		return topupUpdated, err
+	}
 
-		topupUpdated = update
-		return nil
-	})
+	res, err := runTransaction(handler)
+	if err != nil {
+		return nil, err
+	}
 
-	return topupUpdated, err
+	topupUpdated := res.(*domain.Topup)
+	return topupUpdated, nil
 }
