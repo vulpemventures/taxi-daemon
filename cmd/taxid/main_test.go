@@ -46,7 +46,7 @@ func TestTaxiServer(t *testing.T) {
 	// start taxi
 	go main()
 	// give time to server to serve
-	time.Sleep(10 * time.Second)
+	time.Sleep(8 * time.Second)
 
 	// SERVER SIDE --->
 	// The admin connects to admin interface
