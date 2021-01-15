@@ -12,7 +12,6 @@ import (
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
-	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
@@ -182,8 +181,6 @@ func (taxi *taxiService) ListAssets(ctx context.Context) ([]string, error) {
 }
 
 func (taxi *taxiService) fetchandLockFragmentUtxo(ctx context.Context) (explorer.Utxo, error) {
-	defer testutils.TimeTrack(time.Now(), "fetchFragmentUtxos")
-
 	utxo := taxi.popFromCacheSafe()
 	if utxo == nil {
 		return nil, ErrUtxoNotFound{

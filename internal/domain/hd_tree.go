@@ -3,12 +3,10 @@ package domain
 import (
 	"encoding/hex"
 	"errors"
-	"time"
 
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/vulpemventures/go-elements/address"
 	"github.com/vulpemventures/go-elements/network"
-	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
@@ -256,7 +254,6 @@ func (t *HDTree) deriveAddressInRangeForAccount(
 func (t *HDTree) AllDerivedAddressInfoForAcountAsync(accountIndex uint) (chan *AddressInfo, chan error, uint) {
 	const numWorkers = 4
 
-	defer testutils.TimeTrack(time.Now(), "allAddresses")
 	account := t.initOrGetAccount(accountIndex)
 	size := account.NextExternalIndex + account.NextInternalIndex
 
