@@ -18,7 +18,7 @@ import (
 const (
 	derivationPathForAsset = "0'/0/0"
 	derivationPathForLBTC  = "0'/0/1"
-	cacheUpdateInterval    = 30 * time.Second
+	cacheUpdateInterval    = 3 * time.Minute
 )
 
 // TaxiService provides interface for user UI
