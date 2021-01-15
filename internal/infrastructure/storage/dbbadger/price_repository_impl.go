@@ -56,6 +56,10 @@ func (r *badgerPriceRepository) GetPrice(ctx context.Context, assetHash string) 
 		return nil, err
 	}
 
+	if result == nil {
+		return nil, nil
+	}
+
 	price := result.(domain.Price)
 	return &price, nil
 }
