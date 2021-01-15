@@ -126,7 +126,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	}
 
 	// retrieve only the utxos that are not locked by other topups
-	utxo, err := taxi.fetchandLockFragmentUtxo(ctx)
+	utxo, err := taxi.fetchAndLockFragmentUtxo(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +180,7 @@ func (taxi *taxiService) ListAssets(ctx context.Context) ([]string, error) {
 	return assets, nil
 }
 
-func (taxi *taxiService) fetchandLockFragmentUtxo(ctx context.Context) (explorer.Utxo, error) {
+func (taxi *taxiService) fetchAndLockFragmentUtxo(ctx context.Context) (explorer.Utxo, error) {
 	utxo := taxi.popFromCacheSafe()
 	if utxo == nil {
 		return nil, ErrUtxoNotFound{
