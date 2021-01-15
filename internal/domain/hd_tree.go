@@ -3,10 +3,12 @@ package domain
 import (
 	"encoding/hex"
 	"errors"
+	"time"
 
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/vulpemventures/go-elements/address"
 	"github.com/vulpemventures/go-elements/network"
+	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
@@ -82,12 +84,14 @@ func NewHDTree(mnemonic []string, rootPath wallet.DerivationPath, network networ
 	if len(mnemonic) <= 0 {
 		return nil, errors.New("mnemonic can't be zero length string")
 	}
-	return &HDTree{
+	hdTree := &HDTree{
 		Mnemonic:           mnemonic,
 		Network:            network,
 		RootDerivationPath: rootPath.String(),
 		Accounts:           make(map[uint]*Account, 0),
-	}, nil
+	}
+
+	return hdTree, nil
 }
 
 // AddressInfo defines all the address data
@@ -111,10 +115,11 @@ func (t *HDTree) DeriveNextAddressForPayoutAccount(isChange bool) (*AddressInfo,
 
 // DeriveAddressInRangeForAccount derive a set of addresses of a given account: from `start` to `start + numOfAddresses - 1`
 func (t *HDTree) DeriveAddressInRangeForAccount(account, start, numOfAddresses uint, isChange bool) ([]AddressInfo, error) {
+	selectedAccount := t.initOrGetAccount(account)
 	if numOfAddresses == 0 {
-		next := t.Accounts[account].NextExternalIndex
+		next := selectedAccount.NextExternalIndex
 		if isChange {
-			next = t.Accounts[account].NextInternalIndex
+			next = selectedAccount.NextInternalIndex
 		}
 
 		if next < 1 {
@@ -247,28 +252,108 @@ func (t *HDTree) deriveAddressInRangeForAccount(
 	return addrInfoList, nil
 }
 
-func (t *HDTree) allDerivedAddressInfoForAccount(accountIndex uint) ([]AddressInfo, error) {
+// AllDerivedAddressInfoForAcountAsync ...
+func (t *HDTree) AllDerivedAddressInfoForAcountAsync(accountIndex uint) (chan *AddressInfo, chan error, uint) {
+	const numWorkers = 4
+
+	defer testutils.TimeTrack(time.Now(), "allAddresses")
 	account := t.initOrGetAccount(accountIndex)
 	size := account.NextExternalIndex + account.NextInternalIndex
-	addrInfoList := make([]AddressInfo, size, size)
 
-	for i := uint(0); i < account.NextExternalIndex; i++ {
-		addrInfo, _, err := t.deriveAddressInfo(accountIndex, i, false)
-		if err != nil {
-			return nil, err
-		}
-		addrInfoList[i] = *addrInfo
+	jobs := make(chan derivationJob, size)
+	addresses := make(chan *AddressInfo, size)
+	errorsChan := make(chan error)
+	finishFlags := make(chan bool, numWorkers)
+
+	for w := 0; w < numWorkers; w++ {
+		go t.workerAddressDerivation(jobs, addresses, errorsChan, finishFlags)
 	}
 
-	for i := uint(0); i < account.NextInternalIndex; i++ {
-		addrInfo, _, err := t.deriveAddressInfo(accountIndex, i, true)
-		if err != nil {
+	go func() {
+		i := 0
+		for {
+			select {
+			case <-finishFlags:
+				i++
+				if i == numWorkers {
+					close(finishFlags)
+					close(addresses)
+					return
+				}
+			}
+		}
+	}()
+
+	indexesExternal := make([]uint, 0, int(account.NextExternalIndex))
+	for indexExternal := uint(0); indexExternal < account.NextExternalIndex; indexExternal++ {
+		indexesExternal = append(indexesExternal, indexExternal)
+	}
+
+	for i := range indexesExternal {
+		job := derivationJob{
+			accountIndex: accountIndex,
+			addressIndex: uint(i),
+			isChange:     false,
+		}
+		jobs <- job
+	}
+
+	indexesInternal := make([]uint, 0, int(account.NextInternalIndex))
+	for indexInternal := uint(0); indexInternal < account.NextInternalIndex; indexInternal++ {
+		indexesInternal = append(indexesInternal, indexInternal)
+	}
+
+	for i := range indexesInternal {
+		job := derivationJob{
+			accountIndex: accountIndex,
+			addressIndex: uint(i),
+			isChange:     true,
+		}
+		jobs <- job
+	}
+
+	close(jobs)
+
+	return addresses, errorsChan, size
+}
+
+func (t *HDTree) allDerivedAddressInfoForAccount(accountIndex uint) ([]AddressInfo, error) {
+	addresses, errorsChan, size := t.AllDerivedAddressInfoForAcountAsync(accountIndex)
+	addrInfoList := make([]AddressInfo, 0, size)
+
+	for i := 0; i < int(size); i++ {
+		select {
+		case addr := <-addresses:
+			addrInfoList = append(addrInfoList, *addr)
+		case err := <-errorsChan:
 			return nil, err
 		}
-		addrInfoList[i+account.NextExternalIndex] = *addrInfo
 	}
 
 	return addrInfoList, nil
+}
+
+type derivationJob struct {
+	accountIndex uint
+	addressIndex uint
+	isChange     bool
+}
+
+func (t HDTree) workerAddressDerivation(
+	jobs <-chan derivationJob,
+	resultAddresses chan<- *AddressInfo,
+	errors chan<- error,
+	finishFlags chan<- bool,
+) {
+	for job := range jobs {
+		addrInfo, _, err := t.deriveAddressInfo(job.accountIndex, job.addressIndex, job.isChange)
+		if err != nil {
+			errors <- err
+		}
+		resultAddresses <- addrInfo
+	}
+
+	finishFlags <- true
 }
 
 func (t *HDTree) initOrGetAccount(accountIndex uint) *Account {

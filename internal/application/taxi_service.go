@@ -3,20 +3,23 @@ package application
 import (
 	"context"
 	"encoding/hex"
-	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/shopspring/decimal"
+	log "github.com/sirupsen/logrus"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
 const (
 	derivationPathForAsset = "0'/0/0"
 	derivationPathForLBTC  = "0'/0/1"
+	cacheUpdateInterval    = 30 * time.Second
 )
 
 // TaxiService provides interface for user UI
@@ -35,6 +38,8 @@ type taxiService struct {
 	network          network.Network
 	fixedFeeAmount   uint64
 	mnemonic         []string
+	fragmentsCache   []explorer.Utxo
+	cacheLocker      sync.Locker
 }
 
 // NewTaxiServiceArgs is a struct defining the arguments used to create a taxi service
@@ -56,7 +61,7 @@ func NewTaxiService(args NewTaxiServiceArgs) TaxiService {
 }
 
 func newTaxiService(args NewTaxiServiceArgs) *taxiService {
-	return &taxiService{
+	taxiSvc := &taxiService{
 		args.HdTreeRepo,
 		args.LockRepo,
 		args.TopupRepo,
@@ -66,7 +71,44 @@ func newTaxiService(args NewTaxiServiceArgs) *taxiService {
 		args.Network,
 		args.FixedFeeAmount,
 		args.Mnemonic,
+		[]explorer.Utxo{},
+		&sync.Mutex{},
 	}
+
+	go taxiSvc.startCaching()
+	return taxiSvc
+}
+
+func (taxi *taxiService) getCacheCopySafe() []explorer.Utxo {
+	taxi.cacheLocker.Lock()
+	defer taxi.cacheLocker.Unlock()
+
+	clone := make([]explorer.Utxo, len(taxi.fragmentsCache))
+	copy(clone, taxi.fragmentsCache)
+
+	return clone
+}
+
+func (taxi *taxiService) popFromCacheSafe() explorer.Utxo {
+	taxi.cacheLocker.Lock()
+	defer taxi.cacheLocker.Unlock()
+
+	sizeCache := len(taxi.fragmentsCache)
+
+	if sizeCache == 0 {
+		return nil
+	}
+
+	x, xs := taxi.fragmentsCache[sizeCache-1], taxi.fragmentsCache[:sizeCache-1]
+	taxi.fragmentsCache = xs
+	return x
+}
+
+func (taxi *taxiService) PushInCacheSafe(utxo explorer.Utxo) {
+	taxi.cacheLocker.Lock()
+	defer taxi.cacheLocker.Unlock()
+
+	taxi.fragmentsCache = append(taxi.fragmentsCache, utxo)
 }
 
 // TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
@@ -85,21 +127,10 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	}
 
 	// retrieve only the utxos that are not locked by other topups
-	utxo, err := taxi.fetchFragmentUtxo(ctx)
+	utxo, err := taxi.fetchandLockFragmentUtxo(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	// Lock the utxo used for this topup to avoid other ones to use it
-	utxoKey := domain.UtxoToLock(utxo)
-	if err = taxi.lockRepository.Lock(ctx, []domain.Lock{utxoKey}); err != nil {
-		return nil, err
-	}
-
-	go func() {
-		time.Sleep(taxi.utxoTTL)
-		taxi.lockRepository.Unlock(ctx, utxoKey)
-	}()
 
 	expireAt := time.Now().Add(taxi.utxoTTL)
 
@@ -150,51 +181,114 @@ func (taxi *taxiService) ListAssets(ctx context.Context) ([]string, error) {
 	return assets, nil
 }
 
-func (taxi *taxiService) fetchFragmentUtxo(ctx context.Context) (explorer.Utxo, error) {
+func (taxi *taxiService) fetchandLockFragmentUtxo(ctx context.Context) (explorer.Utxo, error) {
+	defer testutils.TimeTrack(time.Now(), "fetchFragmentUtxos")
+
+	utxo := taxi.popFromCacheSafe()
+	if utxo == nil {
+		return nil, ErrUtxoNotFound{
+			TargetedAmount: taxi.fixedFeeAmount,
+			TargetedAsset:  taxi.network.AssetID,
+		}
+	}
+
+	lock := domain.UtxoToLock(utxo)
+	err := taxi.lockRepository.Lock(ctx, []domain.Lock{lock})
+
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		time.Sleep(taxi.utxoTTL)
+		taxi.lockRepository.Unlock(ctx, lock)
+	}()
+
+	return utxo, nil
+}
+
+func (taxi *taxiService) startCaching() {
+	ctx := context.Background()
 	// retrieve root path of the hd tree and instantiate the inmemory wallet
 	hdTree, err := taxi.hdTreeRepository.GetOrCreateHDTree(ctx)
 	if err != nil {
-		return nil, err
+		log.Error(err)
+		return
 	}
 
-	// get all funding derived addresses
-	addrInfoList, err := hdTree.AllDerivedAddressInfoForLBTCAccount()
-	if err != nil {
-		return nil, err
-	}
+	for {
+		copyOfCache := taxi.getCacheCopySafe()
+		cacheContains := func(utxo explorer.Utxo) bool {
+			for _, u := range copyOfCache {
+				if utxo.Hash() == u.Hash() && utxo.Index() == u.Index() {
+					return true
+				}
+			}
+			return false
+		}
 
-	// randomly shuffle addr array
-	shuffledAddrInfoList := shuffleAddresses(addrInfoList)
-
-	for _, addrInfo := range shuffledAddrInfoList {
-		utxos, err := taxi.explorer.GetUnspents(addrInfo.Address, [][]byte{})
+		// get all funding derived addresses asynchronously
+		addresses, errors, _ := hdTree.AllDerivedAddressInfoForAcountAsync(domain.LBTCAccount)
 		if err != nil {
-			return nil, err
+			log.Error(err)
+			return
+		}
+
+		const numOfWorker = 4
+		utxos := make(chan explorer.Utxo)
+		signals := make(chan bool, numOfWorker)
+
+		for w := 0; w < numOfWorker; w++ {
+			go taxi.getUnspentsWorker(addresses, utxos, errors, signals)
+		}
+
+		i := 0
+		for {
+			select {
+			case utxo := <-utxos:
+				lock := domain.UtxoToLock(utxo)
+				if !taxi.lockRepository.IsLocked(ctx, lock) && !cacheContains(utxo) {
+					taxi.PushInCacheSafe(utxo)
+					log.Info("new fragment utxo added to cache ", utxo.Hash(), " index: ", utxo.Index())
+				}
+			case <-signals:
+				i++
+			case err := <-errors:
+				log.Error(err)
+			}
+			if i == numOfWorker {
+				close(utxos)
+				close(signals)
+				close(errors)
+				break
+			}
+		}
+
+		// sleep before the next iteration
+		time.Sleep(cacheUpdateInterval)
+	}
+}
+
+func (taxi taxiService) getUnspentsWorker(
+	jobs <-chan *domain.AddressInfo,
+	results chan<- explorer.Utxo,
+	errors chan<- error,
+	finishSignals chan<- bool,
+) {
+	for addr := range jobs {
+		utxos, err := taxi.explorer.GetUnspents(addr.Address, [][]byte{})
+		if err != nil {
+			errors <- err
 		}
 
 		for _, utxo := range utxos {
-			lock := domain.UtxoToLock(utxo)
-			if !taxi.lockRepository.IsLocked(ctx, lock) {
-				return utxo, nil
+			if utxo.Asset() == taxi.network.AssetID && utxo.Value() == taxi.fixedFeeAmount {
+				results <- utxo
 			}
 		}
 	}
 
-	return nil, ErrUtxoNotFound{
-		TargetedAmount: taxi.fixedFeeAmount,
-		TargetedAsset:  taxi.network.AssetID,
-	}
-}
-
-func shuffleAddresses(addrs []domain.AddressInfo) []domain.AddressInfo {
-	rand.Seed(time.Now().UnixNano())
-	length := len(addrs)
-	for i := length - 1; i > 0; i-- {
-		j := rand.Intn(i + 1)
-		addrs[i], addrs[j] = addrs[j], addrs[i]
-	}
-
-	return addrs
+	finishSignals <- true
 }
 
 type createAndSignTopupTxArgs struct {
