@@ -7,7 +7,7 @@ import (
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/vulpemventures/go-elements/address"
 	"github.com/vulpemventures/go-elements/network"
-	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
+	"github.com/vulpemventures/taxi-daemon/pkg/wallet"
 )
 
 const (

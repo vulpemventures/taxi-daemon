@@ -12,9 +12,9 @@ import (
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
-	"github.com/vulpemventures/liquid-taxi/internal/domain"
-	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
-	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
+	"github.com/vulpemventures/taxi-daemon/internal/domain"
+	"github.com/vulpemventures/taxi-daemon/internal/infrastructure/storage/inmemory"
+	"github.com/vulpemventures/taxi-daemon/pkg/testutils"
 )
 
 func TestTopupWithAsset(t *testing.T) {

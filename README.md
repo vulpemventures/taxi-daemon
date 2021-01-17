@@ -1,5 +1,5 @@
-# liquid-taxi
-![Go](https://github.com/vulpemventures/liquid-taxi/workflows/Go/badge.svg)
+# taxi-daemon
+![Go](https://github.com/vulpemventures/taxi-daemon/workflows/Go/badge.svg)
 
 🚕 Liquid Taxi backend 
 
@@ -16,7 +16,7 @@
 ### Clone
 
 ```sh
-$ git clone https://github.com/vulpemventures/liquid-taxi
+$ git clone https://github.com/vulpemventures/taxi-daemon
 ```
 
 ## Run

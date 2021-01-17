@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/taxi-daemon/internal/domain"
 )
 
 type inmemoryLockRepository struct {

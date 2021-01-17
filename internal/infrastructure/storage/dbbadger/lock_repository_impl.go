@@ -6,7 +6,7 @@ import (
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/timshannon/badgerhold/v2"
-	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/taxi-daemon/internal/domain"
 )
 
 // LockStoreKey is the directory name of the db files

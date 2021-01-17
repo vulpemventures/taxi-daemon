@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/go-elements/network"
-	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
-	"github.com/vulpemventures/liquid-taxi/internal/application"
-	"github.com/vulpemventures/liquid-taxi/internal/domain"
-	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
+	"github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
+	"github.com/vulpemventures/taxi-daemon/internal/application"
+	"github.com/vulpemventures/taxi-daemon/internal/domain"
+	"github.com/vulpemventures/taxi-daemon/internal/infrastructure/storage/inmemory"
 )
 
 const (
