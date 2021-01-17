@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	cacheUpdateInterval = 3 * time.Minute
+	cacheUpdateInterval = 30 * time.Second
 )
 
 // Outpoint is the unique utxo identifier
@@ -63,7 +63,8 @@ func (f *fragmentCache) start() {
 			return
 		}
 
-		const numOfWorker = 4
+		const numOfWorker = 2
+
 		utxos := make(chan explorer.Utxo)
 		signals := make(chan bool, numOfWorker)
 
@@ -76,7 +77,6 @@ func (f *fragmentCache) start() {
 			select {
 			case utxo := <-utxos:
 				lock := domain.UtxoToLock(utxo)
-				log.Info(lock)
 				if !f.lockRepository.IsLocked(ctx, lock) && !f.contains(utxo) {
 					f.set(utxo)
 					log.Info("new fragment utxo added to cache. (txid: ", utxo.Hash(), " index: ", utxo.Index(), ")")
@@ -86,6 +86,7 @@ func (f *fragmentCache) start() {
 			case err := <-errors:
 				log.Error(err)
 			}
+
 			if i == numOfWorker {
 				close(utxos)
 				close(signals)
@@ -105,11 +106,20 @@ func (f fragmentCache) getUnspentsWorker(
 	errors chan<- error,
 	finishSignals chan<- bool,
 ) {
+	const maxErrors = 10
+
+	nbError := 0
 	for addr := range jobs {
 		utxos, err := f.explorer.GetUnspents(addr.Address, [][]byte{})
 		if err != nil {
+			nbError++
 			errors <- err
-			finishSignals <- true
+
+			if nbError >= maxErrors {
+				break
+			}
+
+			continue
 		}
 
 		for _, utxo := range utxos {

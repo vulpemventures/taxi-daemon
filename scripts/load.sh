@@ -10,6 +10,6 @@ wget https://raw.githubusercontent.com/vulpemventures/taxi-protobuf/master/taxi.
 
 # ghz --insecure --proto taxi.proto --call Taxi.ListAssets localhost:8000 --total 800
 
-ghz --insecure --proto taxi.proto --call Taxi.TopupWithAsset -d '{"asset_hash": "0f5243351c492dce4c7a8bc5cd01a69cd8f485f2c7686926a501692575af6835"}' localhost:8000 -t 0 --total 200
+ghz --insecure --proto taxi.proto --call Taxi.TopupWithAsset -d '{"asset_hash": "0f5243351c492dce4c7a8bc5cd01a69cd8f485f2c7686926a501692575af6835"}' localhost:8000 -t 0 --total 1000
 
 rm taxi.proto
