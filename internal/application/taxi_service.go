@@ -3,22 +3,21 @@ package application
 import (
 	"context"
 	"encoding/hex"
-	"sync"
 	"time"
 
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/labstack/gommon/log"
 	"github.com/shopspring/decimal"
-	log "github.com/sirupsen/logrus"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
 const (
 	derivationPathForAsset = "0'/0/0"
 	derivationPathForLBTC  = "0'/0/1"
-	cacheUpdateInterval    = 3 * time.Minute
 )
 
 // TaxiService provides interface for user UI
@@ -37,8 +36,7 @@ type taxiService struct {
 	network          network.Network
 	fixedFeeAmount   uint64
 	mnemonic         []string
-	fragmentsCache   []explorer.Utxo
-	cacheLocker      sync.Locker
+	cache            *fragmentCache
 }
 
 // NewTaxiServiceArgs is a struct defining the arguments used to create a taxi service
@@ -70,53 +68,25 @@ func newTaxiService(args NewTaxiServiceArgs) *taxiService {
 		args.Network,
 		args.FixedFeeAmount,
 		args.Mnemonic,
-		[]explorer.Utxo{},
-		&sync.Mutex{},
+		nil,
 	}
 
-	go taxiSvc.startCaching()
+	// set up and start cache
+	taxiSvc.cache = newCache(taxiSvc)
+	go taxiSvc.cache.start()
+
 	return taxiSvc
-}
-
-func (taxi *taxiService) getCacheCopySafe() []explorer.Utxo {
-	taxi.cacheLocker.Lock()
-	defer taxi.cacheLocker.Unlock()
-
-	clone := make([]explorer.Utxo, len(taxi.fragmentsCache))
-	copy(clone, taxi.fragmentsCache)
-
-	return clone
-}
-
-func (taxi *taxiService) popFromCacheSafe() explorer.Utxo {
-	taxi.cacheLocker.Lock()
-	defer taxi.cacheLocker.Unlock()
-
-	sizeCache := len(taxi.fragmentsCache)
-
-	if sizeCache == 0 {
-		return nil
-	}
-
-	x, xs := taxi.fragmentsCache[sizeCache-1], taxi.fragmentsCache[:sizeCache-1]
-	taxi.fragmentsCache = xs
-	return x
-}
-
-func (taxi *taxiService) PushInCacheSafe(utxo explorer.Utxo) {
-	taxi.cacheLocker.Lock()
-	defer taxi.cacheLocker.Unlock()
-
-	taxi.fragmentsCache = append(taxi.fragmentsCache, utxo)
 }
 
 // TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
 func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (*domain.Topup, error) {
+	defer testutils.TimeTrack(time.Now(), "TopupWithAsset")
 	// check if asset is available
 	price, err := taxi.priceRepository.GetPrice(ctx, assetHash)
 	if err != nil {
 		return nil, err
 	}
+
 	if price == nil {
 		assets, _ := taxi.ListAssets(ctx)
 		return nil, ErrAssetNotSupported{
@@ -157,12 +127,19 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	topupCompleted, err := taxi.topupRepository.MarkAsCompleted(ctx, topup.ID, psetBase64, assetAmount)
+	err = topup.Complete(psetBase64, assetAmount)
 	if err != nil {
 		return nil, err
 	}
 
-	return topupCompleted, nil
+	go func() {
+		_, err := taxi.topupRepository.MarkAsCompleted(ctx, topup.ID, psetBase64, assetAmount)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
+
+	return &topup, nil
 }
 
 // ListAssets return all the available assets of the taxi service
@@ -181,7 +158,13 @@ func (taxi *taxiService) ListAssets(ctx context.Context) ([]string, error) {
 }
 
 func (taxi *taxiService) fetchAndLockFragmentUtxo(ctx context.Context) (explorer.Utxo, error) {
-	utxo := taxi.popFromCacheSafe()
+	defer testutils.TimeTrack(time.Now(), "fetchAndLockFragmentUtxo")
+
+	utxo, err := taxi.cache.randomGetAndDelete()
+	if err != nil {
+		return nil, err
+	}
+
 	if utxo == nil {
 		return nil, ErrUtxoNotFound{
 			TargetedAmount: taxi.fixedFeeAmount,
@@ -190,7 +173,7 @@ func (taxi *taxiService) fetchAndLockFragmentUtxo(ctx context.Context) (explorer
 	}
 
 	lock := domain.UtxoToLock(utxo)
-	err := taxi.lockRepository.Lock(ctx, []domain.Lock{lock})
+	err = taxi.lockRepository.Lock(ctx, []domain.Lock{lock})
 
 	if err != nil {
 		return nil, err
@@ -204,90 +187,6 @@ func (taxi *taxiService) fetchAndLockFragmentUtxo(ctx context.Context) (explorer
 	return utxo, nil
 }
 
-func (taxi *taxiService) startCaching() {
-	ctx := context.Background()
-	// retrieve root path of the hd tree and instantiate the inmemory wallet
-	hdTree, err := taxi.hdTreeRepository.GetOrCreateHDTree(ctx)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	for {
-		copyOfCache := taxi.getCacheCopySafe()
-		cacheContains := func(utxo explorer.Utxo) bool {
-			for _, u := range copyOfCache {
-				if utxo.Hash() == u.Hash() && utxo.Index() == u.Index() {
-					return true
-				}
-			}
-			return false
-		}
-
-		// get all funding derived addresses asynchronously
-		addresses, errors, _ := hdTree.AllDerivedAddressInfoForAcountAsync(domain.LBTCAccount)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		const numOfWorker = 4
-		utxos := make(chan explorer.Utxo)
-		signals := make(chan bool, numOfWorker)
-
-		for w := 0; w < numOfWorker; w++ {
-			go taxi.getUnspentsWorker(addresses, utxos, errors, signals)
-		}
-
-		i := 0
-		for {
-			select {
-			case utxo := <-utxos:
-				lock := domain.UtxoToLock(utxo)
-				if !taxi.lockRepository.IsLocked(ctx, lock) && !cacheContains(utxo) {
-					taxi.PushInCacheSafe(utxo)
-					log.Info("new fragment utxo added to cache ", utxo.Hash(), " index: ", utxo.Index())
-				}
-			case <-signals:
-				i++
-			case err := <-errors:
-				log.Error(err)
-			}
-			if i == numOfWorker {
-				close(utxos)
-				close(signals)
-				close(errors)
-				break
-			}
-		}
-
-		// sleep before the next iteration
-		time.Sleep(cacheUpdateInterval)
-	}
-}
-
-func (taxi taxiService) getUnspentsWorker(
-	jobs <-chan *domain.AddressInfo,
-	results chan<- explorer.Utxo,
-	errors chan<- error,
-	finishSignals chan<- bool,
-) {
-	for addr := range jobs {
-		utxos, err := taxi.explorer.GetUnspents(addr.Address, [][]byte{})
-		if err != nil {
-			errors <- err
-		}
-
-		for _, utxo := range utxos {
-			if utxo.Asset() == taxi.network.AssetID && utxo.Value() == taxi.fixedFeeAmount {
-				results <- utxo
-			}
-		}
-	}
-
-	finishSignals <- true
-}
-
 type createAndSignTopupTxArgs struct {
 	context       context.Context
 	unspent       explorer.Utxo
@@ -297,6 +196,8 @@ type createAndSignTopupTxArgs struct {
 }
 
 func (taxi *taxiService) createAndSignTopupTx(args createAndSignTopupTxArgs) (string, error) {
+	defer testutils.TimeTrack(time.Now(), "createAndSignTopupTx")
+
 	hdTree, err := taxi.hdTreeRepository.GetOrCreateHDTree(args.context)
 	if err != nil {
 		return "", err

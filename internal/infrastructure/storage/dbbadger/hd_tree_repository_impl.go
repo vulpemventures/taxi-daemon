@@ -3,11 +3,13 @@ package dbbadger
 import (
 	"context"
 	"path/filepath"
+	"time"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/timshannon/badgerhold/v2"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
@@ -96,6 +98,7 @@ func (r *badgerHDTreeRepository) update(hdTree *domain.HDTree) error {
 }
 
 func (r *badgerHDTreeRepository) getOrCreateHDTree(ctx context.Context) (*domain.HDTree, error) {
+	defer testutils.TimeTrack(time.Now(), "getOrCreateHDTree")
 	hdTree, err := r.getHDTree(ctx)
 	if err != nil {
 		return nil, err

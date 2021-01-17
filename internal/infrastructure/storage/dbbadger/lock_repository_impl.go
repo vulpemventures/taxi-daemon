@@ -3,10 +3,12 @@ package dbbadger
 import (
 	"context"
 	"path/filepath"
+	"time"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/timshannon/badgerhold/v2"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 )
 
 // LockStoreKey is the directory name of the db files
@@ -52,6 +54,7 @@ func (r *badgerLockRepository) Lock(ctx context.Context, keys []domain.Lock) err
 }
 
 func (r *badgerLockRepository) lock(key domain.Lock) error {
+	defer testutils.TimeTrack(time.Now(), "lock")
 	handler := func() (interface{}, error) {
 		return nil, r.store.Insert(key.String(), key)
 	}

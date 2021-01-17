@@ -1,6 +1,7 @@
 package dbbadger
 
 import (
+	"math/rand"
 	"os"
 	"time"
 
@@ -65,8 +66,10 @@ func isTransactionConflict(err error) bool {
 	return err == badger.ErrConflict
 }
 
-func sleep30ms() {
-	time.Sleep(30 * time.Millisecond)
+func sleepSomeMS() {
+	rand.Seed(time.Now().UnixNano())
+	ms := time.Duration(rand.Intn(30) + 1)
+	time.Sleep(ms * time.Millisecond)
 }
 
 func runTransaction(handler func() (interface{}, error)) (interface{}, error) {
@@ -74,7 +77,7 @@ func runTransaction(handler func() (interface{}, error)) (interface{}, error) {
 		res, err := handler()
 		if err != nil {
 			if isTransactionConflict(err) {
-				sleep30ms()
+				sleepSomeMS()
 				continue
 			}
 
