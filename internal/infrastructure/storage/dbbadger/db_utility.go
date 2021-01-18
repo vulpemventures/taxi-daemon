@@ -6,14 +6,12 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v2"
-	"github.com/dgraph-io/badger/v2/options"
 	log "github.com/sirupsen/logrus"
 	"github.com/timshannon/badgerhold/v2"
 )
 
 func createDb(dbDir string, logger badger.Logger) (*badgerhold.Store, error) {
 	opts := badger.DefaultOptions(dbDir)
-	opts.Compression = options.ZSTD
 	opts.Logger = logger
 
 	db, err := badgerhold.Open(badgerhold.Options{
