@@ -23,7 +23,7 @@ func TestTopupWithAsset(t *testing.T) {
 	}
 
 	hdTreeRepo := newMockedHDTreeRepository(0)
-	lockRepo := inmemory.NewInmemoryLockRepository()
+	lockRepo := inmemory.NewInmemoryLockRepository(utxoTTL)
 	topupRepo := newMockedTopupRepository(nil)
 	priceRepo := newMockedPriceRepository([]string{superToken})
 	explorerSvc := explorer.NewService(explorerEndpoint)
@@ -34,7 +34,6 @@ func TestTopupWithAsset(t *testing.T) {
 		topupRepo,
 		priceRepo,
 		explorerSvc,
-		utxoTTL,
 		regtest,
 		fixedFeeAmount,
 		words,
@@ -93,7 +92,7 @@ func TestTopupWithAsset(t *testing.T) {
 
 func TestListAssets(t *testing.T) {
 	hdTreeRepo := newMockedHDTreeRepository(0)
-	lockRepo := inmemory.NewInmemoryLockRepository()
+	lockRepo := inmemory.NewInmemoryLockRepository(utxoTTL)
 	topupRepo := newMockedTopupRepository(nil)
 	priceRepo := newMockedPriceRepository([]string{superToken, hyperToken})
 	explorerSvc := explorer.NewService(explorerEndpoint)
@@ -104,7 +103,6 @@ func TestListAssets(t *testing.T) {
 		topupRepo,
 		priceRepo,
 		explorerSvc,
-		utxoTTL,
 		regtest,
 		fixedFeeAmount,
 		words,

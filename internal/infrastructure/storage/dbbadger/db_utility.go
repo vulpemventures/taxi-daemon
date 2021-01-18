@@ -89,3 +89,13 @@ func runTransaction(handler func() (interface{}, error)) (interface{}, error) {
 		return res, nil
 	}
 }
+
+func encodeKey(key interface{}, typeName string) ([]byte, error) {
+	const prefix = "bh_"
+	encoded, err := badgerhold.DefaultEncode(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return append([]byte(prefix+typeName), encoded...), nil
+}

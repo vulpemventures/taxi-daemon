@@ -2,10 +2,12 @@ package dbbadger
 
 import (
 	"os"
+	"time"
 )
 
 const (
 	testDataDir = "./test-datadir"
+	utxoTTL     = 5 * time.Minute
 )
 
 func createTestDataDir() (func(), error) {

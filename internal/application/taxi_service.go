@@ -30,7 +30,6 @@ type taxiService struct {
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
 	explorer         explorer.Service
-	utxoTTL          time.Duration
 	network          network.Network
 	fixedFeeAmount   uint64
 	mnemonic         []string
@@ -44,7 +43,6 @@ type NewTaxiServiceArgs struct {
 	TopupRepo      domain.TopupRepository
 	PriceRepo      domain.PriceRepository
 	ExplorerSvc    explorer.Service
-	UtxoTTL        time.Duration
 	Network        network.Network
 	FixedFeeAmount uint64
 	Mnemonic       []string
@@ -62,7 +60,6 @@ func newTaxiService(args NewTaxiServiceArgs) *taxiService {
 		args.TopupRepo,
 		args.PriceRepo,
 		args.ExplorerSvc,
-		args.UtxoTTL,
 		args.Network,
 		args.FixedFeeAmount,
 		args.Mnemonic,
@@ -98,7 +95,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	expireAt := time.Now().Add(taxi.utxoTTL)
+	expireAt := time.Now().Add(taxi.lockRepository.GetConfigTTL(ctx))
 
 	topup := domain.NewTopup(assetHash, taxi.fixedFeeAmount, price.Amount, expireAt)
 	err = taxi.topupRepository.AddTopup(ctx, topup)
@@ -167,11 +164,6 @@ func (taxi *taxiService) fetchAndLockFragmentUtxo(ctx context.Context) (explorer
 	if err != nil {
 		return nil, err
 	}
-
-	go func() {
-		time.Sleep(taxi.utxoTTL)
-		taxi.lockRepository.Unlock(ctx, lock)
-	}()
 
 	return utxo, nil
 }

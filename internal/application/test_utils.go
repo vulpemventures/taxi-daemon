@@ -80,14 +80,14 @@ func newMockedHDTreeRepository(numOfAddresses uint) domain.HDTreeRepository {
 }
 
 func newMockedLockRepository() domain.LockRepository {
-	return inmemory.NewInmemoryLockRepository()
+	return inmemory.NewInmemoryLockRepository(utxoTTL)
 }
 
 func newMockedAdminService(numberOfAddresses uint) *adminService {
 	hdTreeRepo := newMockedHDTreeRepository(numberOfAddresses)
 	topupRepo := newMockedTopupRepository([]string{superToken, hyperToken})
 	priceRepo := newMockedPriceRepository(nil)
-	lockRepo := inmemory.NewInmemoryLockRepository()
+	lockRepo := inmemory.NewInmemoryLockRepository(utxoTTL)
 	explorerSvc := explorer.NewService(explorerEndpoint)
 
 	return newAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerSvc, words, regtest)

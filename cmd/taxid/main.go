@@ -48,7 +48,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	lockRepository, err := dbbadger.NewBadgerLockRepository(datadirPath, dbLogger)
+
+	utxoTTL := time.Duration(config.GetInt(config.UtxoTTLKey)) * time.Second
+	lockRepository, err := dbbadger.NewBadgerLockRepository(datadirPath, utxoTTL, dbLogger)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,7 +68,6 @@ func main() {
 		TopupRepo:      topupRepository,
 		PriceRepo:      priceRepository,
 		ExplorerSvc:    explorerSvc,
-		UtxoTTL:        time.Duration(config.GetInt(config.UtxoTTLKey)) * time.Second,
 		Network:        network,
 		FixedFeeAmount: uint64(config.GetInt(config.FixedFeeAmountKey)),
 		Mnemonic:       mnemonic,

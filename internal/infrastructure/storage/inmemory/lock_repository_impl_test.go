@@ -3,17 +3,19 @@ package inmemory
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
 
 const (
-	txID = "4619ac256b1fa678ac0834c3f7908c6a589cf63580260e86eb11e67f9cb7b8c9"
+	txID    = "4619ac256b1fa678ac0834c3f7908c6a589cf63580260e86eb11e67f9cb7b8c9"
+	utxoTTL = 10 * time.Second
 )
 
 func TestLock(t *testing.T) {
-	repo := newInmemoryLockRepository()
+	repo := newInmemoryLockRepository(utxoTTL)
 
 	lock := domain.Lock{
 		TxID: txID,
@@ -31,7 +33,7 @@ func TestLock(t *testing.T) {
 }
 
 func TestIsLocked(t *testing.T) {
-	repo := newInmemoryLockRepository()
+	repo := newInmemoryLockRepository(utxoTTL)
 
 	lock := domain.Lock{
 		TxID: txID,
@@ -47,7 +49,7 @@ func TestIsLocked(t *testing.T) {
 }
 
 func TestUnlock(t *testing.T) {
-	repo := newInmemoryLockRepository()
+	repo := newInmemoryLockRepository(utxoTTL)
 
 	lock := domain.Lock{
 		TxID: txID,
@@ -70,7 +72,7 @@ func TestUnlock(t *testing.T) {
 }
 
 func TestGetLocks(t *testing.T) {
-	repo := newInmemoryLockRepository()
+	repo := newInmemoryLockRepository(utxoTTL)
 
 	lock := domain.Lock{
 		TxID: txID,

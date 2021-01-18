@@ -3,25 +3,32 @@ package inmemory
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
 
 type inmemoryLockRepository struct {
-	locks  map[domain.Lock]bool
-	locker sync.Locker
+	locks   map[domain.Lock]bool
+	locker  sync.Locker
+	utxoTTL time.Duration
 }
 
 // NewInmemoryLockRepository creates a LockRepository implementation
-func NewInmemoryLockRepository() domain.LockRepository {
-	return newInmemoryLockRepository()
+func NewInmemoryLockRepository(utxoTTL time.Duration) domain.LockRepository {
+	return newInmemoryLockRepository(utxoTTL)
 }
 
-func newInmemoryLockRepository() *inmemoryLockRepository {
+func newInmemoryLockRepository(utxoTTL time.Duration) *inmemoryLockRepository {
 	return &inmemoryLockRepository{
-		locks:  make(map[domain.Lock]bool),
-		locker: &sync.Mutex{},
+		locks:   make(map[domain.Lock]bool),
+		locker:  &sync.Mutex{},
+		utxoTTL: utxoTTL,
 	}
+}
+
+func (r *inmemoryLockRepository) GetConfigTTL(context.Context) time.Duration {
+	return r.utxoTTL
 }
 
 func (r *inmemoryLockRepository) GetLocks(ctx context.Context) ([]domain.Lock, error) {
@@ -42,6 +49,11 @@ func (r *inmemoryLockRepository) Lock(ctx context.Context, locks []domain.Lock) 
 
 	for _, k := range locks {
 		r.locks[k] = true
+		go func(l domain.Lock) {
+			time.Sleep(r.utxoTTL)
+			r.Unlock(ctx, l)
+		}(k)
+
 	}
 
 	return nil
