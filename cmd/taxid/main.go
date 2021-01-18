@@ -78,7 +78,6 @@ func main() {
 		LockRepo:       lockRepository,
 		TopupRepo:      topupRepository,
 		PriceRepo:      priceRepository,
-		ExplorerSvc:    explorerSvc,
 		Network:        network,
 		FixedFeeAmount: fixedFeeAmount,
 		Mnemonic:       mnemonic,

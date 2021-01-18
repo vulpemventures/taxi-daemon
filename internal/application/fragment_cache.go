@@ -116,16 +116,17 @@ func (f *fragmentCache) RandomGetAndDelete() (explorer.Utxo, error) {
 func (f *fragmentCache) Start() {
 	log.Info("start utxos caching...")
 	ctx := context.Background()
-	// retrieve root path of the hd tree and instantiate the inmemory wallet
-	hdTree, err := f.hdTreeRepository.GetOrCreateHDTree(ctx)
-	if err != nil {
-		log.Error(err)
-		return
-	}
 
 	f.tickerInterval = time.NewTicker(f.interval)
 
 	for range f.tickerInterval.C {
+		// retrieve root path of the hd tree and instantiate the inmemory wallet
+		hdTree, err := f.hdTreeRepository.GetOrCreateHDTree(ctx)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
 		// get all funding derived addresses asynchronously
 		addresses, errors, _ := hdTree.AllDerivedAddressInfoForAcountAsync(domain.LBTCAccount)
 		if err != nil {

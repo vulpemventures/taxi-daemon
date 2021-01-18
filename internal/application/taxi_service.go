@@ -29,7 +29,6 @@ type taxiService struct {
 	lockRepository   domain.LockRepository
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
-	explorer         explorer.Service
 	network          network.Network
 	fixedFeeAmount   uint64
 	mnemonic         []string
@@ -42,7 +41,6 @@ type NewTaxiServiceArgs struct {
 	LockRepo       domain.LockRepository
 	TopupRepo      domain.TopupRepository
 	PriceRepo      domain.PriceRepository
-	ExplorerSvc    explorer.Service
 	Network        network.Network
 	FixedFeeAmount uint64
 	Mnemonic       []string
@@ -60,7 +58,6 @@ func newTaxiService(args NewTaxiServiceArgs) *taxiService {
 		args.LockRepo,
 		args.TopupRepo,
 		args.PriceRepo,
-		args.ExplorerSvc,
 		args.Network,
 		args.FixedFeeAmount,
 		args.Mnemonic,
