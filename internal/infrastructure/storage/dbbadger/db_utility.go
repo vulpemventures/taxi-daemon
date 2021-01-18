@@ -25,13 +25,13 @@ func createDb(dbDir string, logger badger.Logger) (*badgerhold.Store, error) {
 		return nil, err
 	}
 
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(30 * time.Minute)
 
 	go func() {
-		log.Info("set up badger garbage collection")
+		log.Debug("set up badger garbage collection")
 
 		for range ticker.C {
-			log.Info("run garbage collector")
+			log.Debug("run garbage collector")
 			err := db.Badger().RunValueLogGC(0.5)
 			if err != nil && err != badger.ErrNoRewrite {
 				log.Error(err)
