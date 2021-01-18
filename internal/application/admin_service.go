@@ -320,6 +320,11 @@ func (adminSvc *adminService) selectUtxos(ctx context.Context, outputs []wallet.
 
 		for _, utxo := range utxos {
 			if utxo.Asset() == asset && !utxo.IsConfidential() {
+				adminSvc.cache.Delete(Outpoint{
+					TxID: utxo.Hash(),
+					Vout: utxo.Index(),
+				})
+
 				selectedUtxos = append(selectedUtxos, utxo)
 				totalSelected += utxo.Value()
 				if totalSelected >= amount {
