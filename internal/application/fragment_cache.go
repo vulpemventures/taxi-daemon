@@ -8,7 +8,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
-	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/taxi-daemon/internal/domain"
 )
 
 // Outpoint is the unique utxo identifier
