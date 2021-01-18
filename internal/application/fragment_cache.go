@@ -21,6 +21,7 @@ type Outpoint struct {
 type FragmentCache interface {
 	Start()
 	Stop()
+	Delete(outpoint Outpoint) error
 	RandomGetAndDelete() (explorer.Utxo, error)
 }
 
@@ -65,6 +66,18 @@ func newCache(args NewCacheArgs) FragmentCache {
 		tickerInterval:   time.NewTicker(args.Interval),
 		stopSignal:       make(chan bool),
 	}
+}
+
+func (f *fragmentCache) Delete(outpoint Outpoint) error {
+	f.locker.Lock()
+	defer f.locker.Unlock()
+
+	_, ok := f.outpointToUtxo[outpoint]
+	if !ok {
+		return ErrUtxoNotFoundInCache
+	}
+
+	return nil
 }
 
 func (f *fragmentCache) contains(utxo explorer.Utxo) (yes bool) {

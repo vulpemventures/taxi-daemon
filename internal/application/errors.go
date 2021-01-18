@@ -47,4 +47,6 @@ var (
 	ErrUtxoNotAvailable = errors.New("a selected utxo is not available")
 	// ErrRandomIntegerUnreachable is returned when trying to get a random value in unspents cache
 	ErrRandomIntegerUnreachable = errors.New("random integer unreachable")
+	// ErrUtxoNotFoundInCache is returned in Delete method if the cache does not contain the given outpoint
+	ErrUtxoNotFoundInCache = errors.New("the uxto is not found in cache")
 )
