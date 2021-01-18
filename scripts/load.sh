@@ -1,15 +1,21 @@
 #!/bin/bash
 
-wget https://raw.githubusercontent.com/vulpemventures/taxi-protobuf/master/taxi.proto
+while getopts a:t: flag
+do
+    case "${flag}" in
+        a) asset=${OPTARG};;
+        t) total=${OPTARG};;
+    esac
+done
 
+echo "load testing script -- a program used to load test the TopupWithAsset request"
 
-./bin/taxi config init
-./bin/taxi config set rpcserver localhost:7000
+echo "asset = $asset"
+echo "total = $total"
 
-./bin/taxi add --asset 0f5243351c492dce4c7a8bc5cd01a69cd8f485f2c7686926a501692575af6835 --price 1.2
+wget --quiet https://raw.githubusercontent.com/vulpemventures/taxi-protobuf/master/taxi.proto
 
 # ghz --insecure --proto taxi.proto --call Taxi.ListAssets localhost:8000 --total 800
-
-ghz --insecure --proto taxi.proto --call Taxi.TopupWithAsset -d '{"asset_hash": "0f5243351c492dce4c7a8bc5cd01a69cd8f485f2c7686926a501692575af6835"}' localhost:8000 -t 0 --total 1000
+ghz --insecure --proto taxi.proto --call Taxi.TopupWithAsset -d '{"asset_hash": "'"$asset"'"}' localhost:8000 -t 0 --total $total
 
 rm taxi.proto
