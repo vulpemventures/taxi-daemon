@@ -3,12 +3,10 @@ package dbbadger
 import (
 	"context"
 	"path/filepath"
-	"time"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/timshannon/badgerhold/v2"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
-	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 )
 
 // TopupStoreKey is the directory name of the db files
@@ -60,7 +58,6 @@ func (r *badgerTopupRepository) GetAllTopups(ctx context.Context) ([]domain.Topu
 }
 
 func (r *badgerTopupRepository) MarkAsCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
-	defer testutils.TimeTrack(time.Now(), "markAsCompleted")
 	var topup domain.Topup
 
 	err := r.store.Get(topupID, &topup)

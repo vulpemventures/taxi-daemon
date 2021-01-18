@@ -10,7 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
-	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 )
 
 const (
@@ -160,7 +159,6 @@ func (f *fragmentCache) set(utxo explorer.Utxo) {
 func (f *fragmentCache) randomGetAndDelete() (explorer.Utxo, error) {
 	f.locker.Lock()
 	defer f.locker.Unlock()
-	defer testutils.TimeTrack(time.Now(), "randomGetAndDelete")
 
 	size := len(f.outpointToUtxo)
 	if size == 0 {

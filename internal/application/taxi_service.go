@@ -6,12 +6,10 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/txscript"
-	"github.com/labstack/gommon/log"
 	"github.com/shopspring/decimal"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
-	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
 )
 
@@ -80,7 +78,6 @@ func newTaxiService(args NewTaxiServiceArgs) *taxiService {
 
 // TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
 func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (*domain.Topup, error) {
-	defer testutils.TimeTrack(time.Now(), "TopupWithAsset")
 	// check if asset is available
 	price, err := taxi.priceRepository.GetPrice(ctx, assetHash)
 	if err != nil {
@@ -127,19 +124,12 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	err = topup.Complete(psetBase64, assetAmount)
+	topupCompleted, err := taxi.topupRepository.MarkAsCompleted(ctx, topup.ID, psetBase64, assetAmount)
 	if err != nil {
 		return nil, err
 	}
 
-	go func() {
-		_, err := taxi.topupRepository.MarkAsCompleted(ctx, topup.ID, psetBase64, assetAmount)
-		if err != nil {
-			log.Error(err)
-		}
-	}()
-
-	return &topup, nil
+	return topupCompleted, nil
 }
 
 // ListAssets return all the available assets of the taxi service
@@ -158,7 +148,6 @@ func (taxi *taxiService) ListAssets(ctx context.Context) ([]string, error) {
 }
 
 func (taxi *taxiService) fetchAndLockFragmentUtxo(ctx context.Context) (explorer.Utxo, error) {
-	defer testutils.TimeTrack(time.Now(), "fetchAndLockFragmentUtxo")
 
 	utxo, err := taxi.cache.randomGetAndDelete()
 	if err != nil {
@@ -196,7 +185,6 @@ type createAndSignTopupTxArgs struct {
 }
 
 func (taxi *taxiService) createAndSignTopupTx(args createAndSignTopupTxArgs) (string, error) {
-	defer testutils.TimeTrack(time.Now(), "createAndSignTopupTx")
 
 	hdTree, err := taxi.hdTreeRepository.GetOrCreateHDTree(args.context)
 	if err != nil {

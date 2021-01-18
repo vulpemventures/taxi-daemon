@@ -3,12 +3,10 @@ package dbbadger
 import (
 	"context"
 	"path/filepath"
-	"time"
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/timshannon/badgerhold/v2"
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
-	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
 )
 
 // PriceStoreKey is the directory name of the db files
@@ -45,7 +43,6 @@ func (r *badgerPriceRepository) UpdateOrCreatePrice(ctx context.Context, price d
 
 func (r *badgerPriceRepository) GetPrice(ctx context.Context, assetHash string) (*domain.Price, error) {
 	handler := func() (interface{}, error) {
-		defer testutils.TimeTrack(time.Now(), "GetPrice")
 		var result domain.Price
 		err := r.store.Get(assetHash, &result)
 		if err == badgerhold.ErrNotFound {
