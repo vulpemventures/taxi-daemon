@@ -86,15 +86,18 @@ func main() {
 
 	taxiSvc := application.NewTaxiService(argsTaviSvc)
 
-	adminSvc := application.NewAdminService(
-		hdTreeRepository,
-		topupRepository,
-		priceRepository,
-		lockRepository,
-		explorerSvc,
-		mnemonic,
-		network,
-	)
+	adminSvcArgs := application.NewAdminServiceArgs{
+		HDTreeRepository: hdTreeRepository,
+		TopupRepository:  topupRepository,
+		PriceRepository:  priceRepository,
+		LockRepository:   lockRepository,
+		ExplorerService:  explorerSvc,
+		Mnemonic:         mnemonic,
+		Network:          network,
+		Cache:            cache,
+	}
+
+	adminSvc := application.NewAdminService(adminSvcArgs)
 
 	taxiHandler := grpc.NewTaxiHandler(taxiSvc)
 	adminHandler := grpc.NewAdminHandler(adminSvc)

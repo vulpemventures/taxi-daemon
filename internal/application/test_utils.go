@@ -90,5 +90,25 @@ func newMockedAdminService(numberOfAddresses uint) *adminService {
 	lockRepo := inmemory.NewInmemoryLockRepository(utxoTTL)
 	explorerSvc := explorer.NewService(explorerEndpoint)
 
-	return newAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerSvc, words, regtest)
+	cache := newCache(NewCacheArgs{
+		Explorer:         explorerSvc,
+		HdTreeRepository: hdTreeRepo,
+		LockRepository:   lockRepo,
+		FragmentAsset:    regtest.AssetID,
+		FragmentAmount:   fixedFeeAmount,
+		Interval:         30 * time.Second,
+	})
+
+	newAdminSvcArgs := NewAdminServiceArgs{
+		HDTreeRepository: hdTreeRepo,
+		TopupRepository:  topupRepo,
+		PriceRepository:  priceRepo,
+		LockRepository:   lockRepo,
+		ExplorerService:  explorerSvc,
+		Mnemonic:         words,
+		Network:          regtest,
+		Cache:            cache,
+	}
+
+	return newAdminService(newAdminSvcArgs)
 }
