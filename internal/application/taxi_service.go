@@ -33,20 +33,20 @@ type taxiService struct {
 	network          network.Network
 	fixedFeeAmount   uint64
 	mnemonic         []string
-	cache            *fragmentCache
+	cache            FragmentCache
 }
 
 // NewTaxiServiceArgs is a struct defining the arguments used to create a taxi service
 type NewTaxiServiceArgs struct {
-	HdTreeRepo          domain.HDTreeRepository
-	LockRepo            domain.LockRepository
-	TopupRepo           domain.TopupRepository
-	PriceRepo           domain.PriceRepository
-	ExplorerSvc         explorer.Service
-	Network             network.Network
-	FixedFeeAmount      uint64
-	Mnemonic            []string
-	CacheUpdateInterval time.Duration
+	HdTreeRepo     domain.HDTreeRepository
+	LockRepo       domain.LockRepository
+	TopupRepo      domain.TopupRepository
+	PriceRepo      domain.PriceRepository
+	ExplorerSvc    explorer.Service
+	Network        network.Network
+	FixedFeeAmount uint64
+	Mnemonic       []string
+	Cache          FragmentCache
 }
 
 // NewTaxiService returns a TaxiService interface
@@ -64,12 +64,10 @@ func newTaxiService(args NewTaxiServiceArgs) *taxiService {
 		args.Network,
 		args.FixedFeeAmount,
 		args.Mnemonic,
-		nil,
+		args.Cache,
 	}
-
-	// set up and start cache
-	taxiSvc.cache = newCache(taxiSvc, args.CacheUpdateInterval)
-	go taxiSvc.cache.start()
+	// start caching
+	go taxiSvc.cache.Start()
 
 	return taxiSvc
 }
@@ -146,8 +144,7 @@ func (taxi *taxiService) ListAssets(ctx context.Context) ([]string, error) {
 }
 
 func (taxi *taxiService) fetchAndLockFragmentUtxo(ctx context.Context) (explorer.Utxo, error) {
-
-	utxo, err := taxi.cache.randomGetAndDelete()
+	utxo, err := taxi.cache.RandomGetAndDelete()
 	if err != nil {
 		return nil, err
 	}

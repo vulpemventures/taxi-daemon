@@ -28,6 +28,15 @@ func TestTopupWithAsset(t *testing.T) {
 	priceRepo := newMockedPriceRepository([]string{superToken})
 	explorerSvc := explorer.NewService(explorerEndpoint)
 
+	cache := newCache(NewCacheArgs{
+		Explorer:         explorerSvc,
+		HdTreeRepository: hdTreeRepo,
+		LockRepository:   lockRepo,
+		FragmentAsset:    regtest.AssetID,
+		FragmentAmount:   fixedFeeAmount,
+		Interval:         30 * time.Second,
+	})
+
 	args := NewTaxiServiceArgs{
 		hdTreeRepo,
 		lockRepo,
@@ -37,7 +46,7 @@ func TestTopupWithAsset(t *testing.T) {
 		regtest,
 		fixedFeeAmount,
 		words,
-		time.Minute,
+		cache,
 	}
 
 	taxiSvc := newTaxiService(args)
@@ -98,6 +107,15 @@ func TestListAssets(t *testing.T) {
 	priceRepo := newMockedPriceRepository([]string{superToken, hyperToken})
 	explorerSvc := explorer.NewService(explorerEndpoint)
 
+	cache := newCache(NewCacheArgs{
+		Explorer:         explorerSvc,
+		HdTreeRepository: hdTreeRepo,
+		LockRepository:   lockRepo,
+		FragmentAsset:    regtest.AssetID,
+		FragmentAmount:   fixedFeeAmount,
+		Interval:         30 * time.Second,
+	})
+
 	args := NewTaxiServiceArgs{
 		hdTreeRepo,
 		lockRepo,
@@ -107,7 +125,7 @@ func TestListAssets(t *testing.T) {
 		regtest,
 		fixedFeeAmount,
 		words,
-		time.Minute,
+		cache,
 	}
 
 	taxiSvc := newTaxiService(args)

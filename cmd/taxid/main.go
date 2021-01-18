@@ -32,6 +32,9 @@ func main() {
 	datadirPath := config.GetString(config.DatadirKey)
 	network := *config.GetNetwork()
 	mnemonic := config.GetMnemonic()
+	utxoTTL := time.Duration(config.GetInt(config.UtxoTTLKey)) * time.Second
+	cacheInterval := time.Duration(config.GetInt(config.UtxoCacheIntervalKey)) * time.Second
+	fixedFeeAmount := uint64(config.GetInt(config.FixedFeeAmountKey))
 
 	log.Info("loading datadir... ", datadirPath)
 	err := dbbadger.CreateDirIfNotExist(datadirPath)
@@ -49,7 +52,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	utxoTTL := time.Duration(config.GetInt(config.UtxoTTLKey)) * time.Second
 	lockRepository, err := dbbadger.NewBadgerLockRepository(datadirPath, utxoTTL, dbLogger)
 	if err != nil {
 		log.Fatal(err)
@@ -62,16 +64,25 @@ func main() {
 
 	log.Info("taxi server is starting...")
 
+	cache := application.NewCache(application.NewCacheArgs{
+		Explorer:         explorerSvc,
+		HdTreeRepository: hdTreeRepository,
+		LockRepository:   lockRepository,
+		FragmentAmount:   fixedFeeAmount,
+		FragmentAsset:    network.AssetID,
+		Interval:         cacheInterval,
+	})
+
 	argsTaviSvc := application.NewTaxiServiceArgs{
-		HdTreeRepo:          hdTreeRepository,
-		LockRepo:            lockRepository,
-		TopupRepo:           topupRepository,
-		PriceRepo:           priceRepository,
-		ExplorerSvc:         explorerSvc,
-		Network:             network,
-		FixedFeeAmount:      uint64(config.GetInt(config.FixedFeeAmountKey)),
-		Mnemonic:            mnemonic,
-		CacheUpdateInterval: 3 * time.Minute,
+		HdTreeRepo:     hdTreeRepository,
+		LockRepo:       lockRepository,
+		TopupRepo:      topupRepository,
+		PriceRepo:      priceRepository,
+		ExplorerSvc:    explorerSvc,
+		Network:        network,
+		FixedFeeAmount: fixedFeeAmount,
+		Mnemonic:       mnemonic,
+		Cache:          cache,
 	}
 
 	taxiSvc := application.NewTaxiService(argsTaviSvc)
@@ -82,8 +93,8 @@ func main() {
 		priceRepository,
 		lockRepository,
 		explorerSvc,
-		config.GetMnemonic(),
-		*config.GetNetwork(),
+		mnemonic,
+		network,
 	)
 
 	taxiHandler := grpc.NewTaxiHandler(taxiSvc)

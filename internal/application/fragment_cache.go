@@ -17,6 +17,13 @@ type Outpoint struct {
 	Vout uint32
 }
 
+// FragmentCache is a service used to manage fragment utxo caching
+type FragmentCache interface {
+	Start()
+	Stop()
+	RandomGetAndDelete() (explorer.Utxo, error)
+}
+
 type fragmentCache struct {
 	outpointToUtxo   map[Outpoint]explorer.Utxo
 	locker           sync.Locker
@@ -30,22 +37,83 @@ type fragmentCache struct {
 	stopSignal       chan bool
 }
 
-func newCache(taxiService *taxiService, interval time.Duration) *fragmentCache {
+// NewCacheArgs is a wrapper struct for NewCache constructor
+type NewCacheArgs struct {
+	Explorer         explorer.Service
+	HdTreeRepository domain.HDTreeRepository
+	LockRepository   domain.LockRepository
+	FragmentAsset    string
+	FragmentAmount   uint64
+	Interval         time.Duration
+}
+
+// NewCache is a factory function for FragmentCache service
+func NewCache(args NewCacheArgs) FragmentCache {
+	return newCache(args)
+}
+
+func newCache(args NewCacheArgs) FragmentCache {
 	return &fragmentCache{
 		outpointToUtxo:   make(map[Outpoint]explorer.Utxo),
 		locker:           &sync.Mutex{},
-		explorer:         taxiService.explorer,
-		hdTreeRepository: taxiService.hdTreeRepository,
-		lockRepository:   taxiService.lockRepository,
-		fragmentAsset:    taxiService.network.AssetID,
-		fragmentAmount:   taxiService.fixedFeeAmount,
-		interval:         interval,
-		tickerInterval:   time.NewTicker(interval),
+		explorer:         args.Explorer,
+		hdTreeRepository: args.HdTreeRepository,
+		lockRepository:   args.LockRepository,
+		fragmentAsset:    args.FragmentAsset,
+		fragmentAmount:   args.FragmentAmount,
+		interval:         args.Interval,
+		tickerInterval:   time.NewTicker(args.Interval),
 		stopSignal:       make(chan bool),
 	}
 }
 
-func (f *fragmentCache) start() {
+func (f *fragmentCache) contains(utxo explorer.Utxo) (yes bool) {
+	f.locker.Lock()
+	defer f.locker.Unlock()
+
+	outpoint := Outpoint{
+		TxID: utxo.Hash(),
+		Vout: utxo.Index(),
+	}
+
+	_, yes = f.outpointToUtxo[outpoint]
+	return
+}
+
+func (f *fragmentCache) set(utxo explorer.Utxo) {
+	f.locker.Lock()
+	defer f.locker.Unlock()
+
+	outpoint := Outpoint{
+		TxID: utxo.Hash(),
+		Vout: utxo.Index(),
+	}
+
+	f.outpointToUtxo[outpoint] = utxo
+}
+
+func (f *fragmentCache) RandomGetAndDelete() (explorer.Utxo, error) {
+	f.locker.Lock()
+	defer f.locker.Unlock()
+
+	size := len(f.outpointToUtxo)
+	if size == 0 {
+		return nil, nil
+	}
+
+	rand.Seed(time.Now().UnixNano())
+	r := rand.Intn(size)
+	for outpoint, utxo := range f.outpointToUtxo {
+		if r == 0 {
+			delete(f.outpointToUtxo, outpoint)
+			return utxo, nil
+		}
+		r--
+	}
+	return nil, ErrRandomIntegerUnreachable
+}
+
+func (f *fragmentCache) Start() {
 	log.Info("start utxos caching...")
 	ctx := context.Background()
 	// retrieve root path of the hd tree and instantiate the inmemory wallet
@@ -101,7 +169,7 @@ func (f *fragmentCache) start() {
 	}
 }
 
-func (f *fragmentCache) stop() {
+func (f *fragmentCache) Stop() {
 	log.Info("stop the fragment cache")
 	f.tickerInterval.Stop()
 	f.stopSignal <- true
@@ -137,50 +205,4 @@ func (f fragmentCache) getUnspentsWorker(
 	}
 
 	finishSignals <- true
-}
-
-func (f *fragmentCache) contains(utxo explorer.Utxo) (yes bool) {
-	f.locker.Lock()
-	defer f.locker.Unlock()
-
-	outpoint := Outpoint{
-		TxID: utxo.Hash(),
-		Vout: utxo.Index(),
-	}
-
-	_, yes = f.outpointToUtxo[outpoint]
-	return
-}
-
-func (f *fragmentCache) set(utxo explorer.Utxo) {
-	f.locker.Lock()
-	defer f.locker.Unlock()
-
-	outpoint := Outpoint{
-		TxID: utxo.Hash(),
-		Vout: utxo.Index(),
-	}
-
-	f.outpointToUtxo[outpoint] = utxo
-}
-
-func (f *fragmentCache) randomGetAndDelete() (explorer.Utxo, error) {
-	f.locker.Lock()
-	defer f.locker.Unlock()
-
-	size := len(f.outpointToUtxo)
-	if size == 0 {
-		return nil, nil
-	}
-
-	rand.Seed(time.Now().UnixNano())
-	r := rand.Intn(size)
-	for outpoint, utxo := range f.outpointToUtxo {
-		if r == 0 {
-			delete(f.outpointToUtxo, outpoint)
-			return utxo, nil
-		}
-		r--
-	}
-	return nil, ErrRandomIntegerUnreachable
 }
