@@ -11,10 +11,6 @@ import (
 	"github.com/vulpemventures/liquid-taxi/internal/domain"
 )
 
-const (
-	cacheUpdateInterval = 30 * time.Second
-)
-
 // Outpoint is the unique utxo identifier
 type Outpoint struct {
 	TxID string
@@ -29,9 +25,12 @@ type fragmentCache struct {
 	lockRepository   domain.LockRepository
 	fragmentAsset    string
 	fragmentAmount   uint64
+	interval         time.Duration
+	tickerInterval   *time.Ticker
+	stopSignal       chan bool
 }
 
-func newCache(taxiService *taxiService) *fragmentCache {
+func newCache(taxiService *taxiService, interval time.Duration) *fragmentCache {
 	return &fragmentCache{
 		outpointToUtxo:   make(map[Outpoint]explorer.Utxo),
 		locker:           &sync.Mutex{},
@@ -40,6 +39,9 @@ func newCache(taxiService *taxiService) *fragmentCache {
 		lockRepository:   taxiService.lockRepository,
 		fragmentAsset:    taxiService.network.AssetID,
 		fragmentAmount:   taxiService.fixedFeeAmount,
+		interval:         interval,
+		tickerInterval:   time.NewTicker(interval),
+		stopSignal:       make(chan bool),
 	}
 }
 
@@ -53,7 +55,9 @@ func (f *fragmentCache) start() {
 		return
 	}
 
-	for {
+	f.tickerInterval = time.NewTicker(f.interval)
+
+	for range f.tickerInterval.C {
 		// get all funding derived addresses asynchronously
 		addresses, errors, _ := hdTree.AllDerivedAddressInfoForAcountAsync(domain.LBTCAccount)
 		if err != nil {
@@ -73,6 +77,8 @@ func (f *fragmentCache) start() {
 		i := 0
 		for {
 			select {
+			case <-f.stopSignal:
+				return
 			case utxo := <-utxos:
 				lock := domain.UtxoToLock(utxo)
 				if !f.lockRepository.IsLocked(ctx, lock) && !f.contains(utxo) {
@@ -92,10 +98,13 @@ func (f *fragmentCache) start() {
 				break
 			}
 		}
-
-		// sleep before the next iteration
-		time.Sleep(cacheUpdateInterval)
 	}
+}
+
+func (f *fragmentCache) stop() {
+	log.Info("stop the fragment cache")
+	f.tickerInterval.Stop()
+	f.stopSignal <- true
 }
 
 func (f fragmentCache) getUnspentsWorker(

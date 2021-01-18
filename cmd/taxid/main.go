@@ -63,14 +63,15 @@ func main() {
 	log.Info("taxi server is starting...")
 
 	argsTaviSvc := application.NewTaxiServiceArgs{
-		HdTreeRepo:     hdTreeRepository,
-		LockRepo:       lockRepository,
-		TopupRepo:      topupRepository,
-		PriceRepo:      priceRepository,
-		ExplorerSvc:    explorerSvc,
-		Network:        network,
-		FixedFeeAmount: uint64(config.GetInt(config.FixedFeeAmountKey)),
-		Mnemonic:       mnemonic,
+		HdTreeRepo:          hdTreeRepository,
+		LockRepo:            lockRepository,
+		TopupRepo:           topupRepository,
+		PriceRepo:           priceRepository,
+		ExplorerSvc:         explorerSvc,
+		Network:             network,
+		FixedFeeAmount:      uint64(config.GetInt(config.FixedFeeAmountKey)),
+		Mnemonic:            mnemonic,
+		CacheUpdateInterval: 3 * time.Minute,
 	}
 
 	taxiSvc := application.NewTaxiService(argsTaviSvc)

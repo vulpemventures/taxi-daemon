@@ -37,6 +37,7 @@ func TestTopupWithAsset(t *testing.T) {
 		regtest,
 		fixedFeeAmount,
 		words,
+		time.Minute,
 	}
 
 	taxiSvc := newTaxiService(args)
@@ -106,6 +107,7 @@ func TestListAssets(t *testing.T) {
 		regtest,
 		fixedFeeAmount,
 		words,
+		time.Minute,
 	}
 
 	taxiSvc := newTaxiService(args)

@@ -38,14 +38,15 @@ type taxiService struct {
 
 // NewTaxiServiceArgs is a struct defining the arguments used to create a taxi service
 type NewTaxiServiceArgs struct {
-	HdTreeRepo     domain.HDTreeRepository
-	LockRepo       domain.LockRepository
-	TopupRepo      domain.TopupRepository
-	PriceRepo      domain.PriceRepository
-	ExplorerSvc    explorer.Service
-	Network        network.Network
-	FixedFeeAmount uint64
-	Mnemonic       []string
+	HdTreeRepo          domain.HDTreeRepository
+	LockRepo            domain.LockRepository
+	TopupRepo           domain.TopupRepository
+	PriceRepo           domain.PriceRepository
+	ExplorerSvc         explorer.Service
+	Network             network.Network
+	FixedFeeAmount      uint64
+	Mnemonic            []string
+	CacheUpdateInterval time.Duration
 }
 
 // NewTaxiService returns a TaxiService interface
@@ -67,7 +68,7 @@ func newTaxiService(args NewTaxiServiceArgs) *taxiService {
 	}
 
 	// set up and start cache
-	taxiSvc.cache = newCache(taxiSvc)
+	taxiSvc.cache = newCache(taxiSvc, args.CacheUpdateInterval)
 	go taxiSvc.cache.start()
 
 	return taxiSvc
