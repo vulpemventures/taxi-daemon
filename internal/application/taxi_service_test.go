@@ -23,21 +23,29 @@ func TestTopupWithAsset(t *testing.T) {
 	}
 
 	hdTreeRepo := newMockedHDTreeRepository(0)
-	lockRepo := inmemory.NewInmemoryLockRepository()
+	lockRepo := inmemory.NewInmemoryLockRepository(utxoTTL)
 	topupRepo := newMockedTopupRepository(nil)
 	priceRepo := newMockedPriceRepository([]string{superToken})
 	explorerSvc := explorer.NewService(explorerEndpoint)
+
+	cache := newCache(NewCacheArgs{
+		Explorer:         explorerSvc,
+		HdTreeRepository: hdTreeRepo,
+		LockRepository:   lockRepo,
+		FragmentAsset:    regtest.AssetID,
+		FragmentAmount:   fixedFeeAmount,
+		Interval:         30 * time.Second,
+	})
 
 	args := NewTaxiServiceArgs{
 		hdTreeRepo,
 		lockRepo,
 		topupRepo,
 		priceRepo,
-		explorerSvc,
-		utxoTTL,
 		regtest,
 		fixedFeeAmount,
 		words,
+		cache,
 	}
 
 	taxiSvc := newTaxiService(args)
@@ -93,21 +101,29 @@ func TestTopupWithAsset(t *testing.T) {
 
 func TestListAssets(t *testing.T) {
 	hdTreeRepo := newMockedHDTreeRepository(0)
-	lockRepo := inmemory.NewInmemoryLockRepository()
+	lockRepo := inmemory.NewInmemoryLockRepository(utxoTTL)
 	topupRepo := newMockedTopupRepository(nil)
 	priceRepo := newMockedPriceRepository([]string{superToken, hyperToken})
 	explorerSvc := explorer.NewService(explorerEndpoint)
+
+	cache := newCache(NewCacheArgs{
+		Explorer:         explorerSvc,
+		HdTreeRepository: hdTreeRepo,
+		LockRepository:   lockRepo,
+		FragmentAsset:    regtest.AssetID,
+		FragmentAmount:   fixedFeeAmount,
+		Interval:         30 * time.Second,
+	})
 
 	args := NewTaxiServiceArgs{
 		hdTreeRepo,
 		lockRepo,
 		topupRepo,
 		priceRepo,
-		explorerSvc,
-		utxoTTL,
 		regtest,
 		fixedFeeAmount,
 		words,
+		cache,
 	}
 
 	taxiSvc := newTaxiService(args)

@@ -29,12 +29,14 @@ import (
 func main() {
 	log.Info("---- Liquid Taxi ----")
 
-	log.Info("loading datadir...")
-
 	datadirPath := config.GetString(config.DatadirKey)
 	network := *config.GetNetwork()
 	mnemonic := config.GetMnemonic()
+	utxoTTL := time.Duration(config.GetInt(config.UtxoTTLKey)) * time.Second
+	cacheInterval := time.Duration(config.GetInt(config.UtxoCacheIntervalKey)) * time.Second
+	fixedFeeAmount := uint64(config.GetInt(config.FixedFeeAmountKey))
 
+	log.Info("loading datadir... ", datadirPath)
 	err := dbbadger.CreateDirIfNotExist(datadirPath)
 	if err != nil {
 		log.Fatal(err)
@@ -49,7 +51,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	lockRepository, err := dbbadger.NewBadgerLockRepository(datadirPath, dbLogger)
+
+	lockRepository, err := dbbadger.NewBadgerLockRepository(datadirPath, utxoTTL, dbLogger)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -59,31 +62,42 @@ func main() {
 	}
 	explorerSvc := explorer.NewService(config.GetString(config.ExplorerEndpointKey))
 
-	log.Info("Taxi server is starting...")
+	log.Info("taxi server is starting...")
+
+	cache := application.NewCache(application.NewCacheArgs{
+		Explorer:         explorerSvc,
+		HdTreeRepository: hdTreeRepository,
+		LockRepository:   lockRepository,
+		FragmentAmount:   fixedFeeAmount,
+		FragmentAsset:    network.AssetID,
+		Interval:         cacheInterval,
+	})
 
 	argsTaviSvc := application.NewTaxiServiceArgs{
 		HdTreeRepo:     hdTreeRepository,
 		LockRepo:       lockRepository,
 		TopupRepo:      topupRepository,
 		PriceRepo:      priceRepository,
-		ExplorerSvc:    explorerSvc,
-		UtxoTTL:        time.Duration(config.GetInt(config.UtxoTTLKey)) * time.Second,
 		Network:        network,
-		FixedFeeAmount: uint64(config.GetInt(config.FixedFeeAmountKey)),
+		FixedFeeAmount: fixedFeeAmount,
 		Mnemonic:       mnemonic,
+		Cache:          cache,
 	}
 
 	taxiSvc := application.NewTaxiService(argsTaviSvc)
 
-	adminSvc := application.NewAdminService(
-		hdTreeRepository,
-		topupRepository,
-		priceRepository,
-		lockRepository,
-		explorerSvc,
-		config.GetMnemonic(),
-		*config.GetNetwork(),
-	)
+	adminSvcArgs := application.NewAdminServiceArgs{
+		HDTreeRepository: hdTreeRepository,
+		TopupRepository:  topupRepository,
+		PriceRepository:  priceRepository,
+		LockRepository:   lockRepository,
+		ExplorerService:  explorerSvc,
+		Mnemonic:         mnemonic,
+		Network:          network,
+		Cache:            cache,
+	}
+
+	adminSvc := application.NewAdminService(adminSvcArgs)
 
 	taxiHandler := grpc.NewTaxiHandler(taxiSvc)
 	adminHandler := grpc.NewAdminHandler(adminSvc)
@@ -116,11 +130,11 @@ func main() {
 
 	<-interrupt
 	fmt.Println("")
-	log.Info("Shutting down Taxi service...")
+	log.Info("shutting down Taxi service...")
 	adminServer.Stop()
-	log.Info("Admin server stopped")
+	log.Info("admin server stopped")
 	taxiServer.Stop()
-	log.Info("Taxi server stopped")
+	log.Info("taxi server stopped")
 
 	os.Exit(0)
 }

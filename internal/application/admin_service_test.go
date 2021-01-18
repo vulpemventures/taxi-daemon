@@ -12,6 +12,7 @@ import (
 )
 
 func TestListLocks(t *testing.T) {
+
 	adminSvc := newMockedAdminService(0)
 
 	adminSvc.lockRepository.Lock(context.Background(), []domain.Lock{

@@ -29,25 +29,53 @@ func NewBadgerPriceRepository(baseDirPath string, logger badger.Logger) (domain.
 }
 
 func (r *badgerPriceRepository) UpdateOrCreatePrice(ctx context.Context, price domain.Price) error {
-	err := r.store.Update(price.AssetHash, price)
-	if err == badgerhold.ErrNotFound {
-		return r.store.Insert(price.AssetHash, price)
+	handler := func() (interface{}, error) {
+		err := r.store.Update(price.AssetHash, price)
+		if err == badgerhold.ErrNotFound {
+			return nil, r.store.Insert(price.AssetHash, price)
+		}
+		return nil, err
 	}
 
+	_, err := runTransaction(handler)
 	return err
 }
 
 func (r *badgerPriceRepository) GetPrice(ctx context.Context, assetHash string) (*domain.Price, error) {
-	var result domain.Price
-	err := r.store.Get(assetHash, &result)
-	if err == badgerhold.ErrNotFound {
+	handler := func() (interface{}, error) {
+		var result domain.Price
+		err := r.store.Get(assetHash, &result)
+		if err == badgerhold.ErrNotFound {
+			return nil, nil
+		}
+		return result, err
+	}
+
+	result, err := runTransaction(handler)
+	if err != nil {
+		return nil, err
+	}
+
+	if result == nil {
 		return nil, nil
 	}
-	return &result, err
+
+	price := result.(domain.Price)
+	return &price, nil
 }
 
 func (r *badgerPriceRepository) GetAllPrices(ctx context.Context) ([]domain.Price, error) {
-	var prices []domain.Price = []domain.Price{}
-	err := r.store.Find(&prices, nil)
-	return prices, err
+	handler := func() (interface{}, error) {
+		var prices []domain.Price = []domain.Price{}
+		err := r.store.Find(&prices, nil)
+		return prices, err
+	}
+
+	res, err := runTransaction(handler)
+	if err != nil {
+		return nil, err
+	}
+
+	prices := res.([]domain.Price)
+	return prices, nil
 }

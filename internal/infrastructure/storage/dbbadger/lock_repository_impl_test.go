@@ -20,7 +20,7 @@ func TestLock(t *testing.T) {
 	}
 	t.Cleanup(clean)
 
-	repo, err := NewBadgerLockRepository(testDataDir, nil)
+	repo, err := NewBadgerLockRepository(testDataDir, utxoTTL, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -45,7 +45,7 @@ func TestIsLocked(t *testing.T) {
 	}
 	t.Cleanup(clean)
 
-	repo, err := NewBadgerLockRepository(testDataDir, nil)
+	repo, err := NewBadgerLockRepository(testDataDir, utxoTTL, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -76,7 +76,7 @@ func TestUnlock(t *testing.T) {
 	}
 	t.Cleanup(clean)
 
-	repo, err := NewBadgerLockRepository(testDataDir, nil)
+	repo, err := NewBadgerLockRepository(testDataDir, utxoTTL, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -110,7 +110,7 @@ func TestGetLocks(t *testing.T) {
 	}
 	t.Cleanup(clean)
 
-	repo, err := NewBadgerLockRepository(testDataDir, nil)
+	repo, err := NewBadgerLockRepository(testDataDir, utxoTTL, nil)
 	if err != nil {
 		t.Error(err)
 	}

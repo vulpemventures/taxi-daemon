@@ -49,10 +49,30 @@ func newMockAdminHandler() admin.AdminServer {
 	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(words, regtest)
 	topupRepo := newMockedTopupRepository([]string{network.Liquid.AssetID})
 	priceRepo := inmemory.NewInmemoryPriceRepository()
-	lockRepo := inmemory.NewInmemoryLockRepository()
+	lockRepo := inmemory.NewInmemoryLockRepository(20 * time.Second)
 	explorerSvc := explorer.NewService(explorerEndpoint)
 
-	adminSvc := application.NewAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerSvc, words, regtest)
+	cache := application.NewCache(application.NewCacheArgs{
+		Explorer:         explorerSvc,
+		HdTreeRepository: hdTreeRepo,
+		LockRepository:   lockRepo,
+		FragmentAsset:    regtest.AssetID,
+		FragmentAmount:   20,
+		Interval:         30 * time.Second,
+	})
+
+	args := application.NewAdminServiceArgs{
+		HDTreeRepository: hdTreeRepo,
+		TopupRepository:  topupRepo,
+		PriceRepository:  priceRepo,
+		LockRepository:   lockRepo,
+		ExplorerService:  explorerSvc,
+		Mnemonic:         words,
+		Network:          regtest,
+		Cache:            cache,
+	}
+
+	adminSvc := application.NewAdminService(args)
 
 	return NewAdminHandler(adminSvc)
 }

@@ -40,6 +40,8 @@ const (
 	SSLCertPathKey = "SSL_CERT"
 	// SSLKeyPathKey is the path to the SSL private key
 	SSLKeyPathKey = "SSL_KEY"
+	// UtxoCacheIntervalKey is the number of seconds between two getUnspents process in fragments cache
+	UtxoCacheIntervalKey = "CACHE_INTERVAL"
 )
 
 var (
@@ -60,6 +62,7 @@ func init() {
 	vip.SetDefault(FixedFeeAmountKey, 1000)
 	vip.SetDefault(UtxoTTLKey, 180)
 	vip.SetDefault(DatadirKey, btcutil.AppDataDir("taxid", false))
+	vip.SetDefault(UtxoCacheIntervalKey, 180)
 
 	validate()
 

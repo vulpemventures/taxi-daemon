@@ -28,6 +28,11 @@ fmt:
 	@echo "Gofmt..."
 	@if [ -n "$(gofmt -l .)" ]; then echo "Go code is not formatted"; exit 1; fi
 
+## help: prints this help message
+help:
+	@echo "Usage: \n"
+	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' |  sed -e 's/^/ /'
+
 ## generate protobuf admin stubs
 proto:
 	chmod u+x ./scripts/compile-proto
@@ -58,6 +63,7 @@ servertest: fmt
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
 	export TAXI_DATADIR="./test-taxi-datadir"; \
+	export TAXI_CACHE_INTERVAL=1; \
 	go test -v -count=1 ./cmd/taxid;
 
 ## integration test + cleaning test datadir

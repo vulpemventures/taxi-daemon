@@ -30,33 +30,39 @@ type adminService struct {
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
 	lockRepository   domain.LockRepository
+	cache            FragmentCache
 	explorerService  explorer.Service
 	mnemonic         []string
 	network          network.Network
 }
 
-// NewAdminService is a factory function for AdminService interface
-func NewAdminService(
-	hdTreeRepo domain.HDTreeRepository,
-	topupRepo domain.TopupRepository,
-	priceRepo domain.PriceRepository,
-	lockRepo domain.LockRepository,
-	explorerService explorer.Service,
-	mnemonic []string,
-	network network.Network,
-) AdminService {
-	return newAdminService(hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerService, mnemonic, network)
+// NewAdminServiceArgs ...
+type NewAdminServiceArgs struct {
+	HDTreeRepository domain.HDTreeRepository
+	TopupRepository  domain.TopupRepository
+	PriceRepository  domain.PriceRepository
+	LockRepository   domain.LockRepository
+	ExplorerService  explorer.Service
+	Mnemonic         []string
+	Network          network.Network
+	Cache            FragmentCache
 }
-func newAdminService(
-	hdTreeRepo domain.HDTreeRepository,
-	topupRepo domain.TopupRepository,
-	priceRepo domain.PriceRepository,
-	lockRepo domain.LockRepository,
-	explorerService explorer.Service,
-	mnemonic []string,
-	network network.Network,
-) *adminService {
-	return &adminService{hdTreeRepo, topupRepo, priceRepo, lockRepo, explorerService, mnemonic, network}
+
+// NewAdminService is a factory function for AdminService interface
+func NewAdminService(args NewAdminServiceArgs) AdminService {
+	return newAdminService(args)
+}
+func newAdminService(args NewAdminServiceArgs) *adminService {
+	return &adminService{
+		hdTreeRepository: args.HDTreeRepository,
+		topupRepository:  args.TopupRepository,
+		priceRepository:  args.PriceRepository,
+		lockRepository:   args.LockRepository,
+		cache:            args.Cache,
+		explorerService:  args.ExplorerService,
+		mnemonic:         args.Mnemonic,
+		network:          args.Network,
+	}
 }
 
 func (adminSvc *adminService) ListLocks(ctx context.Context) ([]domain.Lock, error) {
@@ -314,6 +320,11 @@ func (adminSvc *adminService) selectUtxos(ctx context.Context, outputs []wallet.
 
 		for _, utxo := range utxos {
 			if utxo.Asset() == asset && !utxo.IsConfidential() {
+				adminSvc.cache.Delete(Outpoint{
+					TxID: utxo.Hash(),
+					Vout: utxo.Index(),
+				})
+
 				selectedUtxos = append(selectedUtxos, utxo)
 				totalSelected += utxo.Value()
 				if totalSelected >= amount {

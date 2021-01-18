@@ -29,11 +29,10 @@ type taxiService struct {
 	lockRepository   domain.LockRepository
 	topupRepository  domain.TopupRepository
 	priceRepository  domain.PriceRepository
-	explorer         explorer.Service
-	utxoTTL          time.Duration
 	network          network.Network
 	fixedFeeAmount   uint64
 	mnemonic         []string
+	cache            FragmentCache
 }
 
 // NewTaxiServiceArgs is a struct defining the arguments used to create a taxi service
@@ -42,11 +41,10 @@ type NewTaxiServiceArgs struct {
 	LockRepo       domain.LockRepository
 	TopupRepo      domain.TopupRepository
 	PriceRepo      domain.PriceRepository
-	ExplorerSvc    explorer.Service
-	UtxoTTL        time.Duration
 	Network        network.Network
 	FixedFeeAmount uint64
 	Mnemonic       []string
+	Cache          FragmentCache
 }
 
 // NewTaxiService returns a TaxiService interface
@@ -55,17 +53,20 @@ func NewTaxiService(args NewTaxiServiceArgs) TaxiService {
 }
 
 func newTaxiService(args NewTaxiServiceArgs) *taxiService {
-	return &taxiService{
+	taxiSvc := &taxiService{
 		args.HdTreeRepo,
 		args.LockRepo,
 		args.TopupRepo,
 		args.PriceRepo,
-		args.ExplorerSvc,
-		args.UtxoTTL,
 		args.Network,
 		args.FixedFeeAmount,
 		args.Mnemonic,
+		args.Cache,
 	}
+	// start caching
+	go taxiSvc.cache.Start()
+
+	return taxiSvc
 }
 
 // TopupWithAsset returns a transaction letting to pay a given amount of fees with assetHash token.
@@ -75,6 +76,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	if err != nil {
 		return nil, err
 	}
+
 	if price == nil {
 		assets, _ := taxi.ListAssets(ctx)
 		return nil, ErrAssetNotSupported{
@@ -84,19 +86,12 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 	}
 
 	// retrieve only the utxos that are not locked by other topups
-	utxos, err := taxi.fetchAvailableUtxos(ctx)
+	utxo, err := taxi.fetchAndLockFragmentUtxo(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	lbtcAsset := taxi.network.AssetID
-
-	utxo, err := selectOneUtxo(utxos, taxi.fixedFeeAmount, lbtcAsset)
-	if err != nil {
-		return nil, err
-	}
-
-	expireAt := time.Now().Add(taxi.utxoTTL)
+	expireAt := time.Now().Add(taxi.lockRepository.GetConfigTTL(ctx))
 
 	topup := domain.NewTopup(assetHash, taxi.fixedFeeAmount, price.Amount, expireAt)
 	err = taxi.topupRepository.AddTopup(ctx, topup)
@@ -127,17 +122,6 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	// Lock the utxo used for this topup to avoid other ones to use it
-	utxoKey := domain.UtxoToLock(utxo)
-	if err = taxi.lockRepository.Lock(ctx, []domain.Lock{utxoKey}); err != nil {
-		return nil, err
-	}
-
-	go func() {
-		time.Sleep(taxi.utxoTTL)
-		taxi.lockRepository.Unlock(ctx, utxoKey)
-	}()
-
 	return topupCompleted, nil
 }
 
@@ -156,48 +140,27 @@ func (taxi *taxiService) ListAssets(ctx context.Context) ([]string, error) {
 	return assets, nil
 }
 
-func (taxi *taxiService) fetchAvailableUtxos(ctx context.Context) ([]explorer.Utxo, error) {
-	// retrieve root path of the hd tree and instantiate the inmemory wallet
-	hdTree, err := taxi.hdTreeRepository.GetOrCreateHDTree(ctx)
+func (taxi *taxiService) fetchAndLockFragmentUtxo(ctx context.Context) (explorer.Utxo, error) {
+	utxo, err := taxi.cache.RandomGetAndDelete()
 	if err != nil {
 		return nil, err
 	}
 
-	// get all funding derived addresses
-	addrInfoList, err := hdTree.AllDerivedAddressInfoForLBTCAccount()
+	if utxo == nil {
+		return nil, ErrUtxoNotFound{
+			TargetedAmount: taxi.fixedFeeAmount,
+			TargetedAsset:  taxi.network.AssetID,
+		}
+	}
+
+	lock := domain.UtxoToLock(utxo)
+	err = taxi.lockRepository.Lock(ctx, []domain.Lock{lock})
+
 	if err != nil {
 		return nil, err
 	}
 
-	availableUtxos := make([]explorer.Utxo, 0)
-	for _, addrInfo := range addrInfoList {
-		utxos, err := taxi.explorer.GetUnspents(addrInfo.Address, [][]byte{})
-		if err != nil {
-			return nil, err
-		}
-
-		for _, utxo := range utxos {
-			utxoKey := domain.UtxoToLock(utxo)
-			if !taxi.lockRepository.IsLocked(ctx, utxoKey) {
-				availableUtxos = append(availableUtxos, utxo)
-			}
-		}
-	}
-
-	return availableUtxos, nil
-}
-
-func selectOneUtxo(utxos []explorer.Utxo, targetAmount uint64, targetAsset string) (explorer.Utxo, error) {
-	for _, utxo := range utxos {
-		if !utxo.IsConfidential() && utxo.Asset() == targetAsset && utxo.Value() == targetAmount {
-			return utxo, nil
-		}
-	}
-
-	return nil, ErrUtxoNotFound{
-		TargetedAmount: targetAmount,
-		TargetedAsset:  targetAsset,
-	}
+	return utxo, nil
 }
 
 type createAndSignTopupTxArgs struct {
@@ -209,6 +172,7 @@ type createAndSignTopupTxArgs struct {
 }
 
 func (taxi *taxiService) createAndSignTopupTx(args createAndSignTopupTxArgs) (string, error) {
+
 	hdTree, err := taxi.hdTreeRepository.GetOrCreateHDTree(args.context)
 	if err != nil {
 		return "", err
