@@ -1,17 +1,14 @@
 #!/bin/bash
 
-while getopts a:t: flag
-do
-    case "${flag}" in
-        a) asset=${OPTARG};;
-        t) total=${OPTARG};;
-    esac
-done
-
 echo "load testing script -- a program used to load test the TopupWithAsset request"
+echo
+echo "Enter the asset hash: "
+read asset
 
-echo "asset = $asset"
-echo "total = $total"
+echo "Enter the amount of requests to make: "
+read total
+echo
+echo "Making $total requests for the asset $asset"
 
 wget --quiet https://raw.githubusercontent.com/vulpemventures/taxi-protobuf/master/taxi.proto
 
