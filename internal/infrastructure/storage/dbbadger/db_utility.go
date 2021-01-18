@@ -7,6 +7,7 @@ import (
 
 	"github.com/dgraph-io/badger/v2"
 	"github.com/dgraph-io/badger/v2/options"
+	log "github.com/sirupsen/logrus"
 	"github.com/timshannon/badgerhold/v2"
 )
 
@@ -26,14 +27,16 @@ func createDb(dbDir string, logger badger.Logger) (*badgerhold.Store, error) {
 		return nil, err
 	}
 
+	ticker := time.NewTicker(5 * time.Minute)
+
 	go func() {
-		ticker := time.NewTicker(5 * time.Minute)
-		defer ticker.Stop()
+		log.Info("set up badger garbage collection")
+
 		for range ticker.C {
-		again:
+			log.Info("run garbage collector")
 			err := db.Badger().RunValueLogGC(0.5)
-			if err == nil {
-				goto again
+			if err != nil && err != badger.ErrNoRewrite {
+				log.Error(err)
 			}
 		}
 	}()
