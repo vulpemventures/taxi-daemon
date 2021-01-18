@@ -119,7 +119,4 @@ func TestChangeAddress(t *testing.T) {
 	}
 
 	assert.Equal(t, 2, len(addrInfos))
-
-	// assert.Equal(t, "m/84'/0'/0/1/0", addrInfos[0].DerivationPath)
-	// assert.Equal(t, "m/84'/0'/0/0/0", addrInfos[1].DerivationPath)
 }

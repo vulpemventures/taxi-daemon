@@ -45,4 +45,6 @@ func (e ErrCoinSelection) Error() string {
 var (
 	// ErrUtxoNotAvailable is returned if a selected utxo is already used (i.e locked by the taxi service)
 	ErrUtxoNotAvailable = errors.New("a selected utxo is not available")
+	// ErrRandomIntegerUnreachable is returned when trying to get a random value in unspents cache
+	ErrRandomIntegerUnreachable = errors.New("random integer unreachable")
 )

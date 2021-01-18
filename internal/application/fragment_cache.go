@@ -2,7 +2,6 @@ package application
 
 import (
 	"context"
-	"errors"
 	"math/rand"
 	"sync"
 	"time"
@@ -62,7 +61,7 @@ func (f *fragmentCache) start() {
 			return
 		}
 
-		const numOfWorker = 2
+		const numOfWorker = 4
 
 		utxos := make(chan explorer.Utxo)
 		signals := make(chan bool, numOfWorker)
@@ -174,5 +173,5 @@ func (f *fragmentCache) randomGetAndDelete() (explorer.Utxo, error) {
 		}
 		r--
 	}
-	return nil, errors.New("random integer unreachable")
+	return nil, ErrRandomIntegerUnreachable
 }
