@@ -71,7 +71,7 @@ integrationtest: servertest	cleantest
 
 ## loadtest: Make many requests to TopupWithAsset. This nees the taxi to be ran
 loadtest:
-	chmod u+x ./scripts/sslcert
+	chmod u+x ./scripts/load
 	bash ./scripts/load
 
 
