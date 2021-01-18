@@ -61,12 +61,12 @@ func (r *badgerLockRepository) lock(key domain.Lock) error {
 }
 
 func (r *badgerLockRepository) Unlock(ctx context.Context, key domain.Lock) error {
-	txHandler := func() (interface{}, error) {
+	handler := func() (interface{}, error) {
 		err := r.store.Delete(key.String(), key)
 		return nil, err
 	}
 
-	_, err := runTransaction(txHandler)
+	_, err := runTransaction(handler)
 	return err
 }
 
