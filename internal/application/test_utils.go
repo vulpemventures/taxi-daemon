@@ -8,8 +8,8 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/go-elements/network"
-	"github.com/vulpemventures/liquid-taxi/internal/domain"
-	"github.com/vulpemventures/liquid-taxi/internal/infrastructure/storage/inmemory"
+	"github.com/vulpemventures/taxi-daemon/internal/domain"
+	"github.com/vulpemventures/taxi-daemon/internal/infrastructure/storage/inmemory"
 )
 
 const (

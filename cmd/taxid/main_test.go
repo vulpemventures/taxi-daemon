@@ -16,8 +16,8 @@ import (
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
-	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
-	"github.com/vulpemventures/liquid-taxi/pkg/testutils"
+	"github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
+	"github.com/vulpemventures/taxi-daemon/pkg/testutils"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 	g "google.golang.org/grpc"
 )

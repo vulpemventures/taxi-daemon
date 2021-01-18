@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/taxi-daemon/internal/domain"
 )
 
 type inmemoryPriceRepository struct {
@@ -49,7 +49,7 @@ func (r *inmemoryPriceRepository) GetAllPrices(_ context.Context) ([]domain.Pric
 
 	prices := make([]domain.Price, len(r.assetToPriceMap), len(r.assetToPriceMap))
 
-        i := 0
+	i := 0
 	for _, p := range r.assetToPriceMap {
 		prices[i] = p
 		i++

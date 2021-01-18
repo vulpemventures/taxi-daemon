@@ -9,8 +9,8 @@ import (
 	"path"
 
 	"github.com/btcsuite/btcutil"
-	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
-	"github.com/vulpemventures/liquid-taxi/pkg/taxiclient"
+	"github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
+	"github.com/vulpemventures/taxi-daemon/pkg/taxiclient"
 )
 
 var (

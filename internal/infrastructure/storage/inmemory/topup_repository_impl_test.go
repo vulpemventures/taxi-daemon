@@ -7,7 +7,7 @@ import (
 
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
-	"github.com/vulpemventures/liquid-taxi/internal/domain"
+	"github.com/vulpemventures/taxi-daemon/internal/domain"
 )
 
 var (

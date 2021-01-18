@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/urfave/cli/v2"
-	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
+	"github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
 )
 
 var fundingAddress = cli.Command{

@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
-	admin "github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
+	admin "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 )
 

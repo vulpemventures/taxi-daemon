@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 
-	"github.com/vulpemventures/liquid-taxi/internal/application"
+	"github.com/vulpemventures/taxi-daemon/internal/application"
 	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 )
 

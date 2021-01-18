@@ -7,8 +7,8 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/timshannon/badgerhold/v2"
 	"github.com/vulpemventures/go-elements/network"
-	"github.com/vulpemventures/liquid-taxi/internal/domain"
-	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
+	"github.com/vulpemventures/taxi-daemon/internal/domain"
+	"github.com/vulpemventures/taxi-daemon/pkg/wallet"
 )
 
 // HDTreeStoreKey is the directory name of the db files

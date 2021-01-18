@@ -3,7 +3,7 @@ package taxiclient
 import (
 	"fmt"
 
-	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
+	"github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
 	"google.golang.org/grpc"
 )
 

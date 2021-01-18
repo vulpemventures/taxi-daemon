@@ -5,9 +5,9 @@ import (
 	"encoding/hex"
 
 	"github.com/shopspring/decimal"
-	"github.com/vulpemventures/liquid-taxi/api-spec/protobuf/gen/admin"
-	"github.com/vulpemventures/liquid-taxi/internal/application"
-	"github.com/vulpemventures/liquid-taxi/pkg/wallet"
+	"github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
+	"github.com/vulpemventures/taxi-daemon/internal/application"
+	"github.com/vulpemventures/taxi-daemon/pkg/wallet"
 )
 
 type adminServer struct {
