@@ -2,7 +2,6 @@ package dbbadger
 
 import (
 	"context"
-	"errors"
 	"path/filepath"
 	"time"
 
@@ -62,58 +61,43 @@ func (r *badgerTopupRepository) GetAllTopups(ctx context.Context) ([]domain.Topu
 
 func (r *badgerTopupRepository) MarkAsCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
 	defer testutils.TimeTrack(time.Now(), "markAsCompleted")
+	var topup domain.Topup
 
-	query := badgerhold.Where("ID").Eq(topupID)
-	handler := func() (interface{}, error) {
-		var topupUpdated *domain.Topup
-		err := r.store.UpdateMatching(&domain.Topup{}, query, func(record interface{}) error {
-			update, ok := record.(*domain.Topup)
-			if !ok {
-				return errors.New("record isn't the correct type! Need domain.Topup type")
-			}
-
-			update.Complete(partial, assetAmount)
-
-			topupUpdated = update
-			return nil
-		})
-		return topupUpdated, err
-	}
-
-	res, err := runTransaction(handler)
+	err := r.store.Get(topupID, &topup)
 	if err != nil {
 		return nil, err
 	}
 
-	topupUpdated := res.(*domain.Topup)
+	err = topup.Complete(partial, assetAmount)
+	if err != nil {
+		return nil, err
+	}
 
-	return topupUpdated, nil
+	err = r.store.Update(topup.ID, topup)
+	if err != nil {
+		return nil, err
+	}
+
+	return &topup, nil
 }
 
 func (r *badgerTopupRepository) MarkAsSettled(ctx context.Context, topupID string, txID string) (*domain.Topup, error) {
-	handler := func() (interface{}, error) {
-		var topupUpdated *domain.Topup
-		query := badgerhold.Where("ID").Eq(topupID)
-		err := r.store.UpdateMatching(&domain.Topup{}, query, func(record interface{}) error {
-			update, ok := record.(*domain.Topup)
-			if !ok {
-				return errors.New("record isn't the correct type! Need domain.Topup type")
-			}
+	var topup domain.Topup
 
-			update.Settle()
-			// TODO txid ??
-
-			topupUpdated = update
-			return nil
-		})
-		return topupUpdated, err
-	}
-
-	res, err := runTransaction(handler)
+	err := r.store.Get(topupID, &topup)
 	if err != nil {
 		return nil, err
 	}
 
-	topupUpdated := res.(*domain.Topup)
-	return topupUpdated, nil
+	err = topup.Settle()
+	if err != nil {
+		return nil, err
+	}
+
+	err = r.store.Update(topup.ID, topup)
+	if err != nil {
+		return nil, err
+	}
+
+	return &topup, nil
 }
