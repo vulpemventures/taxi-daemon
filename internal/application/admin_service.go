@@ -21,7 +21,7 @@ type AdminService interface {
 	ListTopups(ctx context.Context, assetHashFilter string) ([]domain.Topup, error)
 	AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error
 	SendToMany(ctx context.Context, outputs []wallet.Receiver, millisatPerByte int64, pushTransaction bool) (string, error)
-	Balance(ctx context.Context) (map[string]BalanceInfo, error)
+	Balance(ctx context.Context) (map[string]*BalanceInfo, error)
 	ListLocks(ctx context.Context) ([]domain.Lock, error)
 }
 
@@ -218,7 +218,7 @@ type BalanceInfo struct {
 	UnconfirmedBalance uint64
 }
 
-func (adminSvc *adminService) Balance(ctx context.Context) (map[string]BalanceInfo, error) {
+func (adminSvc *adminService) Balance(ctx context.Context) (map[string]*BalanceInfo, error) {
 	utxos, err := adminSvc.getUnspents(ctx)
 	if err != nil {
 		return nil, err
@@ -257,8 +257,8 @@ func (adminSvc *adminService) getUnspents(ctx context.Context) ([]explorer.Utxo,
 	return utxos, nil
 }
 
-func utxosToBalanceInfos(utxos []explorer.Utxo) map[string]BalanceInfo {
-	resultMap := make(map[string]BalanceInfo)
+func utxosToBalanceInfos(utxos []explorer.Utxo) map[string]*BalanceInfo {
+	resultMap := make(map[string]*BalanceInfo)
 	for _, utxo := range utxos {
 		value := utxo.Value()
 		isConfirmed := utxo.IsConfirmed()
@@ -276,7 +276,7 @@ func utxosToBalanceInfos(utxos []explorer.Utxo) map[string]BalanceInfo {
 		}
 
 		// new asset = new balance
-		balanceInfo := BalanceInfo{
+		balanceInfo := &BalanceInfo{
 			TotalBalance:       value,
 			ConfirmedBalance:   0,
 			UnconfirmedBalance: 0,

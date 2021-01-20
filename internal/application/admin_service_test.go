@@ -47,6 +47,16 @@ func TestBalance(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	_, err = adminSvc.explorerService.Faucet(payoutAddresses[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = adminSvc.explorerService.Faucet(payoutAddresses[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	_, _, err = adminSvc.explorerService.Mint(payoutAddresses[0], 100)
 	if err != nil {
 		t.Fatal(err)
@@ -59,7 +69,7 @@ func TestBalance(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, true, len(balanceInfosAfter)-len(balanceInfosBefore) >= 1)
+	assert.Equal(t, true, len(balanceInfosAfter)-len(balanceInfosBefore) >= 2)
 }
 
 func TestListTopups(t *testing.T) {
