@@ -132,7 +132,8 @@ func (f *fragmentCache) Start() {
 
 	f.tickerInterval = time.NewTicker(f.interval)
 
-	for range f.tickerInterval.C {
+	for ; true; <-f.tickerInterval.C {
+		log.Debug("cache loop start")
 		// retrieve root path of the hd tree and instantiate the inmemory wallet
 		hdTree, err := f.hdTreeRepository.GetOrCreateHDTree(ctx)
 		if err != nil {
