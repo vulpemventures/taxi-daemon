@@ -34,6 +34,7 @@ message Outpoint {
 message AddAssetRequest {
   string asset_hash = 1; // The asset_hash to update (or to create if the taxi doesn't know it)
   float price = 2; // The current price for the given asset hash
+  float spread = 3; // The % taken as service fee 
 }
 
 message AddAssetReply {}
@@ -141,6 +142,7 @@ message TopupDetails {
   uint64 fee_amount = 7; // amount in satoshis of bitcoin needed to cover the fees
   Timestamps times = 9; // the timestamps of each status change
   string txid = 10; // the tx hash when the topup is settled, empty otherwise
+  uint64 basis_point = 11; // the amount expressed in satoshis as taxi service fee (part of asset_amount)
 }
 
 message Timestamps {
