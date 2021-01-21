@@ -112,19 +112,16 @@ func (t *Topup) ToTopupMessage() *pb.Topup {
 
 // ToTopupDetailsMessage maps topup domain to admin.TopupDetails message type
 func (t *Topup) ToTopupDetailsMessage() *admin.TopupDetails {
-	price, _ := t.AssetPrice.Float64()
-
 	return &admin.TopupDetails{
 		TopupId:     t.ID,
 		Partial:     t.Partial,
 		AssetHash:   t.AssetHash,
 		AssetAmount: t.AssetAmount,
-		AssetPrice:  float32(price),
+		AssetSpread: t.SpreadAmount,
 		Status:      admin.TopupDetails_Status(t.Status),
 		FeeAmount:   t.FeeAmount,
 		Times:       t.toProtobufTimestampsMessage(),
 		Txid:        "",
-		BasisPoint:  t.SpreadAmount,
 	}
 }
 
