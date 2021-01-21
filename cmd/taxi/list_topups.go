@@ -49,13 +49,14 @@ func listTopupsAction(ctx *cli.Context) error {
 	}
 
 	topupsDetails := topups.GetTopups()
+
 	topupsJSON, err := json.Marshal(topupsDetails)
 	if err != nil {
 		return err
 	}
 
 	fmt.Println()
-	fmt.Println(topupsJSON)
+	fmt.Println(string(topupsJSON))
 
 	return nil
 }
