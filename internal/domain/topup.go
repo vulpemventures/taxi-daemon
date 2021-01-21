@@ -106,6 +106,7 @@ func (t *Topup) ToTopupMessage() *pb.Topup {
 		AssetHash:   t.AssetHash,
 		AssetAmount: t.AssetAmount,
 		AssetPrice:  float32(price),
+		BasisPoint:  int32(t.SpreadAmount),
 	}
 }
 
@@ -123,6 +124,7 @@ func (t *Topup) ToTopupDetailsMessage() *admin.TopupDetails {
 		FeeAmount:   t.FeeAmount,
 		Times:       t.toProtobufTimestampsMessage(),
 		Txid:        "",
+		BasisPoint:  t.SpreadAmount,
 	}
 }
 
