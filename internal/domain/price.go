@@ -6,4 +6,5 @@ import "github.com/shopspring/decimal"
 type Price struct {
 	AssetHash string
 	Amount    decimal.Decimal
+	Spread    decimal.Decimal
 }

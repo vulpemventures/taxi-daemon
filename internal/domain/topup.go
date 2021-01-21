@@ -48,6 +48,8 @@ type Topup struct {
 	SettledAt time.Time
 	// ExpireAt is the date where the utxo used in topup's transaction can be used for other topups
 	ExpireAt time.Time
+	// SpreadAmount is the amount of asset paid as taxi service fee
+	SpreadAmount uint64
 }
 
 // NewTopup is a factory function used to create an base topup
@@ -70,12 +72,13 @@ func NewTopup(
 }
 
 // Complete sets partial and assetAmount field + timestamp the complete time + update the status
-func (t *Topup) Complete(partial string, assetAmount uint64) error {
+func (t *Topup) Complete(partial string, assetAmount uint64, spreadAmount uint64) error {
 	if t.Status == Requested {
 		t.CompletedAt = time.Now()
 		t.Status = Completed
 		t.Partial = partial
 		t.AssetAmount = assetAmount
+		t.SpreadAmount = spreadAmount
 		return nil
 	}
 

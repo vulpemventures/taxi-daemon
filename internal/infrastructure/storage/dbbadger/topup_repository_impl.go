@@ -65,7 +65,8 @@ func (r *badgerTopupRepository) MarkAsCompleted(ctx context.Context, topupID str
 		return nil, err
 	}
 
-	err = topup.Complete(partial, assetAmount)
+	spreadAmount := uint64(0)
+	err = topup.Complete(partial, assetAmount, spreadAmount)
 	if err != nil {
 		return nil, err
 	}
