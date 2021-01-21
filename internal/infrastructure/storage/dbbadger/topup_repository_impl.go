@@ -57,7 +57,13 @@ func (r *badgerTopupRepository) GetAllTopups(ctx context.Context) ([]domain.Topu
 	return topups, err
 }
 
-func (r *badgerTopupRepository) MarkAsCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
+func (r *badgerTopupRepository) MarkAsCompleted(
+	ctx context.Context,
+	topupID string,
+	partial string,
+	assetAmount uint64,
+	spreadAmount uint64,
+) (*domain.Topup, error) {
 	var topup domain.Topup
 
 	err := r.store.Get(topupID, &topup)
@@ -65,7 +71,6 @@ func (r *badgerTopupRepository) MarkAsCompleted(ctx context.Context, topupID str
 		return nil, err
 	}
 
-	spreadAmount := uint64(0)
 	err = topup.Complete(partial, assetAmount, spreadAmount)
 	if err != nil {
 		return nil, err

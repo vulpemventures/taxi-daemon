@@ -106,7 +106,7 @@ func TestMarkAsCompleted(t *testing.T) {
 
 	fakeAssetAmount := uint64(100)
 	fakePset := "fakepartialbase64"
-	topup, err := repo.MarkAsCompleted(context.Background(), topupToCreate.ID, fakePset, fakeAssetAmount)
+	topup, err := repo.MarkAsCompleted(context.Background(), topupToCreate.ID, fakePset, fakeAssetAmount, uint64(0))
 	assert.Nil(t, err)
 
 	topups, err := repo.GetAllTopups(context.Background())

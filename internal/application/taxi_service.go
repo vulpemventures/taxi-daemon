@@ -99,8 +99,12 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	amountAsDecimal := decimal.NewFromInt(int64(taxi.fixedFeeAmount))
-	assetAmount := uint64(price.Amount.Mul(amountAsDecimal).IntPart())
+	fixedFeeAmountAsDecimal := decimal.NewFromInt(int64(taxi.fixedFeeAmount))
+	assetAmountAsDecimal := price.Amount.Mul(fixedFeeAmountAsDecimal)
+	serviceFeeAmountAsDecimal := assetAmountAsDecimal.Mul(price.Spread)
+
+	assetAmount := uint64(assetAmountAsDecimal.Add(serviceFeeAmountAsDecimal).IntPart())
+	spreadAmount := uint64(serviceFeeAmountAsDecimal.IntPart())
 
 	payouts, err := taxi.hdTreeRepository.GetNewPayoutAddresses(ctx, 1, false)
 	if err != nil {
@@ -117,7 +121,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	topupCompleted, err := taxi.topupRepository.MarkAsCompleted(ctx, topup.ID, psetBase64, assetAmount)
+	topupCompleted, err := taxi.topupRepository.MarkAsCompleted(ctx, topup.ID, psetBase64, assetAmount, spreadAmount)
 	if err != nil {
 		return nil, err
 	}

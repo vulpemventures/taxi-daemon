@@ -42,12 +42,14 @@ func (a *adminServer) ListLocks(ctx context.Context, req *admin.ListLocksRequest
 }
 
 func (a *adminServer) AddAsset(ctx context.Context, req *admin.AddAssetRequest) (*admin.AddAssetReply, error) {
-	priceAmountAsDecimal := decimal.NewFromFloat(float64(req.GetPrice()))
+	priceAmountAsDecimal := decimal.NewFromFloat32(req.GetPrice())
+	spreadAsDecimal := decimal.NewFromFloat32(req.GetSpread())
 
 	return &admin.AddAssetReply{}, a.adminSvc.AddAsset(
 		ctx,
 		req.GetAssetHash(),
 		priceAmountAsDecimal,
+		spreadAsDecimal,
 	)
 }
 

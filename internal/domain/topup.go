@@ -96,7 +96,7 @@ func (t *Topup) Settle() error {
 	return ErrTopupNeedToBeCompleted
 }
 
-// ToTopupMessage maps topup domain to admin.Topup message type
+// ToTopupMessage maps topup domain to taxi.Topup message type
 func (t *Topup) ToTopupMessage() *pb.Topup {
 	price, _ := t.AssetPrice.Float64()
 
@@ -110,7 +110,7 @@ func (t *Topup) ToTopupMessage() *pb.Topup {
 	}
 }
 
-// ToTopupDetailsMessage maps topup domain to admin.Topup message type
+// ToTopupDetailsMessage maps topup domain to admin.TopupDetails message type
 func (t *Topup) ToTopupDetailsMessage() *admin.TopupDetails {
 	price, _ := t.AssetPrice.Float64()
 

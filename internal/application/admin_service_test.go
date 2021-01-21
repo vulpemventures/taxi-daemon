@@ -99,6 +99,8 @@ func TestAddAsset(t *testing.T) {
 		ctx,
 		hyperToken,
 		decimal.NewFromFloat(27169),
+		// take 20% as service fee
+		decimal.NewFromFloat(0.2),
 	); err != nil {
 		t.Fatal(err)
 	}
@@ -115,6 +117,7 @@ func TestAddAsset(t *testing.T) {
 		ctx,
 		hyperToken,
 		decimal.NewFromFloat(27252),
+		decimal.NewFromFloat(0.2),
 	); err != nil {
 		t.Fatal(err)
 	}
