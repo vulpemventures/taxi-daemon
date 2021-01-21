@@ -137,12 +137,11 @@ message TopupDetails {
   string partial = 2; // PSET signed with SIGHASH_SINGLE | ANYONECANPAY
   string asset_hash = 3; // the asset hash used as payout for bitcoin fees
   uint64 asset_amount = 4; // the asset denominated amount expressed in satoshis to be used as payout. It includes also the spread as taxi service fee
-  float asset_price = 5; // the price of bitcoin expressed in asset
+  uint64 asset_spread = 5; // the amount expressed in satoshis as taxi service fee (part of asset_amount)
   Status status = 6;
   uint64 fee_amount = 7; // amount in satoshis of bitcoin needed to cover the fees
   Timestamps times = 9; // the timestamps of each status change
-  string txid = 10; // the tx hash when the topup is settled, empty otherwise
-  uint64 basis_point = 11; // the amount expressed in satoshis as taxi service fee (part of asset_amount)
+  string txid = 10; // the tx hash when the topup is settled (status = 2), empty otherwise
 }
 
 message Timestamps {
