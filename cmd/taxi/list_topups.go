@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/urfave/cli/v2"
@@ -48,15 +47,8 @@ func listTopupsAction(ctx *cli.Context) error {
 		return err
 	}
 
-	topupsDetails := topups.GetTopups()
-
-	topupsJSON, err := json.Marshal(topupsDetails)
-	if err != nil {
-		return err
-	}
-
 	fmt.Println()
-	fmt.Println(string(topupsJSON))
+	printRespJSON(topups)
 
 	return nil
 }
