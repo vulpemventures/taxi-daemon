@@ -98,15 +98,12 @@ func (t *Topup) Settle() error {
 
 // ToTopupMessage maps topup domain to taxi.Topup message type
 func (t *Topup) ToTopupMessage() *pb.Topup {
-	price, _ := t.AssetPrice.Float64()
-
 	return &pb.Topup{
 		TopupId:     t.ID,
 		Partial:     t.Partial,
 		AssetHash:   t.AssetHash,
 		AssetAmount: t.AssetAmount,
-		AssetPrice:  float32(price),
-		BasisPoint:  int32(t.SpreadAmount),
+		AssetSpread: t.SpreadAmount,
 	}
 }
 

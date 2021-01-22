@@ -4,18 +4,25 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/vulpemventures/taxi-daemon/internal/domain"
 )
 
 // ErrAssetNotSupported is returned as error if the taxi service does not handle the given assetHash
 type ErrAssetNotSupported struct {
 	AssetHash     string
-	AssetsAllowed []string
+	AssetsAllowed []domain.Price
 }
 
 var _ error = (*ErrAssetNotSupported)(nil)
 
 func (e ErrAssetNotSupported) Error() string {
-	return "taxi does not support the asset:" + e.AssetHash + ". Please choose one of the following: " + strings.Join(e.AssetsAllowed, ", ")
+	assets := make([]string, len(e.AssetsAllowed), len(e.AssetsAllowed))
+	for i, a := range e.AssetsAllowed {
+		assets[i] = a.AssetHash
+	}
+
+	return "taxi does not support the asset:" + e.AssetHash + ". Please choose one of the following: " + strings.Join(assets, ", ")
 }
 
 // ErrUtxoNotFound is returned as error if the Utxo with value = targetedAmount and asset = targetedAsset is not found

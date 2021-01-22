@@ -19,7 +19,7 @@ type AdminService interface {
 	LatestFundingAddressIndex(ctx context.Context) (int, error)
 	ListFundingAddresses(ctx context.Context, start, numOfAddresses uint, change bool) ([]domain.AddressInfo, error)
 	ListTopups(ctx context.Context, assetHashFilter string) ([]domain.Topup, error)
-	AddAsset(ctx context.Context, assetHash string, price decimal.Decimal, spread decimal.Decimal) error
+	AddAsset(ctx context.Context, assetHash string, price decimal.Decimal, basisPoints uint32) error
 	SendToMany(ctx context.Context, outputs []wallet.Receiver, millisatPerByte int64, pushTransaction bool) (string, error)
 	Balance(ctx context.Context) (map[string]*BalanceInfo, error)
 	ListLocks(ctx context.Context) ([]domain.Lock, error)
@@ -180,11 +180,11 @@ func (adminSvc *adminService) ListFundingAddresses(ctx context.Context, start, n
 	return hdTree.DeriveAddressInRangeForAccount(domain.LBTCAccount, start, numOfAddresses, change)
 }
 
-func (adminSvc *adminService) AddAsset(ctx context.Context, assetHash string, price decimal.Decimal, spread decimal.Decimal) error {
+func (adminSvc *adminService) AddAsset(ctx context.Context, assetHash string, price decimal.Decimal, basisPoints uint32) error {
 	return adminSvc.priceRepository.UpdateOrCreatePrice(ctx, domain.Price{
-		AssetHash: assetHash,
-		Amount:    price,
-		Spread:    spread,
+		AssetHash:  assetHash,
+		Amount:     price,
+		BasisPoint: basisPoints,
 	})
 }
 
