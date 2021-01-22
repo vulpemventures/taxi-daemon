@@ -12,6 +12,7 @@ type Price struct {
 	BasisPoint uint32
 }
 
+// ToAssetDetailsMessage returns the protobuf message associated with the Price domain
 func (price *Price) ToAssetDetailsMessage() *pb.AssetDetails {
 	p, _ := price.Amount.Float64()
 
