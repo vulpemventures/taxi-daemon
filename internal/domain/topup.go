@@ -127,5 +127,6 @@ func (t *Topup) toProtobufTimestampsMessage() *admin.Timestamps {
 		RequestedAt: uint64(t.RequestedAt.Unix()),
 		CompletedAt: uint64(t.CompletedAt.Unix()),
 		SettledAt:   uint64(t.SettledAt.Unix()),
+		ExpiredAt:   uint64(t.ExpireAt.Unix()),
 	}
 }
