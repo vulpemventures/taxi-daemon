@@ -25,8 +25,13 @@ func (t *taxiServer) ListAssets(ctx context.Context, _ *pb.ListAssetsRequest) (*
 		return nil, err
 	}
 
+	pbAssets := make([]*pb.AssetDetails, len(assets), len(assets))
+	for i, price := range assets {
+		pbAssets[i] = price.ToAssetDetailsMessage()
+	}
+
 	return &pb.ListAssetsReply{
-		AssetHash: assets,
+		Assets: pbAssets,
 	}, nil
 }
 

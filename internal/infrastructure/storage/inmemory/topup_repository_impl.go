@@ -47,7 +47,13 @@ func (r *inmemoryTopupRepository) GetAllTopups(ctx context.Context) ([]domain.To
 	return topups, nil
 }
 
-func (r *inmemoryTopupRepository) MarkAsCompleted(ctx context.Context, topupID string, partial string, assetAmount uint64) (*domain.Topup, error) {
+func (r *inmemoryTopupRepository) MarkAsCompleted(
+	ctx context.Context,
+	topupID string,
+	partial string,
+	assetAmount uint64,
+	spreadAmount uint64,
+) (*domain.Topup, error) {
 	r.repositoryLocker.Lock()
 	defer r.repositoryLocker.Unlock()
 	topup, ok := r.topups[topupID]
@@ -55,7 +61,7 @@ func (r *inmemoryTopupRepository) MarkAsCompleted(ctx context.Context, topupID s
 		return nil, errors.New("Topup does not exist")
 	}
 
-	err := topup.Complete(partial, assetAmount)
+	err := topup.Complete(partial, assetAmount, spreadAmount)
 	if err != nil {
 		return nil, err
 	}

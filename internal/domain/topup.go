@@ -48,6 +48,8 @@ type Topup struct {
 	SettledAt time.Time
 	// ExpireAt is the date where the utxo used in topup's transaction can be used for other topups
 	ExpireAt time.Time
+	// SpreadAmount is the amount of asset paid as taxi service fee
+	SpreadAmount uint64
 }
 
 // NewTopup is a factory function used to create an base topup
@@ -70,12 +72,13 @@ func NewTopup(
 }
 
 // Complete sets partial and assetAmount field + timestamp the complete time + update the status
-func (t *Topup) Complete(partial string, assetAmount uint64) error {
+func (t *Topup) Complete(partial string, assetAmount uint64, spreadAmount uint64) error {
 	if t.Status == Requested {
 		t.CompletedAt = time.Now()
 		t.Status = Completed
 		t.Partial = partial
 		t.AssetAmount = assetAmount
+		t.SpreadAmount = spreadAmount
 		return nil
 	}
 
@@ -93,29 +96,25 @@ func (t *Topup) Settle() error {
 	return ErrTopupNeedToBeCompleted
 }
 
-// ToTopupMessage maps topup domain to admin.Topup message type
+// ToTopupMessage maps topup domain to taxi.Topup message type
 func (t *Topup) ToTopupMessage() *pb.Topup {
-	price, _ := t.AssetPrice.Float64()
-
 	return &pb.Topup{
 		TopupId:     t.ID,
 		Partial:     t.Partial,
 		AssetHash:   t.AssetHash,
 		AssetAmount: t.AssetAmount,
-		AssetPrice:  float32(price),
+		AssetSpread: t.SpreadAmount,
 	}
 }
 
-// ToTopupDetailsMessage maps topup domain to admin.Topup message type
+// ToTopupDetailsMessage maps topup domain to admin.TopupDetails message type
 func (t *Topup) ToTopupDetailsMessage() *admin.TopupDetails {
-	price, _ := t.AssetPrice.Float64()
-
 	return &admin.TopupDetails{
 		TopupId:     t.ID,
 		Partial:     t.Partial,
 		AssetHash:   t.AssetHash,
 		AssetAmount: t.AssetAmount,
-		AssetPrice:  float32(price),
+		AssetSpread: t.SpreadAmount,
 		Status:      admin.TopupDetails_Status(t.Status),
 		FeeAmount:   t.FeeAmount,
 		Times:       t.toProtobufTimestampsMessage(),
@@ -128,5 +127,6 @@ func (t *Topup) toProtobufTimestampsMessage() *admin.Timestamps {
 		RequestedAt: uint64(t.RequestedAt.Unix()),
 		CompletedAt: uint64(t.CompletedAt.Unix()),
 		SettledAt:   uint64(t.SettledAt.Unix()),
+		ExpiredAt:   uint64(t.ExpireAt.Unix()),
 	}
 }

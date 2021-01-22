@@ -41,6 +41,7 @@ proto:
 ## run the service (for tests)
 run:
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
+	export TAXI_LOG_LEVEL=9; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
 	go run cmd/taxid/main.go
 

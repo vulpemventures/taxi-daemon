@@ -59,7 +59,7 @@ func TestMarkAsCompleted(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	topupUpdated, err := repo.MarkAsCompleted(context.Background(), topup0.ID, "PSETbase64", 100)
+	topupUpdated, err := repo.MarkAsCompleted(context.Background(), topup0.ID, "PSETbase64", 100, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +72,7 @@ func TestMarkAsCompleted(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = repo.MarkAsCompleted(context.Background(), topupWithCompletedStatus.ID, "PSETbase64", 100)
+	_, err = repo.MarkAsCompleted(context.Background(), topupWithCompletedStatus.ID, "PSETbase64", 100, 0)
 
 	assert.NotNil(t, err)
 }

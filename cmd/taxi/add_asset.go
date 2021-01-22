@@ -22,6 +22,12 @@ var addAsset = cli.Command{
 			Usage:    "the number of assets needed to get 1 satoshi of LBTC (float)",
 			Required: true,
 		},
+		&cli.IntFlag{
+			Name:     "basis_point",
+			Aliases:  []string{"bps"},
+			Usage:    "the spread used in basis point",
+			Required: true,
+		},
 	},
 	Action: addAssetAction,
 }
@@ -36,12 +42,14 @@ func addAssetAction(ctx *cli.Context) error {
 
 	assetHash := ctx.String("asset")
 	price := float32(ctx.Float64("price"))
+	basisPoints := ctx.Int("basis_point")
 
 	_, err = adminClient.AddAsset(
 		context.Background(),
 		&admin.AddAssetRequest{
-			AssetHash: assetHash,
-			Price:     price,
+			AssetHash:   assetHash,
+			Price:       price,
+			BasisPoints: uint32(basisPoints),
 		})
 
 	if err != nil {

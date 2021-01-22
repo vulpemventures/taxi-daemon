@@ -13,6 +13,7 @@ require (
 	github.com/dgraph-io/ristretto v0.0.3 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/gogo/protobuf v1.2.1
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
@@ -20,7 +21,6 @@ require (
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/improbable-eng/grpc-web v0.13.0
 	github.com/kr/text v0.2.0 // indirect
-	github.com/labstack/gommon v0.3.0
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
@@ -41,7 +41,7 @@ require (
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/vulpemventures/go-elements v0.1.1
-	github.com/vulpemventures/taxi-protobuf v0.0.0-20210108153455-5b4ce4d487f4
+	github.com/vulpemventures/taxi-protobuf v0.0.0-20210121231259-e45b1c1d4f7c
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
 	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect

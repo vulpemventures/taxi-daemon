@@ -21,7 +21,7 @@ const (
 // TaxiService provides interface for user UI
 type TaxiService interface {
 	TopupWithAsset(ctx context.Context, assetHash string) (*domain.Topup, error)
-	ListAssets(ctx context.Context) ([]string, error)
+	ListAssets(ctx context.Context) ([]domain.Price, error)
 }
 
 type taxiService struct {
@@ -79,6 +79,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 
 	if price == nil {
 		assets, _ := taxi.ListAssets(ctx)
+
 		return nil, ErrAssetNotSupported{
 			AssetHash:     assetHash,
 			AssetsAllowed: assets,
@@ -99,8 +100,14 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	amountAsDecimal := decimal.NewFromInt(int64(taxi.fixedFeeAmount))
-	assetAmount := uint64(price.Amount.Mul(amountAsDecimal).IntPart())
+	fixedFeeAmountAsDecimal := decimal.NewFromInt(int64(taxi.fixedFeeAmount))
+	assetAmountAsDecimal := price.Amount.Mul(fixedFeeAmountAsDecimal)
+
+	spreadRate := decimal.NewFromFloat(float64(price.BasisPoint) * 0.01 / 100)
+	serviceFeeAmountAsDecimal := assetAmountAsDecimal.Mul(spreadRate)
+
+	assetAmount := uint64(assetAmountAsDecimal.Add(serviceFeeAmountAsDecimal).IntPart())
+	spreadAmount := uint64(serviceFeeAmountAsDecimal.IntPart())
 
 	payouts, err := taxi.hdTreeRepository.GetNewPayoutAddresses(ctx, 1, false)
 	if err != nil {
@@ -117,7 +124,7 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 		return nil, err
 	}
 
-	topupCompleted, err := taxi.topupRepository.MarkAsCompleted(ctx, topup.ID, psetBase64, assetAmount)
+	topupCompleted, err := taxi.topupRepository.MarkAsCompleted(ctx, topup.ID, psetBase64, assetAmount, spreadAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -126,18 +133,13 @@ func (taxi *taxiService) TopupWithAsset(ctx context.Context, assetHash string) (
 }
 
 // ListAssets return all the available assets of the taxi service
-func (taxi *taxiService) ListAssets(ctx context.Context) ([]string, error) {
+func (taxi *taxiService) ListAssets(ctx context.Context) ([]domain.Price, error) {
 	prices, err := taxi.priceRepository.GetAllPrices(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	assets := make([]string, 0)
-	for _, price := range prices {
-		assets = append(assets, price.AssetHash)
-	}
-
-	return assets, nil
+	return prices, nil
 }
 
 func (taxi *taxiService) fetchAndLockFragmentUtxo(ctx context.Context) (explorer.Utxo, error) {

@@ -9,7 +9,7 @@ import (
 	"github.com/tdex-network/tdex-daemon/pkg/explorer"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/taxi-daemon/internal/domain"
-	"github.com/vulpemventures/taxi-daemon/pkg/fees"
+	"github.com/vulpemventures/taxi-daemon/pkg/fee"
 	"github.com/vulpemventures/taxi-daemon/pkg/wallet"
 )
 
@@ -19,7 +19,7 @@ type AdminService interface {
 	LatestFundingAddressIndex(ctx context.Context) (int, error)
 	ListFundingAddresses(ctx context.Context, start, numOfAddresses uint, change bool) ([]domain.AddressInfo, error)
 	ListTopups(ctx context.Context, assetHashFilter string) ([]domain.Topup, error)
-	AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error
+	AddAsset(ctx context.Context, assetHash string, price decimal.Decimal, basisPoints uint32) error
 	SendToMany(ctx context.Context, outputs []wallet.Receiver, millisatPerByte int64, pushTransaction bool) (string, error)
 	Balance(ctx context.Context) (map[string]*BalanceInfo, error)
 	ListLocks(ctx context.Context) ([]domain.Lock, error)
@@ -87,10 +87,11 @@ func (adminSvc *adminService) SendToMany(ctx context.Context, outputs []wallet.R
 		return "", err
 	}
 
-	feeAmount := fees.CalculateFeeIncrease(
+	feeAmount := fee.EstimateTxFee(
 		len(selectedUtxos),
-		len(outputs)+len(changeOutputs)+1,
-		decimal.NewFromFloat(float64(millisatPerByte)/float64(1000)),
+		len(outputs)+len(changeOutputs),
+		true,
+		int(millisatPerByte),
 	)
 
 	feeOutput := wallet.Receiver{
@@ -179,10 +180,11 @@ func (adminSvc *adminService) ListFundingAddresses(ctx context.Context, start, n
 	return hdTree.DeriveAddressInRangeForAccount(domain.LBTCAccount, start, numOfAddresses, change)
 }
 
-func (adminSvc *adminService) AddAsset(ctx context.Context, assetHash string, price decimal.Decimal) error {
+func (adminSvc *adminService) AddAsset(ctx context.Context, assetHash string, price decimal.Decimal, basisPoints uint32) error {
 	return adminSvc.priceRepository.UpdateOrCreatePrice(ctx, domain.Price{
-		AssetHash: assetHash,
-		Amount:    price,
+		AssetHash:  assetHash,
+		Amount:     price,
+		BasisPoint: basisPoints,
 	})
 }
 
