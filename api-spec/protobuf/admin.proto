@@ -34,7 +34,7 @@ message Outpoint {
 message AddAssetRequest {
   string asset_hash = 1; // The asset_hash to update (or to create if the taxi doesn't know it)
   float price = 2; // The current price for the given asset hash
-  float spread = 3; // The % taken as service fee 
+  uint32 basisPoints = 3; // The % taken as service fee expressed in basis points
 }
 
 message AddAssetReply {}
