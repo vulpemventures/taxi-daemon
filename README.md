@@ -59,15 +59,38 @@ docker run -d -it --name taxid -p 7000:7000 -p 8000:8000 -v `pwd`/taxid:/.taxid 
 alias taxi="docker exec -it taxid taxi"
 ```
 
-## Deployment 
+## Usage
 
-### Fragment script
+### Set the `taxid` RPC admin server into `taxi` CLI
 
-Taxi needs utxos with a fixed amount (i.e fragment size). `scripts/fragment.py` is a Python script used to create these fragments from an Elements/Liquid node.
-
- NOTICE: the number of addresses specified as argument determines the number of fragments created.
 ```sh
-python3 scripts/fragment.py --url http://127.0.0.1:7041 \
+$ taxi config init
+# Optional: default is localhost:7000
+$ taxi config set rpcserver http://myremoteurl:7000
+```
+
+### Get funding addresses for LBTC
+
+```sh
+# This gets 10 addresses. It means we can serve 10 concurrent topups
+$ taxi fund -n 10
+```
+
+### Deposit LBTC
+
+Use the previous addresses to send an exact amount defined in `TAXI_FIXED_FEE_AMOUNT`
+
+If running an Elements instance, you can use the `fragment.py` script to make a deposit to many addresses in a single transaction.
+
+* Fragment script
+
+`scripts/fragment.py` is a Python script used to create these fragments from an Elements/Liquid node.
+
+NOTICE: the number of addresses specified as argument determines the number of fragments created.
+
+```sh
+$ git clone git@github.com:vulpemventures/taxi-daemon.git && cd taxi-daemon
+$ python3 ./scripts/fragment.py --url http://127.0.0.1:7041 \
     --rpc_user admin1 \
     --rpc_pass 123 \
     --fragment_size 0.0001 \
@@ -77,4 +100,9 @@ python3 scripts/fragment.py --url http://127.0.0.1:7041 \
 tips: use `-h` to print the script's help guide.
 
 
+### Add an asset and price
 
+```sh
+# Add Tether asset hash, make the USDt price per BTC of 34000 and use 10% as service fee for taxi
+$ taxi add --asset ce091c998b83c78bb71a632313ba3760f1763d9cfcffae02258ffa9865a37bd2 --price 34000 --basis_point 1000
+```
