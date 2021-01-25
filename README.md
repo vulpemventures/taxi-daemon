@@ -19,22 +19,19 @@
 $ git clone https://github.com/vulpemventures/taxi-daemon
 ```
 
-## Run
+## Run for development
 
 ```sh
-$ make build # build binary server + admin cli
-$ make start # Run Nigiri
+# Run Nigiri first
 $ make run
-$ make stop # Stop and delete the containers
 ```
 
 ### Run test 
 
 ```sh
-$ make start  # Run Nigiri
+# Run Nigiri first
 $ make test # Run short unit tests
 $ make integrationtest # Run integration tests
-$ make stop # Stop and delete the containers
 ```
 
 
