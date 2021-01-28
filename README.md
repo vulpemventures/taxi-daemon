@@ -35,7 +35,7 @@ make infra-load
 **WARNING** Backup the docker volumes and taxid data directory before performing this action
 
 ```sh
-make infra-destroy
+make infra-down
 ```
 
 
