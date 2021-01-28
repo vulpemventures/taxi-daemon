@@ -14,9 +14,10 @@ services:
       - "7000:7000"
     volumes:
       - $HOME/taxi-data:/.taxid
-      - ${SSL_CERT_PATH}:/cert.pem
-      - ${SSL_KEY_PATH}:/key.pem
+      - $HOME/caddy-data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/api.liquid.taxi/api.liquid.taxi.crt:/cert.pem
+      - $HOME/caddy-data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/api.liquid.taxi/api.liquid.taxi.key:/key.pem
   caddy:
+    container_name: "caddy"
     image: caddy:latest
     restart: unless-stopped
     depends_on:
@@ -26,4 +27,4 @@ services:
       - "443:443"
     volumes:
       - $HOME/Caddyfile:/etc/caddy/Caddyfile
-      - caddy-data:/data
+      - $HOME/caddy-data:/data
