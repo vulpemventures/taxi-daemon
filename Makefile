@@ -40,7 +40,7 @@ proto:
 
 ## run the service (for tests)
 run:
-	export TAXI_NETWORK=regtest
+	export TAXI_NETWORK=regtest; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_LOG_LEVEL=9; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
@@ -48,7 +48,7 @@ run:
 
 ## run all the tests
 alltest: fmt 
-	export TAXI_NETWORK=regtest
+	export TAXI_NETWORK=regtest; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
 	export TAXI_DATADIR="./test-taxi-datadir"; \
@@ -56,7 +56,7 @@ alltest: fmt
 
 ## run the short tests
 test: fmt 
-	export TAXI_NETWORK=regtest
+	export TAXI_NETWORK=regtest; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
 	export TAXI_DATADIR="./test-taxi-datadir"; \
@@ -64,7 +64,7 @@ test: fmt
 
 ## integration test
 servertest: fmt
-	export TAXI_NETWORK=regtest
+	export TAXI_NETWORK=regtest; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
 	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
 	export TAXI_DATADIR="./test-taxi-datadir"; \
@@ -78,3 +78,17 @@ integrationtest: servertest	cleantest
 create-cert:
 	chmod u+x ./scripts/sslcert
 	bash ./scripts/sslcert
+
+## infra-up: create infra on Hetzner with Docker & Docker-Compose
+infra-up:
+	terraform -chdir=./terraform  init
+	terraform -chdir=./terraform  apply -auto-approve
+
+## infra-down: tear down infra on Hetzner
+infra-down:
+	terraform -chdir=./terraform  destroy -auto-approve
+
+## infra-load: build a docker imge and deploy onto
+infra-load:
+	chmod u+x ./scripts/upload-docker-ssh
+	bash ./scripts/upload-docker-ssh

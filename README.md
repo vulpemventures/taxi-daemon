@@ -3,6 +3,42 @@
 
 🚕 Liquid Taxi backend 
 
+
+## Deployment
+
+Taxi Daemon is deployed onto a Hetzner Cloud VM, packaged as docker image and uploaded via SSH.
+
+### Prepare the infrastructure
+
+In order to deploy you need to provide the following:
+
+* Hetzner API Token `hcloud_token`
+* Server name `server_name`
+* SSH Public Key `server_sshkey`
+
+```sh
+make infra-up
+```
+
+This can be run against an already deployed infrastructure, it will re-create terraform state locally
+
+### Build and upload
+
+You need to have docker to perform this step. This will build the docker image and upload the `docker-compose.yml` file along with the built image.
+
+```sh
+make infra-load 
+```
+
+### Tear down infrastructure
+
+**WARNING** Backup the docker volumes and taxid data directory before performing this action
+
+```sh
+make infra-destroy
+```
+
+
 ## Development
 
 ### Requirements
@@ -106,3 +142,4 @@ tips: use `-h` to print the script's help guide.
 # Add Tether asset hash, make the USDt price per BTC of 34000 and use 10% as service fee for taxi
 $ taxi add --asset ce091c998b83c78bb71a632313ba3760f1763d9cfcffae02258ffa9865a37bd2 --price 34000 --basis_point 1000
 ```
+

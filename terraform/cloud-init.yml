@@ -43,11 +43,12 @@ write_files:
     path: /etc/sysctl.d/99-enable-ipv4-forwarding.conf
     content: |
       net.ipv4.conf.all.forwarding=1
+  # Disable PasswordAuthentication
   - owner: root:root
     path: /etc/ssh/sshd_config
     permissions: "0644"
     content: |
-      # This file was inserted via cloud-init.yaml
+      # This file was inserted via cloud-init.yml
       # Authentication:
       PermitRootLogin no
       MaxAuthTries 2

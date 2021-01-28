@@ -12,6 +12,9 @@ terraform {
 # or using the -var="hcloud_token=..." CLI option
 variable "hcloud_token" {}
 variable "server_name" {}
+variable "server_username" {
+  default = "ubuntu"
+}
 variable "server_sshkey" {}
 
 
@@ -28,11 +31,11 @@ resource "hcloud_server" "server" {
   # 1vCPU, 2GB RAM, 20GB NVMe SSD, 20TB Traffic
   server_type = "cx11"
 
-  # reference cloud-init.yaml file
+  # reference cloud-init.yml file
   user_data = templatefile(
-    "${path.module}/cloud-init.yaml",
+    "${path.module}/cloud-init.yml",
     {
-      username = "ubuntu"
+      username = var.server_username
       sshkey   = var.server_sshkey
     }
   )
@@ -46,3 +49,8 @@ output "server_ipv4" {
 output "server_ipv6" {
   value = hcloud_server.server.ipv6_address
 }
+
+output "user_host" {
+  value = "${var.server_username}@${hcloud_server.server.ipv4_address}"
+}
+

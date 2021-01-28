@@ -1,0 +1,5 @@
+#!/bin/bash
+
+scp ./docker-compose.yml $(terraform -chdir=./terraform output -raw user_host):./
+docker build --pull --rm -f "Dockerfile" -t taxid:latest "."
+docker save taxid:latest | ssh -C $(terraform -chdir=./terraform output -raw user_host) docker load
