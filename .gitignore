@@ -24,3 +24,8 @@ bin/
 # ssl files
 *.crt
 *.key
+
+# terraform files
+**/.terraform/
+*.tfvars
+*.hcl

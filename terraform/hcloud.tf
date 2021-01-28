@@ -33,7 +33,7 @@ resource "hcloud_server" "server" {
     "${path.module}/cloud-init.yaml",
     {
       username = "ubuntu"
-      sshkey   = "${var.server_sshkey}"
+      sshkey   = var.server_sshkey
     }
   )
 }
