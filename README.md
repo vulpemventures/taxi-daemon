@@ -23,7 +23,7 @@ In order to deploy you need to provide the following:
 * SSH Public Key `server_sshkey`
 
 ```sh
-make infra-up
+$ make infra-up
 ```
 
 This can be run against an already deployed infrastructure, it will re-create terraform state locally
@@ -33,7 +33,27 @@ This can be run against an already deployed infrastructure, it will re-create te
 You need to have docker to perform this step. This will build the docker image and upload the `docker-compose.yml` file along with the built image.
 
 ```sh
-make infra-load 
+$ make infra-load 
+```
+
+### Run the compose
+
+Enter into the machine
+
+```sh
+$ ssh username@host
+```
+   
+**Only if is the first time** you MUST run caddy server alone to generate the TLS certificates
+
+```sh
+$ docker-compose up -d --no-deps caddy
+```
+
+start the taxi daemon and the Caddy reverse proxy
+
+```sh
+$ docker-compose up -d
 ```
 
 ### Tear down infrastructure

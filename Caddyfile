@@ -1,3 +1,12 @@
-https://api.liquid.taxi 
+api.liquid.taxi
 
-reverse_proxy http://taxid:8000
+log {
+    level INFO
+}
+
+reverse_proxy {
+    to h2c://taxid:8000
+    transport http {
+        versions h2c 2
+    }
+}
