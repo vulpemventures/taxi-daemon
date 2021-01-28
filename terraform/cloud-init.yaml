@@ -14,7 +14,6 @@ packages:
   - curl
   - gnupg-agent
   - software-properties-common
-  - python3-pip
 
 # Disable root access
 disable_root: true
@@ -79,6 +78,13 @@ runcmd:
   - add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
   - apt-get update -y
   - apt-get install -y docker-ce docker-ce-cli containerd.io
+  # Install docker-compose
+  - curl -L "https://github.com/docker/compose/releases/download/1.28.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+  - chmod a+x /usr/local/bin/docker-compose
+  # Delete passwords
+  - passwd -d root
+  # Restart services
+  - service ssh restart
   # UFW
   - echo "Setting up ufw.."
   - ufw default allow outgoing
@@ -91,10 +97,6 @@ runcmd:
   # Enable docker
   - systemctl start docker
   - systemctl enable docker
-  # Delete passwords
-  - passwd -d root
-  # Restart services
-  - service ssh restart
   # Finish
   - echo "Done."
   - touch /cloud-init-ran
