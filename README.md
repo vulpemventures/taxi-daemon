@@ -3,6 +3,12 @@
 
 🚕 Liquid Taxi backend 
 
+## Index 
+
+1. [Deployment](#deployment)
+2. [Usage](#usage)
+3. [Development](#development)
+4. [Docker](#docker)
 
 ## Deployment
 
@@ -38,62 +44,6 @@ make infra-load
 make infra-down
 ```
 
-
-## Development
-
-### Requirements
-
-* Go
-* Docker
-* Docker Compose
-* Nigiri
-
-
-### Clone
-
-```sh
-$ git clone https://github.com/vulpemventures/taxi-daemon
-```
-
-## Run for development
-
-```sh
-# Run Nigiri first
-$ make run
-```
-
-### Run test 
-
-```sh
-# Run Nigiri first
-$ make test # Run short unit tests
-$ make integrationtest # Run integration tests
-```
-
-
-## Docker
-
-Build and use `taxid` with docker.
-
-#### Build taxid docker image
-
-_At the root of the repository_
-
-```bash
-docker build --pull --rm -f "Dockerfile" -t taxid:latest "."
-```
-
-#### Run the taxi server
-
-```bash
-docker run -d -it --name taxid -p 7000:7000 -p 8000:8000 -v `pwd`/taxid:/.taxid taxid:latest
-```
-
-#### Use the CLI
-
-```bash
-alias taxi="docker exec -it taxid taxi"
-```
 
 ## Usage
 
@@ -141,5 +91,70 @@ tips: use `-h` to print the script's help guide.
 ```sh
 # Add Tether asset hash, make the USDt price per BTC of 34000 and use 10% as service fee for taxi
 $ taxi add --asset ce091c998b83c78bb71a632313ba3760f1763d9cfcffae02258ffa9865a37bd2 --price 34000 --basis_point 1000
+```
+
+
+## Development
+
+### Requirements
+
+* Go
+* Docker
+* Docker Compose
+* Nigiri
+
+
+### Clone
+
+```sh
+$ git clone https://github.com/vulpemventures/taxi-daemon
+```
+
+### Build 
+
+```sh
+# Run Nigiri first
+$ make build
+```
+
+
+### Run for development
+
+```sh
+# Run Nigiri first
+$ make run
+```
+
+### Test 
+
+```sh
+# Run Nigiri first
+$ make test # Run short unit tests
+$ make integrationtest # Run integration tests
+```
+
+
+## Docker
+
+Build and use `taxid` with docker.
+
+#### Build taxid docker image
+
+_At the root of the repository_
+
+```bash
+docker build --pull --rm -f "Dockerfile" -t taxid:latest "."
+```
+
+#### Run the taxi server
+
+```bash
+docker run -d -it --name taxid -p 7000:7000 -p 8000:8000 -v `pwd`/taxid:/.taxid taxid:latest
+```
+
+#### Use the CLI
+
+```bash
+alias taxi="docker exec -it taxid taxi"
 ```
 

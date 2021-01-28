@@ -1,0 +1,29 @@
+version: "3.7"
+
+services:
+  taxid:
+    container_name: "taxid"
+    image: taxid:latest
+    restart: unless-stopped
+    environment:
+      - TAXI_MNEMONIC=${MNEMONIC}
+      - TAXI_SSL_CERT=./cert.pem
+      - TAXI_SSL_KEY=./key.pem
+    ports:
+      - "8000:8000"
+      - "7000:7000"
+    volumes:
+      - $HOME/taxi-data:/.taxid
+      - ${SSL_CERT_PATH}:/cert.pem
+      - ${SSL_KEY_PATH}:/key.pem
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    depends_on:
+      - taxid
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - $HOME/Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
