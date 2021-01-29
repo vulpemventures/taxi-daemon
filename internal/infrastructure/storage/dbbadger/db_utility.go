@@ -28,7 +28,7 @@ func createDb(dbDir string, logger badger.Logger) (*badgerhold.Store, error) {
 	ticker := time.NewTicker(30 * time.Minute)
 
 	go func() {
-		time.Sleep(1 * time.Minute)
+		time.Sleep(30 * time.Minute)
 		log.Debug("set up badger garbage collection for ", dbDir)
 
 		for range ticker.C {
