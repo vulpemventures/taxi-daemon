@@ -2,13 +2,13 @@
 
 ## build the taxi server
 build-server: 
-	export GO111MODULE=on
-	env go build -ldflags="-s -w" -o bin/taxid cmd/taxid/main.go
+	export GO111MODULE=on; \
+	env go build -tags netgo -ldflags="-s -w" -o bin/taxid cmd/taxid/main.go
 
 ## build only the taxi CLI
 build-cli:
-	export GO111MODULE=on
-	env go build -ldflags="-s -w" -o bin/taxi cmd/taxi/*.go
+	export GO111MODULE=on; \
+	env go build -tags netgo -ldflags="-s -w" -o bin/taxi cmd/taxi/*.go
 
 ## build the project (CLI + server)
 build: clean build-server build-cli
@@ -88,7 +88,7 @@ infra-up:
 infra-down:
 	terraform -chdir=./terraform  destroy -auto-approve
 
-## infra-load: build a docker imge and deploy onto
+## infra-load: build binaries and deploy to remote infra
 infra-load:
-	chmod u+x ./scripts/upload-docker-ssh
-	bash ./scripts/upload-docker-ssh
+	chmod u+x ./scripts/provision
+	bash ./scripts/provision

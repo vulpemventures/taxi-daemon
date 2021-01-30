@@ -1,7 +1,0 @@
-#!/bin/bash
-user_host=$(terraform -chdir=./terraform output -raw user_host)
-
-scp ./Caddyfile ${user_host}:./
-scp ./docker-compose.yml ${user_host}:./
-docker build -f "Dockerfile" -t taxid:latest "."
-docker save taxid:latest | ssh -C ${user_host} docker load

@@ -9,11 +9,7 @@ packages:
   # General security
   - ufw
   - unattended-upgrades
-  - apt-transport-https
-  - ca-certificates
-  - curl
-  - gnupg-agent
-  - software-properties-common
+  - build-essential
 
 # Disable root access
 disable_root: true
@@ -22,15 +18,11 @@ disable_root: true
 locale: en_US.UTF-8
 timezone: Europe/Rome
 
-# create the docker group
-groups:
-  - docker
-
 users:
   - default
   - name: ${username}
     sudo: ALL=(ALL) NOPASSWD:ALL
-    groups: users, admin, docker
+    groups: users, admin
     ssh_import_id: None
     lock_passwd: true
     ssh_authorized_keys:
@@ -38,11 +30,6 @@ users:
     shell: /bin/bash
 
 write_files:
-  # Enable ipv4 forwarding, required on CIS hardened machines
-  - owner: root:root
-    path: /etc/sysctl.d/99-enable-ipv4-forwarding.conf
-    content: |
-      net.ipv4.conf.all.forwarding=1
   # Disable PasswordAuthentication
   - owner: root:root
     path: /etc/ssh/sshd_config
@@ -66,6 +53,18 @@ write_files:
       Subsystem sftp	/usr/lib/openssh/sftp-server
       Protocol 2
       AllowUsers ${username}
+  - owner: root:root
+    path: /etc/systemd/system/taxid.service
+    content: |
+      [Unit]
+      Description=Liquid.Taxi Daemon
+      [Service]
+      Type=simple
+      Restart=always
+      RestartSec=5s
+      ExecStart=/home/${username}/taxid
+      [Install]
+      WantedBy=multi-user.target
 
 cloud_config_modules:
   - runcmd
@@ -74,18 +73,6 @@ cloud_final_modules:
   - scripts-user
 
 runcmd:
-  # Install Docker, for production, consider pinning to stable versions
-  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-  - add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-  - apt-get update -y
-  - apt-get install -y docker-ce docker-ce-cli containerd.io
-  # Install docker-compose
-  - curl -L "https://github.com/docker/compose/releases/download/1.28.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-  - chmod a+x /usr/local/bin/docker-compose
-  # Delete passwords
-  - passwd -d root
-  # Restart services
-  - service ssh restart
   # UFW
   - echo "Setting up ufw.."
   - ufw default allow outgoing
@@ -95,9 +82,10 @@ runcmd:
   - ufw allow https
   - ufw disable
   - ufw enable
-  # Enable docker
-  - systemctl start docker
-  - systemctl enable docker
+  # Delete passwords
+  - passwd -d root
+  # Restart services
+  - service ssh restart
   # Finish
   - echo "Done."
   - touch /cloud-init-ran
