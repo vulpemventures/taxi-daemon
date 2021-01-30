@@ -13,6 +13,11 @@ build-cli:
 ## build the project (CLI + server)
 build: clean build-server build-cli
 
+## buildlinux: use a docker container with ubuntu to build binaries and move into bin folder
+buildlinux: 	
+	chmod u+x ./scripts/buildlinux
+	bash ./scripts/buildlinux
+
 ## remove the compiled binaries in ./bin
 clean: 
 	@echo "Clean..."
@@ -42,8 +47,8 @@ proto:
 run:
 	export TAXI_NETWORK=regtest; \
 	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
-	export TAXI_LOG_LEVEL=9; \
-	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
+		export TAXI_LOG_LEVEL=9; \
+		export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
 	go run cmd/taxid/main.go
 
 ## run all the tests
@@ -81,14 +86,14 @@ create-cert:
 
 ## infra-up: create infra on Hetzner with Docker & Docker-Compose
 infra-up:
-	terraform -chdir=./terraform  init
-	terraform -chdir=./terraform  apply -auto-approve
+	terraform -chdir=./resources/terraform  init
+	terraform -chdir=./resources/terraform  apply -auto-approve
 
 ## infra-down: tear down infra on Hetzner
 infra-down:
-	terraform -chdir=./terraform  destroy -auto-approve
+	terraform -chdir=./resources/terraform  destroy -auto-approve
 
-## infra-load: build binaries and deploy to remote infra
-infra-load:
+## infra-load: load remote infra
+infra-load: buildlinux
 	chmod u+x ./scripts/provision
 	bash ./scripts/provision
