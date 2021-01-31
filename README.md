@@ -12,7 +12,7 @@
 
 ## Deployment
 
-Taxi Daemon is deployed onto a Hetzner Cloud VM, packaged as docker image and uploaded via SSH.
+Taxi Daemon is deployed onto a Hetzner Cloud VM in a box with 1vCPU, 2GB RAM, 20GB NVMe SSD, 20TB Traffic
 
 ### Prepare the infrastructure
 
@@ -30,35 +30,46 @@ This can be run against an already deployed infrastructure, it will re-create te
 
 ### Build and upload
 
-You need to have docker to perform this step. This will build the docker image and upload the `docker-compose.yml` file along with the built image.
+You need to have docker to perform this step. This will build the binary in a [docker container with Go on ubuntu 20.04](https://github.com/vulpemventures/docker-golang-ubuntu) (to be consistent between local machine and remote one) and upload it 
 
 ```sh
 $ make infra-load 
 ```
 
-### Run the compose
+### Run
 
-Enter into the machine
+* Enter into the machine via SSH
 
 ```sh
 $ ssh username@host
 ```
-   
-**Only if is the first time** you MUST run caddy server alone to generate the TLS certificates
+
+* Create a `taxid.conf` and append environment variables to it
 
 ```sh
-$ docker-compose up -d --no-deps caddy
+touch `/etc/taxid/taxid.conf`
+echo "TAXI_MNEMONIC=super secret words foo bar" >> /etc/taxid/taxid.conf
+echo "TAXI_SSL_KEY=/path/to/key" >> /etc/taxid/taxid.conf
+echo "TAXI_SSL_CERT=/path/to/cert" >> /etc/taxid/taxid.conf
 ```
 
-start the taxi daemon and the Caddy reverse proxy
+* start the taxi daemon 
 
 ```sh
-$ docker-compose up -d
+$ sudo systemctl enable taxid
+$ suo systectl start taxid
 ```
+
+* get logs 
+
+```sh
+sudo journalctl -u taxid
+```
+
 
 ### Tear down infrastructure
 
-**WARNING** Backup the docker volumes and taxid data directory before performing this action
+**WARNING** Backup taxid data directory and TLS certificates/keys before performing this action
 
 ```sh
 make infra-down
@@ -84,13 +95,13 @@ $ taxi fund -n 10
 
 ### Deposit LBTC
 
-Use the previous addresses to send an exact amount defined in `TAXI_FIXED_FEE_AMOUNT`
+Use the previous addresses to send an exact amount defined in `TAXI_FIXED_FEE_AMOUNT` (by default 0.00001 LBTC / 1000 staoshis)
 
 If running an Elements instance, you can use the `fragment.py` script to make a deposit to many addresses in a single transaction.
 
 * Fragment script
 
-`scripts/fragment.py` is a Python script used to create these fragments from an Elements/Liquid node.
+`resources/fragment/fragment.py` is a Python script used to create these fragments from an Elements/Liquid node.
 
 NOTICE: the number of addresses specified as argument determines the number of fragments created.
 
