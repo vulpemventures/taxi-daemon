@@ -108,9 +108,8 @@ func main() {
 	admin.RegisterAdminServer(adminServer, adminHandler)
 	pb.RegisterTaxiServer(taxiServer, taxiHandler)
 
-	domainURL := "localhost"
-	taxiAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetInt(config.TaxiPortKey))
-	adminAddress := fmt.Sprintf("%s:%+v", domainURL, config.GetInt(config.AdminPortKey))
+	taxiAddress := fmt.Sprintf(":%+v", config.GetInt(config.TaxiPortKey))
+	adminAddress := fmt.Sprintf(":%+v", config.GetInt(config.AdminPortKey))
 
 	if err := serveMux(taxiAddress, true, taxiServer); err != nil {
 		log.WithError(err).Panic("error listening on taxi interface")

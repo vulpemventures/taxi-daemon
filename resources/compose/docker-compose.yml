@@ -1,0 +1,31 @@
+version: "3.7"
+
+services:
+  taxid:
+    container_name: "taxid"
+    image: taxid:latest
+    restart: unless-stopped
+    environment:
+      - TAXI_MNEMONIC=${MNEMONIC}
+      - TAXI_LOG_LEVEL=5
+      - TAXI_SSL_CERT=./cert.pem
+      - TAXI_SSL_KEY=./key.pem
+    ports:
+      - "8000:8000"
+      - "7000:7000"
+    volumes:
+      - $HOME/taxi-data:/.taxid
+      - $HOME/caddy-data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/api.liquid.taxi/api.liquid.taxi.crt:/cert.pem
+      - $HOME/caddy-data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/api.liquid.taxi/api.liquid.taxi.key:/key.pem
+  caddy:
+    container_name: "caddy"
+    image: caddy:latest
+    restart: unless-stopped
+    depends_on:
+      - taxid
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - $HOME/Caddyfile:/etc/caddy/Caddyfile
+      - $HOME/caddy-data:/data

@@ -1,0 +1,6 @@
+#!/bin/bash
+user_host=$(terraform -chdir=./terraform output -raw user_host)
+
+scp ./bin/taxid ${user_host}:./
+scp ./bin/taxi ${user_host}:./
+ssh ${user_host} 'chmod +x taxid taxi'
