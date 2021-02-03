@@ -7,7 +7,7 @@ import (
 // Fragment launch the fragment.py script (target a nigiri instance i.e with default rpc credentials and endpoint)
 func Fragment(addresses []string) error {
 	args := []string{
-		"../../scripts/fragment.py",
+		"../../resources/fragment/fragment.py",
 		"--unsafe",
 		"--fragment_size", "0.00001",
 		"--addresses",
