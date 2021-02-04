@@ -107,7 +107,7 @@ NOTICE: the number of addresses specified as argument determines the number of f
 
 ```sh
 $ git clone git@github.com:vulpemventures/taxi-daemon.git && cd taxi-daemon
-$ python3 ./scripts/fragment.py --url http://127.0.0.1:7041 \
+$ python3 ./resources/fragment/fragment.py --url http://127.0.0.1:7041 \
     --rpc_user admin1 \
     --rpc_pass 123 \
     --fragment_size 0.00001 \
