@@ -107,10 +107,10 @@ NOTICE: the number of addresses specified as argument determines the number of f
 
 ```sh
 $ git clone git@github.com:vulpemventures/taxi-daemon.git && cd taxi-daemon
-$ python3 ./scripts/fragment.py --url http://127.0.0.1:7041 \
+$ python3 ./resources/fragment/fragment.py --url http://127.0.0.1:7041 \
     --rpc_user admin1 \
     --rpc_pass 123 \
-    --fragment_size 0.0001 \
+    --fragment_size 0.00001 \
     --addresses XQFscDmxh6N9L5SknW6XxDHvjie4xfH8Bu XNqdSvixmaVqgrgEEpSA9s1EEtGfPoAZoH 
 ```
 
@@ -177,10 +177,12 @@ _At the root of the repository_
 docker build --pull --rm -f "Dockerfile" -t taxid:latest "."
 ```
 
-#### Run the taxi server
+#### Run the taxi server 
+
+For in depth documentation of the environment variables look [here](https://github.com/vulpemventures/taxi-daemon/blob/master/config/config.go)
 
 ```bash
-docker run -d -it --name taxid -p 7000:7000 -p 8000:8000 -v `pwd`/taxid:/.taxid taxid:latest
+docker run -d -it --name taxid -p 7000:7000 -p 8000:8000 -v `pwd`/taxid:/.taxid -e TAXI_MNEMONIC="<seed words here>" taxid:latest
 ```
 
 #### Use the CLI
