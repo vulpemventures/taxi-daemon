@@ -174,7 +174,7 @@ Build and use `taxid` with docker.
 _At the root of the repository_
 
 ```bash
-docker build --pull --rm -f "Dockerfile" -t taxid:latest "."
+$ docker build --pull --rm -f "Dockerfile" -t taxid:latest "."
 ```
 
 #### Run the taxi server 
@@ -182,12 +182,18 @@ docker build --pull --rm -f "Dockerfile" -t taxid:latest "."
 For in depth documentation of the environment variables look [here](https://github.com/vulpemventures/taxi-daemon/blob/master/config/config.go)
 
 ```bash
-docker run -d -it --name taxid -p 7000:7000 -p 8000:8000 -v `pwd`/taxid:/.taxid -e TAXI_MNEMONIC="<seed words here>" taxid:latest
+$ docker run -d -it --name taxid -p 7000:7000 -p 8000:8000 -v `pwd`/taxid:/.taxid -e TAXI_MNEMONIC="<seed words here>" taxid:latest
+```
+
+Run in regtest with Nigiri
+
+```
+$ docker run -d -it --name taxid --network host -v `pwd`/taxid:/.taxid -e TAXI_MNEMONIC="<seed words here>" -e TAXI_NETWORK=regtest -e TAXI_EXPLORER_ENDPOINT='http://127.0.0.1:3001' -e TAXI_CACHE_INTERVAL=5 -e TAXI_LOG_LEVEL=9 ghcr.io/vulpemventures/taxid:latest
 ```
 
 #### Use the CLI
 
 ```bash
-alias taxi="docker exec -it taxid taxi"
+$ alias taxi="docker exec -it taxid taxi"
 ```
 
