@@ -9,6 +9,7 @@ services:
       - TAXI_DOMAIN=${DOMAIN}
       - TAXI_EMAIL=${EMAIL}
       - TAXI_MNEMONIC=${MNEMONIC}
+      - TAXI_PORT=443
       - TAXI_LOG_LEVEL=5
     ports:
       - "443:443"
