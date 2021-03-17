@@ -30,7 +30,7 @@ This can be run against an already deployed infrastructure, it will re-create te
 
 ### Build and upload
 
-You need to have docker to perform this step. This will build the binary in a [docker container with Go on ubuntu 20.04](https://github.com/vulpemventures/docker-golang-ubuntu) (to be consistent between local machine and remote one) and upload it 
+You need to have docker to perform this step. This will save and load the docker image up to the machine via ssh
 
 ```sh
 $ make infra-load 
@@ -44,26 +44,17 @@ $ make infra-load
 $ ssh username@host
 ```
 
-* Create a `taxid.conf` and append environment variables to it
-
-```sh
-touch `/etc/taxid/taxid.conf`
-echo "TAXI_MNEMONIC=super secret words foo bar" >> /etc/taxid/taxid.conf
-echo "TAXI_SSL_KEY=/path/to/key" >> /etc/taxid/taxid.conf
-echo "TAXI_SSL_CERT=/path/to/cert" >> /etc/taxid/taxid.conf
-```
-
 * start the taxi daemon 
 
 ```sh
-$ sudo systemctl enable taxid
-$ suo systectl start taxid
+$ cd compose
+$ TAXI_MNEMONIC="<your words>" docker-compose up -d
 ```
 
 * get logs 
 
 ```sh
-sudo journalctl -u taxid
+docker logs taxid
 ```
 
 

@@ -95,6 +95,6 @@ infra-down:
 	terraform -chdir=./resources/terraform  destroy -auto-approve
 
 ## infra-load: load remote infra
-infra-load: buildlinux
+infra-load:
 	chmod u+x ./scripts/provision-docker
 	bash ./scripts/provision-docker

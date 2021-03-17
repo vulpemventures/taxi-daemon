@@ -6,8 +6,11 @@ services:
     image: ghcr.io/vulpemventures/taxid:latest
     restart: unless-stopped
     environment:
+      - TAXI_DOMAIN=${DOMAIN}
+      - TAXI_EMAIL=${EMAIL}
       - TAXI_MNEMONIC=${MNEMONIC}
       - TAXI_LOG_LEVEL=5
     ports:
+      - "80:80"
       - "443:8000"
       - "7000:7000"

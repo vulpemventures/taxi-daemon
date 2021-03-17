@@ -7,7 +7,6 @@ package_reboot_if_required: true
 
 packages:
   # General security
-  - ufw
   - unattended-upgrades
   - apt-transport-https
   - ca-certificates
@@ -30,7 +29,7 @@ users:
   - default
   - name: ${username}
     sudo: ALL=(ALL) NOPASSWD:ALL
-    groups: users, admin
+    groups: users, admin, docker
     ssh_import_id: None
     lock_passwd: true
     ssh_authorized_keys:
@@ -38,6 +37,11 @@ users:
     shell: /bin/bash
 
 write_files:
+  # Enable ipv4 forwarding, required on CIS hardened machines
+  - owner: root:root
+    path: /etc/sysctl.d/99-enable-ipv4-forwarding.conf
+    content: |
+      net.ipv4.conf.all.forwarding=1
   # Disable PasswordAuthentication
   - owner: root:root
     path: /etc/ssh/sshd_config
@@ -81,15 +85,6 @@ runcmd:
   - passwd -d root
   # Restart services
   - service ssh restart
-  # UFW
-  - echo "Setting up ufw.."
-  - ufw default allow outgoing
-  - ufw default deny incoming
-  - ufw allow ssh
-  - ufw allow http
-  - ufw allow https
-  - ufw disable
-  - ufw enable
   # Enable docker
   - systemctl start docker
   - systemctl enable docker
