@@ -11,8 +11,7 @@ services:
       - TAXI_MNEMONIC=${MNEMONIC}
       - TAXI_LOG_LEVEL=5
     ports:
-      - "80:80"
-      - "443:8000"
+      - "443:443"
       - "7000:7000"
     volumes:
       - ./data:/home/taxi
