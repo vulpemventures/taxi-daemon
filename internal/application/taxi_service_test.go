@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tdex-network/tdex-daemon/pkg/explorer"
+	explorer "github.com/tdex-network/tdex-daemon/pkg/explorer/esplora"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
@@ -26,7 +26,10 @@ func TestTopupWithAsset(t *testing.T) {
 	lockRepo := inmemory.NewInmemoryLockRepository(utxoTTL)
 	topupRepo := newMockedTopupRepository(nil)
 	priceRepo := newMockedPriceRepository([]string{superToken})
-	explorerSvc := explorer.NewService(explorerEndpoint)
+	explorerSvc, err := explorer.NewService(explorerEndpoint)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	cache := newCache(NewCacheArgs{
 		Explorer:         explorerSvc,
@@ -104,7 +107,10 @@ func TestListAssets(t *testing.T) {
 	lockRepo := inmemory.NewInmemoryLockRepository(utxoTTL)
 	topupRepo := newMockedTopupRepository(nil)
 	priceRepo := newMockedPriceRepository([]string{superToken, hyperToken})
-	explorerSvc := explorer.NewService(explorerEndpoint)
+	explorerSvc, err := explorer.NewService(explorerEndpoint)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	cache := newCache(NewCacheArgs{
 		Explorer:         explorerSvc,

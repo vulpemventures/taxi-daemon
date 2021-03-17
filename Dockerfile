@@ -25,25 +25,13 @@ RUN cp /taxi/taxi .
 # Second image, running the executable
 FROM debian:buster
 
-ENV TAXI_DATADIR="/.taxid"
-
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 
-COPY --from=builder /build/taxid /
-COPY --from=builder /build/taxi /
+COPY --from=builder /build/taxid /taxid
+COPY --from=builder /build/taxi /taxi
 
-RUN install /taxi /bin
 
-# expose server and admin interface ports
-EXPOSE 8000
-EXPOSE 7000
+ENV XDG_DATA_HOME="/.certmagic"
+ENV TAXI_DATADIR="/.taxid"
 
-RUN useradd -ms /bin/bash taxi
-
-USER taxi
-
-# Prevents `VOLUME $HOME/.local/` being created as owned by `root`
-RUN mkdir -p "$HOME/.local/"
-
-CMD /taxid
-
+ENTRYPOINT ["/taxid"]

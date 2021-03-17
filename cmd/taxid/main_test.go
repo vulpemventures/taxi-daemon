@@ -10,7 +10,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/prometheus/common/log"
 	"github.com/stretchr/testify/assert"
-	"github.com/tdex-network/tdex-daemon/pkg/explorer"
+	explorer "github.com/tdex-network/tdex-daemon/pkg/explorer/esplora"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
@@ -34,7 +34,10 @@ func TestTaxiServer(t *testing.T) {
 	// In the scenario, alice will send USDT to bob
 	// However, alice has only USDT and would like to pay fees using them.
 
-	explorerSvc := explorer.NewService(explorerEndpoint)
+	explorerSvc, err := explorer.NewService(explorerEndpoint)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	aliceKeyPair, _ := btcec.NewPrivateKey(btcec.S256())
 	alice := payment.FromPublicKey(aliceKeyPair.PubKey(), &network.Regtest, nil)
@@ -115,7 +118,10 @@ func TestTaxiServer(t *testing.T) {
 	// bobAddress, _ := bob.WitnessPubKeyHash()
 
 	// Now, alice adds his own inputs and outputs
-	aliceExplorerSvc := explorer.NewService(explorerEndpoint)
+	aliceExplorerSvc, err := explorer.NewService(explorerEndpoint)
+	if err != nil {
+		t.Fatal(err)
+	}
 	time.Sleep(3 * time.Second)
 	utxos, err := aliceExplorerSvc.GetUnspents(aliceAddress, [][]byte{})
 

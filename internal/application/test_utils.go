@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
-	"github.com/tdex-network/tdex-daemon/pkg/explorer"
+	explorer "github.com/tdex-network/tdex-daemon/pkg/explorer/esplora"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/taxi-daemon/internal/domain"
 	"github.com/vulpemventures/taxi-daemon/internal/infrastructure/storage/inmemory"
@@ -88,7 +88,10 @@ func newMockedAdminService(numberOfAddresses uint) *adminService {
 	topupRepo := newMockedTopupRepository([]string{superToken, hyperToken})
 	priceRepo := newMockedPriceRepository(nil)
 	lockRepo := inmemory.NewInmemoryLockRepository(utxoTTL)
-	explorerSvc := explorer.NewService(explorerEndpoint)
+	explorerSvc, err := explorer.NewService(explorerEndpoint)
+	if err != nil {
+		panic(err)
+	}
 
 	cache := newCache(NewCacheArgs{
 		Explorer:         explorerSvc,

@@ -9,7 +9,7 @@ import (
 
 var config = cli.Command{
 	Name:   "config",
-	Usage:  "Print local configuration of the tdex CLI",
+	Usage:  "Print local configuration of the taxi CLI",
 	Action: configAction,
 	Subcommands: []*cli.Command{
 		{

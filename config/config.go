@@ -42,7 +42,7 @@ const (
 	SSLKeyPathKey = "SSL_KEY"
 	// DomainKey is TLD domain to be used for obtaining and renewing the TLS certificate
 	DomainKey = "DOMAIN"
-	// EmailKey is the email used for TLS certificates communications. Mandatory if TDEX_DOMAIN is given
+	// EmailKey is the email used for TLS certificates communications. Mandatory if TAXI_DOMAIN is given
 	EmailKey = "EMAIL"
 	// UtxoCacheIntervalKey is the number of seconds between two getUnspents process in fragments cache
 	UtxoCacheIntervalKey = "CACHE_INTERVAL"

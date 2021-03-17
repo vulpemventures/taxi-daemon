@@ -8,7 +8,7 @@ import (
 
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
-	"github.com/tdex-network/tdex-daemon/pkg/explorer"
+	explorer "github.com/tdex-network/tdex-daemon/pkg/explorer/esplora"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
 	"github.com/vulpemventures/taxi-daemon/internal/application"
@@ -45,12 +45,15 @@ func newMockedTopupRepository(assets []string) domain.TopupRepository {
 	return repo
 }
 
-func newMockAdminHandler() admin.AdminServer {
+func newMockAdminHandler() (admin.AdminServer, error) {
 	hdTreeRepo := inmemory.NewInmemoryHDTreeRepository(words, regtest)
 	topupRepo := newMockedTopupRepository([]string{network.Liquid.AssetID})
 	priceRepo := inmemory.NewInmemoryPriceRepository()
 	lockRepo := inmemory.NewInmemoryLockRepository(20 * time.Second)
-	explorerSvc := explorer.NewService(explorerEndpoint)
+	explorerSvc, err := explorer.NewService(explorerEndpoint)
+	if err != nil {
+		return nil, err
+	}
 
 	cache := application.NewCache(application.NewCacheArgs{
 		Explorer:         explorerSvc,
@@ -74,11 +77,15 @@ func newMockAdminHandler() admin.AdminServer {
 
 	adminSvc := application.NewAdminService(args)
 
-	return NewAdminHandler(adminSvc)
+	return NewAdminHandler(adminSvc), nil
 }
 
 func TestListTopups(t *testing.T) {
-	adminHandler := newMockAdminHandler()
+	adminHandler, err := newMockAdminHandler()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	reply, err := adminHandler.ListTopups(context.Background(), &admin.ListTopupsRequest{
 		AssetHash: "",
 	})

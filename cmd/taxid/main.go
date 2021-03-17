@@ -16,7 +16,7 @@ import (
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	log "github.com/sirupsen/logrus"
 	"github.com/soheilhy/cmux"
-	"github.com/tdex-network/tdex-daemon/pkg/explorer"
+	explorer "github.com/tdex-network/tdex-daemon/pkg/explorer/esplora"
 	"github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
 	"github.com/vulpemventures/taxi-daemon/config"
 	"github.com/vulpemventures/taxi-daemon/internal/application"
@@ -61,7 +61,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	explorerSvc := explorer.NewService(config.GetString(config.ExplorerEndpointKey))
+	explorerSvc, err := explorer.NewService(config.GetString(config.ExplorerEndpointKey))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	log.Info("taxi server is starting...")
 
