@@ -1,0 +1,74 @@
+builds:
+  - id: "taxid-linux"
+    main: ./cmd/taxid
+    ldflags:
+      - -s -w
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    goarch:
+      - amd64
+    binary: taxid-linux
+  - id: "taxi"
+    main: ./cmd/taxi
+    ldflags:
+      - -X 'main.version={{.Version}}' -X 'main.commit={{.Commit}}' -X 'main.date={{.Date}}'
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+    binary: taxi
+## flag the semver v**.**.**-<tag>.* as pre-release on Github
+release:
+  prerelease: auto
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+archives:
+  - id: taxid
+    format: binary
+    builds:
+      - taxid-linux
+    name_template: "taxid-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+  - id: taxi
+    format: binary
+    builds:
+      - taxi
+    name_template: "taxi-v{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+dockers:
+  # push always either release or prerelease with a docker tag with the semver only
+  - skip_push: false
+    dockerfile: Dockerfile
+    # image templates
+    image_templates:
+      - "ghcr.io/vulpemventures/taxid:latest"
+    # GOOS of the built binaries/packages that should be used.
+    goos: linux
+    # GOARCH of the built binaries/packages that should be used.
+    goarch: amd64
+    # Template of the docker build flags.
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+    extra_files:
+      - go.mod
+      - go.sum
+      - internal
+      - config
+      - pkg
+      - cmd
+      - api-spec

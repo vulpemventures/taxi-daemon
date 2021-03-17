@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/caddyserver/certmagic"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	log "github.com/sirupsen/logrus"
 	"github.com/soheilhy/cmux"
@@ -142,6 +143,22 @@ func serveMux(address string, withSsl bool, grpcServer *g.Server) error {
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
 		return err
+	}
+
+	if domain := config.GetString(config.DomainKey); domain != "" && withSsl {
+		// read and agree to your CA's legal documents
+		certmagic.DefaultACME.Agreed = true
+
+		// provide an email address
+		certmagic.DefaultACME.Email = config.GetString(config.EmailKey)
+
+		config, err := certmagic.TLS([]string{domain})
+		if err != nil {
+			return err
+		}
+		config.NextProtos = []string{"http/1.1", http2.NextProtoTLS, "h2-14"} // h2-14 is just for compatibility. will be eventually removed.
+
+		lis = tls.NewListener(lis, config)
 	}
 
 	if sslKey := config.GetString(config.SSLKeyPathKey); sslKey != "" && withSsl {

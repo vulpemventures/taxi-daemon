@@ -2,4 +2,4 @@
 user_host=$(terraform -chdir=./terraform output -raw user_host)
 
 scp -r ./resources/compose ${user_host}:./
-docker save | ssh -C ${user_host} docker load
+docker save ghcr.io/vulpemventures/taxid:latest | ssh -C ${user_host} docker load

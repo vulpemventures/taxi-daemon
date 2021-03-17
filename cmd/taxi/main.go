@@ -10,10 +10,16 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
 	app := cli.NewApp()
 
-	app.Version = "0.0.1"
+	app.Version = formatVersion()
 	app.Name = "taxi admin CLI"
 	app.Usage = "CLI for taxi-server administration"
 	app.EnableBashCompletion = true
@@ -61,4 +67,11 @@ func printRespJSON(res interface{}) {
 	}
 
 	fmt.Println(jsonStr)
+}
+
+func formatVersion() string {
+	return fmt.Sprintf(
+		"\nVersion: %s\nCommit: %s\nDate: %s",
+		version, commit, date,
+	)
 }

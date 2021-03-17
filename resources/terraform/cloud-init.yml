@@ -9,7 +9,11 @@ packages:
   # General security
   - ufw
   - unattended-upgrades
-  - build-essential
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg-agent
+  - software-properties-common
 
 # Disable root access
 disable_root: true
@@ -17,6 +21,10 @@ disable_root: true
 # Set Locale
 locale: en_US.UTF-8
 timezone: Europe/Rome
+
+# create the docker group
+groups:
+  - docker
 
 users:
   - default
@@ -53,18 +61,6 @@ write_files:
       Subsystem sftp	/usr/lib/openssh/sftp-server
       Protocol 2
       AllowUsers ${username}
-  - owner: root:root
-    path: /etc/systemd/system/taxid.service
-    content: |
-      [Unit]
-      Description=Liquid.Taxi Daemon
-      [Service]
-      Type=simple
-      Restart=always
-      RestartSec=5s
-      ExecStart=/home/${username}/taxid
-      [Install]
-      WantedBy=multi-user.target
 
 cloud_config_modules:
   - runcmd
@@ -73,6 +69,18 @@ cloud_final_modules:
   - scripts-user
 
 runcmd:
+  # Install Docker, for production, consider pinning to stable versions
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+  - add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  - apt-get update -y
+  - apt-get install -y docker-ce docker-ce-cli containerd.io
+  # Install docker-compose
+  - curl -L "https://github.com/docker/compose/releases/download/1.28.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+  - chmod a+x /usr/local/bin/docker-compose
+  # Delete passwords
+  - passwd -d root
+  # Restart services
+  - service ssh restart
   # UFW
   - echo "Setting up ufw.."
   - ufw default allow outgoing
@@ -82,10 +90,9 @@ runcmd:
   - ufw allow https
   - ufw disable
   - ufw enable
-  # Delete passwords
-  - passwd -d root
-  # Restart services
-  - service ssh restart
+  # Enable docker
+  - systemctl start docker
+  - systemctl enable docker
   # Finish
   - echo "Done."
   - touch /cloud-init-ran

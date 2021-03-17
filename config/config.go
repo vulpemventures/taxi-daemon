@@ -40,6 +40,10 @@ const (
 	SSLCertPathKey = "SSL_CERT"
 	// SSLKeyPathKey is the path to the SSL private key
 	SSLKeyPathKey = "SSL_KEY"
+	// DomainKey is TLD domain to be used for obtaining and renewing the TLS certificate
+	DomainKey = "DOMAIN"
+	// EmailKey is the email used for TLS certificates communications. Mandatory if TDEX_DOMAIN is given
+	EmailKey = "EMAIL"
 	// UtxoCacheIntervalKey is the number of seconds between two getUnspents process in fragments cache
 	UtxoCacheIntervalKey = "CACHE_INTERVAL"
 )
@@ -103,9 +107,18 @@ func validate() {
 		log.Fatal("port ", p, " is not available")
 	}
 
+	domain, email := vip.GetString(DomainKey), vip.GetString(EmailKey)
+	if (domain != "" && email == "") || (domain == "" && email != "") {
+		log.Fatalln("SSL requires both domain and email when enabled")
+	}
+
 	certPath, keyPath := vip.GetString(SSLCertPathKey), vip.GetString(SSLKeyPathKey)
 	if (certPath != "" && keyPath == "") || (certPath == "" && keyPath != "") {
 		log.Fatalln("SSL requires both key and certificate when enabled")
+	}
+
+	if certPath != "" && domain != "" {
+		log.Fatalln("either domain&email or key and certificate must be given, not both")
 	}
 }
 

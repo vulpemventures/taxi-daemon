@@ -96,5 +96,5 @@ infra-down:
 
 ## infra-load: load remote infra
 infra-load: buildlinux
-	chmod u+x ./scripts/provision-binary
-	bash ./scripts/provision-binary
+	chmod u+x ./scripts/provision-docker
+	bash ./scripts/provision-docker
