@@ -38,5 +38,12 @@ RUN install /taxi /bin
 EXPOSE 8000
 EXPOSE 7000
 
+RUN useradd -ms /bin/bash taxi
+
+USER taxi
+
+# Prevents `VOLUME $HOME/.local/` being created as owned by `root`
+RUN mkdir -p "$HOME/.local/"
+
 CMD /taxid
 
