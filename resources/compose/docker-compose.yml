@@ -9,10 +9,10 @@ services:
       - TAXI_DOMAIN=${DOMAIN}
       - TAXI_EMAIL=${EMAIL}
       - TAXI_MNEMONIC=${MNEMONIC}
-      - TAXI_PORT=443
-      - TAXI_LOG_LEVEL=5
+      - TAXI_LOG_LEVEL=9
     ports:
-      - "443:443"
+      - "80:80"
+      - "443:8000"
       - "7000:7000"
     volumes:
       - ./data:/.taxid
