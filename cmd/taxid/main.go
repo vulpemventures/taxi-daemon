@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/tls"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/caddyserver/certmagic"
+	"github.com/go-acme/lego/v3/challenge/tlsalpn01"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	log "github.com/sirupsen/logrus"
 	"github.com/soheilhy/cmux"
@@ -148,18 +150,34 @@ func serveMux(address string, withSsl bool, grpcServer *g.Server) error {
 		return err
 	}
 
+	// If the DOMAIN and EMAIL is given, we are going to spinup a basic http server to handle the http ACME challenge
 	if domain := config.GetString(config.DomainKey); domain != "" && withSsl {
-		// read and agree to your CA's legal documents
-		certmagic.DefaultACME.Agreed = true
 
-		// provide an email address
-		certmagic.DefaultACME.Email = config.GetString(config.EmailKey)
+		magic := certmagic.NewDefault()
+		myACME := certmagic.NewACMEManager(magic, certmagic.ACMEManager{
+			Agreed: true,
+			Email:  config.GetString(config.EmailKey),
+		})
+		magic.Issuer = myACME
 
-		config, err := certmagic.TLS([]string{domain})
+		// we run this server only for handling HTTP ACME challange
+		go http.ListenAndServe(":80", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if myACME.HandleHTTPChallenge(w, r) {
+				return
+			}
+		}),
+		)
+
+		err := magic.ManageAsync(context.Background(), []string{domain})
 		if err != nil {
-			return err
+			return fmt.Errorf("manage sync: %w", err)
 		}
-		config.NextProtos = []string{"http/1.1", http2.NextProtoTLS, "h2-14"} // h2-14 is just for compatibility. will be eventually removed.
+
+		config := &tls.Config{
+			NextProtos: []string{"http/1.1", http2.NextProtoTLS, "h2-14"}, // h2-14 is just for compatibility. will be eventually removed.
+		}
+		config.GetCertificate = magic.GetCertificate
+		config.NextProtos = append(config.NextProtos, tlsalpn01.ACMETLS1Protocol)
 
 		lis = tls.NewListener(lis, config)
 	}
