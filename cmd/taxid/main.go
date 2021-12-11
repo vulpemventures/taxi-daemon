@@ -15,6 +15,7 @@ import (
 
 	"github.com/caddyserver/certmagic"
 	"github.com/go-acme/lego/v3/challenge/tlsalpn01"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	log "github.com/sirupsen/logrus"
 	"github.com/soheilhy/cmux"
@@ -209,10 +210,20 @@ func serveMux(address string, withSsl bool, grpcServer *g.Server) error {
 		grpcweb.WithOriginFunc(func(origin string) bool { return true }),
 	)
 
+	gwmux := runtime.NewServeMux()
+	if err := pb.RegisterTaxiHandlerFromEndpoint(
+		context.Background(),
+		gwmux, address, []g.DialOption{g.WithInsecure()},
+	); err != nil {
+		return err
+	}
+
 	go grpcServer.Serve(grpcL)
 	go http.Serve(httpL, http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		if isValidRequest(req) {
+		if isGrpcWebRequest(req) {
 			grpcWebServer.ServeHTTP(resp, req)
+		} else {
+			gwmux.ServeHTTP(resp, req)
 		}
 	}))
 
@@ -220,7 +231,7 @@ func serveMux(address string, withSsl bool, grpcServer *g.Server) error {
 	return nil
 }
 
-func isValidRequest(req *http.Request) bool {
+func isGrpcWebRequest(req *http.Request) bool {
 	return isValidGrpcWebOptionRequest(req) || isValidGrpcWebRequest(req)
 }
 
