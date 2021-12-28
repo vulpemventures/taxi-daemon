@@ -1,24 +1,61 @@
 syntax = "proto3";
-option go_package = "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin";
+option go_package = "taxi-daemon/api-spec/protobuf/gen/admin";
+
+import "google/api/annotations.proto";
 
 service Admin {
   // AddAsset lets update the asset_hash with price if exists, or creates it
-  rpc AddAsset(AddAssetRequest) returns (AddAssetReply);
+  rpc AddAsset(AddAssetRequest) returns (AddAssetReply) {
+    option (google.api.http) = {
+      post: "/addasset"
+      body: "*"
+    };
+  }
   // FundingAddress returns one or more receiving addresses to deposit LBTC funds 
-  rpc FundingAddress(FundingAddressRequest) returns (FundingAddressReply);
+  rpc FundingAddress(FundingAddressRequest) returns (FundingAddressReply) {
+    option (google.api.http) = {
+      post: "/fundingaddress"
+      body: "*"
+    };
+  }
   // ListTopups returns all the internal topups
-  rpc ListTopups(ListTopupsRequest) returns (ListTopupsReply);
+  rpc ListTopups(ListTopupsRequest) returns (ListTopupsReply) {
+    option (google.api.http) = {
+      get: "/listtopups"
+    };
+  }
   // ListFundingAddresses returns a list of addresses of the taxi wallet with their derivation path
-  rpc ListFundingAddresses(ListFundingAddressesRequest) returns (ListFundingAddressesReply);
+  rpc ListFundingAddresses(ListFundingAddressesRequest) returns (ListFundingAddressesReply) {
+    option (google.api.http) = {
+      get: "/listfundingaddresses"
+    };
+  }
   // LatestFundingAddressIndex returns the derivation index of the latest address derived owning LBTCs
-  rpc LatestFundingAddressIndex(LatestFundingAddressIndexRequest) returns(LatestFundingAddressIndexReply);
+  rpc LatestFundingAddressIndex(LatestFundingAddressIndexRequest) returns(LatestFundingAddressIndexReply) {
+    option (google.api.http) = {
+      get: "/latestfundingaddressindex"
+    };
+  }
   // Balance returns total unspent outputs (confirmed and unconfirmed), all
   // confirmed unspent outputs and all unconfirmed unspent outputs under control
   // of the wallet.
-  rpc Balance(BalanceRequest) returns (BalanceReply);
+  rpc Balance(BalanceRequest) returns (BalanceReply) {
+    option (google.api.http) = {
+      get: "/balance"
+    };
+  }
   // SendToMany sends funds to many outputs out of taxi wallet
-  rpc SendToMany(SendToManyRequest) returns (SendToManyReply);
-  rpc ListLocks(ListLocksRequest) returns (ListLocksReply);
+  rpc SendToMany(SendToManyRequest) returns (SendToManyReply) {
+    option (google.api.http) = {
+      post: "/sendtomany"
+      body: "*"
+    };
+  }
+  rpc ListLocks(ListLocksRequest) returns (ListLocksReply) {
+    option (google.api.http) = {
+      get: "/listlocks"
+    };
+  }
 }
 
 message ListLocksRequest {}

@@ -1,0 +1,13 @@
+version: v1beta1
+name: buf.build/esvenlab/taxi
+build:
+  roots:
+    - api-spec/protobuf
+deps:
+  - buf.build/googleapis/googleapis
+lint:
+  use:
+    - DEFAULT
+breaking:
+  use:
+    - FILE
