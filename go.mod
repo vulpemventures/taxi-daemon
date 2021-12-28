@@ -19,7 +19,7 @@ require (
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/uuid v1.1.4
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.1 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.1
 	github.com/improbable-eng/grpc-web v0.14.0
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
@@ -44,6 +44,7 @@ require (
 	github.com/vulpemventures/taxi-protobuf v0.1.1
 	golang.org/x/crypto v0.0.0-20210317152858-513c2a44f670 // indirect
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
+	google.golang.org/genproto v0.0.0-20211129164237-f09f9a12af12
 	google.golang.org/grpc v1.42.0
 	google.golang.org/grpc/examples v0.0.0-20210113212343-5e3cbb54d230 // indirect
 	google.golang.org/protobuf v1.27.1

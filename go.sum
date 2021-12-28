@@ -643,8 +643,6 @@ github.com/vulpemventures/go-elements v0.1.1 h1:x8xxc6FUBrbxasNw7v3wk8vICg1qvHlw
 github.com/vulpemventures/go-elements v0.1.1/go.mod h1:OtH2q9NiwybzT9X0AWvkNY+sbxy3okD+vC9oAu5hWhE=
 github.com/vulpemventures/go-secp256k1-zkp v1.1.0 h1:Z3qKc/lYxEQ1cukwwjD4n7EBCrg7N6of4hylVsD+lOA=
 github.com/vulpemventures/go-secp256k1-zkp v1.1.0/go.mod h1:zo7CpgkuPgoe7fAV+inyxsI9IhGmcoFgyD8nqZaPSOM=
-github.com/vulpemventures/taxi-protobuf v0.1.1-0.20211210194816-ef24933d6f80 h1:QHETuRX/0xhKSAnq0mQtKTMZCwKyd6+lB9TbjHaX+JU=
-github.com/vulpemventures/taxi-protobuf v0.1.1-0.20211210194816-ef24933d6f80/go.mod h1:kFmVCMCp4Vj4Ota5aRCKddBWj6PRVaXKir02c2Xqsy8=
 github.com/vulpemventures/taxi-protobuf v0.1.1 h1:K1xf2y6azlAQUTizfXxG2CRkZ1n2EsfTPxn19KrXSh8=
 github.com/vulpemventures/taxi-protobuf v0.1.1/go.mod h1:kFmVCMCp4Vj4Ota5aRCKddBWj6PRVaXKir02c2Xqsy8=
 github.com/vultr/govultr v0.4.2/go.mod h1:TUuUizMOFc7z+PNMssb6iGjKjQfpw5arIaOLfocVudQ=
