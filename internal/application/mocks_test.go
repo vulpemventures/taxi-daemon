@@ -1,4 +1,4 @@
-package application
+package application_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"github.com/shopspring/decimal"
 	explorer "github.com/tdex-network/tdex-daemon/pkg/explorer/esplora"
 	"github.com/vulpemventures/go-elements/network"
+	"github.com/vulpemventures/taxi-daemon/internal/application"
 	"github.com/vulpemventures/taxi-daemon/internal/domain"
 	"github.com/vulpemventures/taxi-daemon/internal/infrastructure/storage/inmemory"
 )
@@ -83,7 +84,7 @@ func newMockedLockRepository() domain.LockRepository {
 	return inmemory.NewInmemoryLockRepository(utxoTTL)
 }
 
-func newMockedAdminService(numberOfAddresses uint) *adminService {
+func newMockedAdminService(numberOfAddresses uint) application.AdminService {
 	hdTreeRepo := newMockedHDTreeRepository(numberOfAddresses)
 	topupRepo := newMockedTopupRepository([]string{superToken, hyperToken})
 	priceRepo := newMockedPriceRepository(nil)
@@ -93,7 +94,7 @@ func newMockedAdminService(numberOfAddresses uint) *adminService {
 		panic(err)
 	}
 
-	cache := newCache(NewCacheArgs{
+	cache := application.NewCache(application.NewCacheArgs{
 		Explorer:         explorerSvc,
 		HdTreeRepository: hdTreeRepo,
 		LockRepository:   lockRepo,
@@ -102,7 +103,7 @@ func newMockedAdminService(numberOfAddresses uint) *adminService {
 		Interval:         30 * time.Second,
 	})
 
-	newAdminSvcArgs := NewAdminServiceArgs{
+	newAdminSvcArgs := application.NewAdminServiceArgs{
 		HDTreeRepository: hdTreeRepo,
 		TopupRepository:  topupRepo,
 		PriceRepository:  priceRepo,
@@ -113,5 +114,5 @@ func newMockedAdminService(numberOfAddresses uint) *adminService {
 		Cache:            cache,
 	}
 
-	return newAdminService(newAdminSvcArgs)
+	return application.NewAdminService(newAdminSvcArgs)
 }

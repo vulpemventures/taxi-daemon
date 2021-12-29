@@ -1,4 +1,4 @@
-package application
+package application_test
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/pset"
 	"github.com/vulpemventures/go-elements/transaction"
+	"github.com/vulpemventures/taxi-daemon/internal/application"
 	"github.com/vulpemventures/taxi-daemon/internal/domain"
 	"github.com/vulpemventures/taxi-daemon/internal/infrastructure/storage/inmemory"
 	"github.com/vulpemventures/taxi-daemon/pkg/testutils"
@@ -31,7 +32,7 @@ func TestTopupWithAsset(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cache := newCache(NewCacheArgs{
+	cache := application.NewCache(application.NewCacheArgs{
 		Explorer:         explorerSvc,
 		HdTreeRepository: hdTreeRepo,
 		LockRepository:   lockRepo,
@@ -40,7 +41,7 @@ func TestTopupWithAsset(t *testing.T) {
 		Interval:         30 * time.Second,
 	})
 
-	args := NewTaxiServiceArgs{
+	args := application.NewTaxiServiceArgs{
 		hdTreeRepo,
 		lockRepo,
 		topupRepo,
@@ -51,7 +52,7 @@ func TestTopupWithAsset(t *testing.T) {
 		cache,
 	}
 
-	taxiSvc := newTaxiService(args)
+	taxiSvc := application.NewTaxiService(args)
 	ctx := context.Background()
 
 	addresses, err := hdTreeRepo.GetNewFundingAddresses(ctx, 3, false)
@@ -112,7 +113,7 @@ func TestListAssets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cache := newCache(NewCacheArgs{
+	cache := application.NewCache(application.NewCacheArgs{
 		Explorer:         explorerSvc,
 		HdTreeRepository: hdTreeRepo,
 		LockRepository:   lockRepo,
@@ -121,7 +122,7 @@ func TestListAssets(t *testing.T) {
 		Interval:         30 * time.Second,
 	})
 
-	args := NewTaxiServiceArgs{
+	args := application.NewTaxiServiceArgs{
 		hdTreeRepo,
 		lockRepo,
 		topupRepo,
@@ -132,7 +133,7 @@ func TestListAssets(t *testing.T) {
 		cache,
 	}
 
-	taxiSvc := newTaxiService(args)
+	taxiSvc := application.NewTaxiService(args)
 	ctx := context.Background()
 
 	assets, err := taxiSvc.ListAssets(ctx)
