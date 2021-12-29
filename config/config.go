@@ -16,10 +16,6 @@ const (
 	ConfigPathKey = "CONFIG_PATH"
 	//ExplorerEndpointKey defines the explorer to fetch data
 	ExplorerEndpointKey = "EXPLORER_ENDPOINT"
-	// TaxiPortKey defines the port to run in a standalone context
-	TaxiPortKey = "PORT"
-	// AdminPortKey serves the port for admin server
-	AdminPortKey = "ADMIN_PORT"
 	// NetworkKey defines the network
 	NetworkKey = "NETWORK"
 	// MnemonicKey defines the private key used by the taxi
@@ -36,14 +32,25 @@ const (
 	MaxFixedFeeAmount = 10000000
 	// DatadirKey is the path of the directory used to store the taxi's database files
 	DatadirKey = "DATADIR"
-	// SSLCertPathKey is the path to the SSL certificate
-	SSLCertPathKey = "SSL_CERT"
-	// SSLKeyPathKey is the path to the SSL private key
-	SSLKeyPathKey = "SSL_KEY"
-	// DomainKey is TLD domain to be used for obtaining and renewing the TLS certificate
-	DomainKey = "DOMAIN"
-	// EmailKey is the email used for TLS certificates communications. Mandatory if TAXI_DOMAIN is given
-	EmailKey = "EMAIL"
+	// AdminPortKey serves the port for admin server
+	AdminPortKey = "ADMIN_PORT"
+	// AdminTLSKeyPathKey is the path to the TLS private key for admin interface
+	AdminTLSKeyPathKey = "ADMIN_TLS_KEY"
+	// AdminTLSCertPathKey is the path to the TLS certificate for admin interface
+	AdminTLSCertPathKey = "ADMIN_TLS_CERT"
+	// TaxiPortKey defines the port to run in a standalone context
+	TaxiPortKey = "PORT"
+	// TaxiTLSKeyPathKey is the path to the TLS private key for taxi interface
+	TaxiTLSKeyPathKey = "TLS_KEY"
+	// TaxiTLSCertPathKey is the path to the TLS certificate for admin interface.
+	// Mandatory if TAXI_TLS_KEY is given
+	TaxiTLSCertPathKey = "TLS_CERT"
+	// TaxiDomainKey is TLD domain to be used for obtaining and renewing the TLS
+	// certificate for the taxi interface with CertMagic
+	TaxiDomainKey = "DOMAIN"
+	// TaxiEmailKey is the email used for TLS certificates communications.
+	// Mandatory if TAXI_DOMAIN is given
+	TaxiEmailKey = "EMAIL"
 	// UtxoCacheIntervalKey is the number of seconds between two getUnspents process in fragments cache
 	UtxoCacheIntervalKey = "CACHE_INTERVAL"
 )
@@ -59,8 +66,8 @@ func init() {
 
 	vip.SetDefault(NetworkKey, "liquid")
 	vip.SetDefault(ExplorerEndpointKey, "https://blockstream.info/liquid/api")
-	vip.SetDefault(TaxiPortKey, 8000)
 	vip.SetDefault(AdminPortKey, 7000)
+	vip.SetDefault(TaxiPortKey, 8000)
 	vip.SetDefault(MnemonicKey, "")
 	vip.SetDefault(LogLevelKey, log.InfoLevel)
 	vip.SetDefault(FixedFeeAmountKey, 1000)
@@ -68,58 +75,82 @@ func init() {
 	vip.SetDefault(DatadirKey, btcutil.AppDataDir("taxid", false))
 	vip.SetDefault(UtxoCacheIntervalKey, 180)
 
-	validate()
+	if err := validate(); err != nil {
+		log.WithError(err).Fatal("invalid config")
+	}
 
 	log.SetLevel(log.Level(vip.GetInt(LogLevelKey)))
 }
 
-func validate() {
+func validate() error {
 	if GetString(MnemonicKey) == "" {
-		log.Fatal("mnemonic is an empty string")
+		return fmt.Errorf("mnemonic is missing")
 	}
 
 	if GetNetwork() == nil {
-		log.Fatal("network does not exist")
+		return fmt.Errorf("network is missing")
 	}
 
 	feeAmount := GetInt(FixedFeeAmountKey)
-
-	if feeAmount < MinFixedFeeAmount {
-		log.Fatal("fragment amount can't be lower than ", MinFixedFeeAmount, " satoshis")
+	if feeAmount < MinFixedFeeAmount || feeAmount > MaxFixedFeeAmount {
+		return fmt.Errorf("fee amount must be in range [%d, %d]", MinFixedFeeAmount, MaxFixedFeeAmount)
 	}
 
-	if feeAmount > MaxFixedFeeAmount {
-		log.Fatal("fragment amount can't be greater than ", MaxFixedFeeAmount, " satoshis")
+	adminPort := GetInt(AdminPortKey)
+	taxiPort := GetInt(TaxiPortKey)
+
+	if adminPort == taxiPort {
+		return fmt.Errorf("ports can't be equal")
 	}
 
-	p := GetInt(TaxiPortKey)
-	pAdmin := GetInt(AdminPortKey)
-
-	if p == pAdmin {
-		log.Fatal("ports can't be equal")
+	if err := validatePort(adminPort); err != nil {
+		return fmt.Errorf(
+			"port %d not available for admin server: %s", adminPort, err,
+		)
 	}
 
-	if err := validatePort(p); err != nil {
-		log.Fatal("port ", p, " is not available")
+	if err := validatePort(taxiPort); err != nil {
+		return fmt.Errorf(
+			"port %d not available for taxi server: %s", adminPort, err,
+		)
 	}
 
-	if err := validatePort(pAdmin); err != nil {
-		log.Fatal("port ", p, " is not available")
+	adminTLSKeyPathSet := GetString(AdminTLSKeyPathKey) != ""
+	adminTLSCertPathSet := GetString(AdminTLSCertPathKey) != ""
+	if adminTLSKeyPathSet != adminTLSCertPathSet {
+		return fmt.Errorf(
+			"TLS termination for admin server requires both %s and %s when enabled",
+			AdminTLSKeyPathKey, AdminTLSCertPathKey,
+		)
 	}
 
-	domain, email := vip.GetString(DomainKey), vip.GetString(EmailKey)
-	if (domain != "" && email == "") || (domain == "" && email != "") {
-		log.Fatalln("SSL requires both domain and email when enabled")
+	taxiTLSKeyPathSet := GetString(TaxiTLSKeyPathKey) != ""
+	taxiTLSCertPathSet := GetString(TaxiTLSCertPathKey) != ""
+	if taxiTLSKeyPathSet != taxiTLSCertPathSet {
+		return fmt.Errorf(
+			"TLS termination for taxi server with local files requires both "+
+				"%s and %s when enabled", TaxiTLSKeyPathKey, TaxiTLSCertPathKey,
+		)
 	}
 
-	certPath, keyPath := vip.GetString(SSLCertPathKey), vip.GetString(SSLKeyPathKey)
-	if (certPath != "" && keyPath == "") || (certPath == "" && keyPath != "") {
-		log.Fatalln("SSL requires both key and certificate when enabled")
+	taxiDomainSet := GetString(TaxiDomainKey) != ""
+	taxiEmailSet := GetString(TaxiEmailKey) != ""
+	if taxiDomainSet != taxiEmailSet {
+		return fmt.Errorf(
+			"TLS termination for taxi server with CertMagic requires both "+
+				"%s and %s when enabled", TaxiDomainKey, TaxiEmailKey,
+		)
 	}
 
-	if certPath != "" && domain != "" {
-		log.Fatalln("either domain&email or key and certificate must be given, not both")
+	if taxiTLSKeyPathSet && taxiTLSKeyPathSet == taxiDomainSet {
+		return fmt.Errorf(
+			"TLS termination for taxi server requires exactly one between " +
+				"CertMagic (email&domain) and local files (key&cert) to be given " +
+				"when enabled",
+		)
 	}
+
+	return nil
 }
 
 func validatePort(port int) error {
@@ -127,11 +158,7 @@ func validatePort(port int) error {
 	if err != nil {
 		return err
 	}
-
-	err = ln.Close()
-	if err != nil {
-		log.Fatal("Can't close: ", err)
-	}
+	ln.Close()
 	return nil
 }
 
