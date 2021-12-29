@@ -16,7 +16,7 @@
     "application/json"
   ],
   "paths": {
-    "/addasset": {
+    "/v1/addasset": {
       "post": {
         "summary": "AddAsset lets update the asset_hash with price if exists, or creates it",
         "operationId": "Admin_AddAsset",
@@ -49,86 +49,7 @@
         ]
       }
     },
-    "/balance": {
-      "get": {
-        "summary": "Balance returns total unspent outputs (confirmed and unconfirmed), all\nconfirmed unspent outputs and all unconfirmed unspent outputs under control\nof the wallet.",
-        "operationId": "Admin_Balance",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/BalanceReply"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
-            }
-          }
-        },
-        "tags": [
-          "Admin"
-        ]
-      }
-    },
-    "/fundingaddress": {
-      "post": {
-        "summary": "FundingAddress returns one or more receiving addresses to deposit LBTC funds",
-        "operationId": "Admin_FundingAddress",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/FundingAddressReply"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/FundingAddressRequest"
-            }
-          }
-        ],
-        "tags": [
-          "Admin"
-        ]
-      }
-    },
-    "/latestfundingaddressindex": {
-      "get": {
-        "summary": "LatestFundingAddressIndex returns the derivation index of the latest address derived owning LBTCs",
-        "operationId": "Admin_LatestFundingAddressIndex",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/LatestFundingAddressIndexReply"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
-            }
-          }
-        },
-        "tags": [
-          "Admin"
-        ]
-      }
-    },
-    "/listfundingaddresses": {
+    "/v1/addresses": {
       "get": {
         "summary": "ListFundingAddresses returns a list of addresses of the taxi wallet with their derivation path",
         "operationId": "Admin_ListFundingAddresses",
@@ -173,7 +94,86 @@
         ]
       }
     },
-    "/listlocks": {
+    "/v1/balance": {
+      "get": {
+        "summary": "Balance returns total unspent outputs (confirmed and unconfirmed), all\nconfirmed unspent outputs and all unconfirmed unspent outputs under control\nof the wallet.",
+        "operationId": "Admin_Balance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/BalanceReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/fund": {
+      "post": {
+        "summary": "FundingAddress returns one or more receiving addresses to deposit LBTC funds",
+        "operationId": "Admin_FundingAddress",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/FundingAddressReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FundingAddressRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/latestaddressindex": {
+      "get": {
+        "summary": "LatestFundingAddressIndex returns the derivation index of the latest address derived owning LBTCs",
+        "operationId": "Admin_LatestFundingAddressIndex",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/LatestFundingAddressIndexReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/locks": {
       "get": {
         "operationId": "Admin_ListLocks",
         "responses": {
@@ -195,38 +195,7 @@
         ]
       }
     },
-    "/listtopups": {
-      "get": {
-        "summary": "ListTopups returns all the internal topups",
-        "operationId": "Admin_ListTopups",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/ListTopupsReply"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "assetHash",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "Admin"
-        ]
-      }
-    },
-    "/sendtomany": {
+    "/v1/sendtomany": {
       "post": {
         "summary": "SendToMany sends funds to many outputs out of taxi wallet",
         "operationId": "Admin_SendToMany",
@@ -252,6 +221,37 @@
             "schema": {
               "$ref": "#/definitions/SendToManyRequest"
             }
+          }
+        ],
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/topups": {
+      "get": {
+        "summary": "ListTopups returns all the internal topups",
+        "operationId": "Admin_ListTopups",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ListTopupsReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "assetHash",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
