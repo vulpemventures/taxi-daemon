@@ -7,14 +7,14 @@ service Admin {
   // AddAsset lets update the asset_hash with price if exists, or creates it
   rpc AddAsset(AddAssetRequest) returns (AddAssetReply) {
     option (google.api.http) = {
-      post: "/v1/addasset"
+      post: "/v1/asset"
       body: "*"
     };
   }
   // FundingAddress returns one or more receiving addresses to deposit LBTC funds 
   rpc FundingAddress(FundingAddressRequest) returns (FundingAddressReply) {
     option (google.api.http) = {
-      post: "/v1/fund"
+      post: "/v1/address"
       body: "*"
     };
   }
@@ -33,7 +33,7 @@ service Admin {
   // LatestFundingAddressIndex returns the derivation index of the latest address derived owning LBTCs
   rpc LatestFundingAddressIndex(LatestFundingAddressIndexRequest) returns(LatestFundingAddressIndexReply) {
     option (google.api.http) = {
-      get: "/v1/latestaddressindex"
+      get: "/v1/address/latest"
     };
   }
   // Balance returns total unspent outputs (confirmed and unconfirmed), all
@@ -47,7 +47,7 @@ service Admin {
   // SendToMany sends funds to many outputs out of taxi wallet
   rpc SendToMany(SendToManyRequest) returns (SendToManyReply) {
     option (google.api.http) = {
-      post: "/v1/sendtomany"
+      post: "/v1/withdraw"
       body: "*"
     };
   }

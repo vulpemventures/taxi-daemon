@@ -271,7 +271,7 @@ func RegisterAdminHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Admin/AddAsset", runtime.WithHTTPPathPattern("/v1/addasset"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Admin/AddAsset", runtime.WithHTTPPathPattern("/v1/asset"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -294,7 +294,7 @@ func RegisterAdminHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Admin/FundingAddress", runtime.WithHTTPPathPattern("/v1/fund"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Admin/FundingAddress", runtime.WithHTTPPathPattern("/v1/address"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -363,7 +363,7 @@ func RegisterAdminHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Admin/LatestFundingAddressIndex", runtime.WithHTTPPathPattern("/v1/latestaddressindex"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Admin/LatestFundingAddressIndex", runtime.WithHTTPPathPattern("/v1/address/latest"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -409,7 +409,7 @@ func RegisterAdminHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Admin/SendToMany", runtime.WithHTTPPathPattern("/v1/sendtomany"))
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.Admin/SendToMany", runtime.WithHTTPPathPattern("/v1/withdraw"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -494,7 +494,7 @@ func RegisterAdminHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Admin/AddAsset", runtime.WithHTTPPathPattern("/v1/addasset"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Admin/AddAsset", runtime.WithHTTPPathPattern("/v1/asset"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -514,7 +514,7 @@ func RegisterAdminHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Admin/FundingAddress", runtime.WithHTTPPathPattern("/v1/fund"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Admin/FundingAddress", runtime.WithHTTPPathPattern("/v1/address"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -574,7 +574,7 @@ func RegisterAdminHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Admin/LatestFundingAddressIndex", runtime.WithHTTPPathPattern("/v1/latestaddressindex"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Admin/LatestFundingAddressIndex", runtime.WithHTTPPathPattern("/v1/address/latest"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -614,7 +614,7 @@ func RegisterAdminHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Admin/SendToMany", runtime.WithHTTPPathPattern("/v1/sendtomany"))
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/.Admin/SendToMany", runtime.WithHTTPPathPattern("/v1/withdraw"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -654,19 +654,19 @@ func RegisterAdminHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Admin_AddAsset_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "addasset"}, ""))
+	pattern_Admin_AddAsset_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "asset"}, ""))
 
-	pattern_Admin_FundingAddress_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "fund"}, ""))
+	pattern_Admin_FundingAddress_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "address"}, ""))
 
 	pattern_Admin_ListTopups_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "topups"}, ""))
 
 	pattern_Admin_ListFundingAddresses_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "addresses"}, ""))
 
-	pattern_Admin_LatestFundingAddressIndex_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "latestaddressindex"}, ""))
+	pattern_Admin_LatestFundingAddressIndex_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "address", "latest"}, ""))
 
 	pattern_Admin_Balance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "balance"}, ""))
 
-	pattern_Admin_SendToMany_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "sendtomany"}, ""))
+	pattern_Admin_SendToMany_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "withdraw"}, ""))
 
 	pattern_Admin_ListLocks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "locks"}, ""))
 )
