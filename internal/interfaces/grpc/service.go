@@ -28,7 +28,7 @@ type ServiceConfig struct {
 	Domain      string
 }
 
-func (c ServiceConfig) validate(checkExtraFields bool) error {
+func (c ServiceConfig) validate() error {
 	if c.Port < minPort || c.Port > maxPort {
 		return fmt.Errorf("port must be in range [%d, %d]", minPort, maxPort)
 	}
@@ -40,20 +40,22 @@ func (c ServiceConfig) validate(checkExtraFields bool) error {
 		)
 	}
 
-	if checkExtraFields {
-		emailSet, domainSet := c.Email != "", c.Domain != ""
-		if emailSet != domainSet {
-			return fmt.Errorf(
-				"both email and domain must be either defined to use certmagic " +
-					"or not to source TLS key/cert from existing files",
-			)
-		}
+	emailSet, domainSet := c.Email != "", c.Domain != ""
+	if emailSet != domainSet {
+		return fmt.Errorf(
+			"both email and domain must be either defined to use certmagic " +
+				"or not to source TLS key/cert from existing files",
+		)
 	}
 	return nil
 }
 
 func (c ServiceConfig) insecure() bool {
 	return c.TLSKeyPath == "" && c.Domain == ""
+}
+
+func (c ServiceConfig) withCertMagic() bool {
+	return c.Domain != "" && c.Email != ""
 }
 
 func (c ServiceConfig) serverAddr() string {
@@ -72,10 +74,10 @@ type ServiceOpts struct {
 }
 
 func (o ServiceOpts) validate() error {
-	if err := o.AdminConfig.validate(false); err != nil {
+	if err := o.AdminConfig.validate(); err != nil {
 		return fmt.Errorf("invalid admin config: %s", err)
 	}
-	if err := o.TaxiConfig.validate(true); err != nil {
+	if err := o.TaxiConfig.validate(); err != nil {
 		return fmt.Errorf("invalid taxi config: %s", err)
 	}
 	if o.AdminSvc == nil {

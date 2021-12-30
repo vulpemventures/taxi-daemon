@@ -32,17 +32,40 @@ func newAdminHandlers(opts ServiceOpts) (*handlers, error) {
 		grpc.UnaryInterceptor(interceptor.UnaryLogger),
 		grpc.StreamInterceptor(interceptor.StreamLogger),
 	}
-	if !opts.AdminConfig.insecure() {
-		creds, err := credentials.NewServerTLSFromFile(
-			opts.AdminConfig.TLSCertPath, opts.AdminConfig.TLSKeyPath,
-		)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"failed to create TLS credentials for admin svc: %s", err,
+	withInsecure := opts.AdminConfig.insecure()
+	withCertMagic := opts.AdminConfig.withCertMagic()
+	var tlsConfig *tls.Config
+
+	if !withInsecure {
+		if withCertMagic {
+			var err error
+			tlsConfig, err = credsFromCertMagic(
+				opts.AdminConfig.Email, opts.AdminConfig.Domain,
 			)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"failed to create TLS credentials for admin svc: %s", err,
+				)
+			}
+		} else {
+			cert, err := tls.LoadX509KeyPair(
+				opts.AdminConfig.TLSCertPath, opts.AdminConfig.TLSKeyPath,
+			)
+			if err != nil {
+				return nil, err
+			}
+			tlsConfig = &tls.Config{
+				NextProtos:   []string{"http/1.1", http2.NextProtoTLS, "h2-14"}, // h2-14 is just for compatibility. will be eventually removed.
+				Certificates: []tls.Certificate{cert},
+				CipherSuites: []uint16{
+					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+				},
+				Rand: rand.Reader,
+			}
 		}
-		serverOpts = append(serverOpts, grpc.Creds(creds))
+		serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(tlsConfig)))
 	}
+
 	grpcHandler := handler.NewAdminHandler(opts.AdminSvc)
 	grpcServer := grpc.NewServer(serverOpts...)
 	admin.RegisterAdminServer(grpcServer, grpcHandler)
@@ -59,7 +82,10 @@ func newAdminHandlers(opts ServiceOpts) (*handlers, error) {
 	if opts.AdminConfig.insecure() {
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	} else {
-		tlsCreds, _ := credentials.NewClientTLSFromFile(opts.AdminConfig.TLSCertPath, "")
+		tlsCreds := credentials.NewTLS(nil)
+		if !withCertMagic {
+			tlsCreds, _ = credentials.NewClientTLSFromFile(opts.AdminConfig.TLSCertPath, "")
+		}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(tlsCreds))
 	}
 	conn, err := grpc.DialContext(
@@ -74,17 +100,11 @@ func newAdminHandlers(opts ServiceOpts) (*handlers, error) {
 
 	// http server routing requests to either grpc|grpcweb|grpcgateway handler
 	// based on their header
-	var tlsConfig *tls.Config
-	if !opts.AdminConfig.insecure() {
-		cert, _ := tls.LoadX509KeyPair(opts.AdminConfig.TLSCertPath, opts.AdminConfig.TLSKeyPath)
-		tlsConfig = &tls.Config{
-			Certificates: []tls.Certificate{cert},
-		}
-	}
 	handler := router(grpcServer, grpcWebServer, grpcGateway)
-	if opts.AdminConfig.insecure() {
+	if withInsecure {
 		handler = h2c.NewHandler(handler, &http2.Server{})
 	}
+
 	httpServer := &http.Server{
 		Addr:      opts.AdminConfig.serverAddr(),
 		Handler:   handler,
@@ -95,13 +115,13 @@ func newAdminHandlers(opts ServiceOpts) (*handlers, error) {
 }
 
 func newTaxiHandlers(opts ServiceOpts) (*handlers, error) {
-	// grpc server for taxi
+	// grpc server for taxi service
 	serverOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(interceptor.UnaryLogger),
 		grpc.StreamInterceptor(interceptor.StreamLogger),
 	}
 	withInsecure := opts.TaxiConfig.insecure()
-	withCertMagic := !withInsecure && opts.TaxiConfig.Email != ""
+	withCertMagic := opts.TaxiConfig.withCertMagic()
 	var tlsConfig *tls.Config
 
 	if !withInsecure {
