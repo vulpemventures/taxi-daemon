@@ -10,6 +10,7 @@ import (
 const (
 	rpcServerKey   = "rpcserver"
 	tlsCertPathKey = "tls_cert_path"
+	insecureKey    = "insecure"
 )
 
 var config = cli.Command{
@@ -36,6 +37,11 @@ var config = cli.Command{
 					Name:  tlsCertPathKey,
 					Usage: "the path of the TLS certificate file to use",
 				},
+				&cli.BoolFlag{
+					Name:  insecureKey,
+					Usage: "to connect to a daemon with TLS disabled",
+					Value: false,
+				},
 			},
 		},
 	},
@@ -58,6 +64,7 @@ func configInitAction(c *cli.Context) error {
 	return setState(map[string]string{
 		"rpcserver":     c.String(rpcServerKey),
 		"tls_cert_path": cleanAndExpandPath(c.String(tlsCertPathKey)),
+		"insecure":      c.String(insecureKey),
 	})
 }
 

@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strconv"
 
 	"github.com/btcsuite/btcutil"
 	"github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
@@ -87,13 +88,17 @@ func getAdminClient() (admin.AdminClient, func(), error) {
 	}
 	opts := make([]grpc.DialOption, 0)
 
-	certPath, ok := state["tls_cert_path"]
-	if !ok {
+	insecure, _ := strconv.ParseBool(state["insecure"])
+
+	if insecure {
 		opts = append(opts, grpc.WithInsecure())
 	} else {
-		tlsCreds, err := credentials.NewClientTLSFromFile(certPath, "")
-		if err != nil {
-			return nil, nil, fmt.Errorf("could not read TLS certificate:  %s", err)
+		tlsCreds := credentials.NewTLS(nil)
+		if certPath, ok := state["tls_cert_path"]; ok {
+			tlsCreds, err = credentials.NewClientTLSFromFile(certPath, "")
+			if err != nil {
+				return nil, nil, fmt.Errorf("could not read TLS certificate:  %s", err)
+			}
 		}
 		opts = append(opts, grpc.WithTransportCredentials(tlsCreds))
 	}
