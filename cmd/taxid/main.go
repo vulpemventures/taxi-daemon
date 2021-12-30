@@ -22,14 +22,12 @@ var (
 	cacheInterval  = time.Duration(config.GetInt(config.UtxoCacheIntervalKey)) * time.Second
 	fixedFeeAmount = uint64(config.GetInt(config.FixedFeeAmountKey))
 
-	adminPort        = config.GetInt(config.AdminPortKey)
-	adminTLSKeyPath  = config.GetString(config.AdminTLSKeyPathKey)
-	adminTLSCertPath = config.GetString(config.AdminTLSCertPathKey)
-	taxiPort         = config.GetInt(config.TaxiPortKey)
-	taxiTLSKeyPath   = config.GetString(config.TaxiTLSKeyPathKey)
-	taxiTLSCertPath  = config.GetString(config.TaxiTLSCertPathKey)
-	taxiEmail        = config.GetString(config.TaxiEmailKey)
-	taxiDomain       = config.GetString(config.TaxiDomainKey)
+	adminPort   = config.GetInt(config.AdminPortKey)
+	taxiPort    = config.GetInt(config.TaxiPortKey)
+	tlsKeyPath  = config.GetString(config.TLSKeyPathKey)
+	tlsCertPath = config.GetString(config.TLSCertPathKey)
+	email       = config.GetString(config.EmailKey)
+	domain      = config.GetString(config.DomainKey)
 )
 
 func main() {
@@ -102,15 +100,17 @@ func main() {
 		TaxiSvc:  taxiSvc,
 		AdminConfig: grpc.ServiceConfig{
 			Port:        adminPort,
-			TLSKeyPath:  adminTLSKeyPath,
-			TLSCertPath: adminTLSCertPath,
+			TLSKeyPath:  tlsKeyPath,
+			TLSCertPath: tlsCertPath,
+			Email:       email,
+			Domain:      domain,
 		},
 		TaxiConfig: grpc.ServiceConfig{
 			Port:        taxiPort,
-			TLSKeyPath:  taxiTLSKeyPath,
-			TLSCertPath: taxiTLSCertPath,
-			Email:       taxiEmail,
-			Domain:      taxiDomain,
+			TLSKeyPath:  tlsKeyPath,
+			TLSCertPath: tlsCertPath,
+			Email:       email,
+			Domain:      domain,
 		},
 	})
 	if err != nil {

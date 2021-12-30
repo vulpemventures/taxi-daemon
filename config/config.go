@@ -34,23 +34,19 @@ const (
 	DatadirKey = "DATADIR"
 	// AdminPortKey serves the port for admin server
 	AdminPortKey = "ADMIN_PORT"
-	// AdminTLSKeyPathKey is the path to the TLS private key for admin interface
-	AdminTLSKeyPathKey = "ADMIN_TLS_KEY"
-	// AdminTLSCertPathKey is the path to the TLS certificate for admin interface
-	AdminTLSCertPathKey = "ADMIN_TLS_CERT"
 	// TaxiPortKey defines the port to run in a standalone context
 	TaxiPortKey = "PORT"
-	// TaxiTLSKeyPathKey is the path to the TLS private key for taxi interface
-	TaxiTLSKeyPathKey = "TLS_KEY"
-	// TaxiTLSCertPathKey is the path to the TLS certificate for admin interface.
-	// Mandatory if TAXI_TLS_KEY is given
-	TaxiTLSCertPathKey = "TLS_CERT"
-	// TaxiDomainKey is TLD domain to be used for obtaining and renewing the TLS
-	// certificate for the taxi interface with CertMagic
-	TaxiDomainKey = "DOMAIN"
-	// TaxiEmailKey is the email used for TLS certificates communications.
+	// TLSKeyPathKey is the path to the TLS private key for taxi|admin interface
+	TLSKeyPathKey = "TLS_KEY"
+	// TLSCertPathKey is the path to the TLS certificate for taxi|admin
+	// interface. Mandatory if TAXI_TLS_KEY is given
+	TLSCertPathKey = "TLS_CERT"
+	// DomainKey is TLD domain to be used for obtaining and renewing the TLS
+	// certificate for the taxi|admin interface with CertMagic
+	DomainKey = "DOMAIN"
+	// EmailKey is the email used for TLS certificates communications.
 	// Mandatory if TAXI_DOMAIN is given
-	TaxiEmailKey = "EMAIL"
+	EmailKey = "EMAIL"
 	// UtxoCacheIntervalKey is the number of seconds between two getUnspents process in fragments cache
 	UtxoCacheIntervalKey = "CACHE_INTERVAL"
 )
@@ -115,30 +111,21 @@ func validate() error {
 		)
 	}
 
-	adminTLSKeyPathSet := GetString(AdminTLSKeyPathKey) != ""
-	adminTLSCertPathSet := GetString(AdminTLSCertPathKey) != ""
-	if adminTLSKeyPathSet != adminTLSCertPathSet {
-		return fmt.Errorf(
-			"TLS termination for admin server requires both %s and %s when enabled",
-			AdminTLSKeyPathKey, AdminTLSCertPathKey,
-		)
-	}
-
-	taxiTLSKeyPathSet := GetString(TaxiTLSKeyPathKey) != ""
-	taxiTLSCertPathSet := GetString(TaxiTLSCertPathKey) != ""
+	taxiTLSKeyPathSet := GetString(TLSKeyPathKey) != ""
+	taxiTLSCertPathSet := GetString(TLSCertPathKey) != ""
 	if taxiTLSKeyPathSet != taxiTLSCertPathSet {
 		return fmt.Errorf(
 			"TLS termination for taxi server with local files requires both "+
-				"%s and %s when enabled", TaxiTLSKeyPathKey, TaxiTLSCertPathKey,
+				"%s and %s when enabled", TLSKeyPathKey, TLSCertPathKey,
 		)
 	}
 
-	taxiDomainSet := GetString(TaxiDomainKey) != ""
-	taxiEmailSet := GetString(TaxiEmailKey) != ""
+	taxiDomainSet := GetString(DomainKey) != ""
+	taxiEmailSet := GetString(EmailKey) != ""
 	if taxiDomainSet != taxiEmailSet {
 		return fmt.Errorf(
 			"TLS termination for taxi server with CertMagic requires both "+
-				"%s and %s when enabled", TaxiDomainKey, TaxiEmailKey,
+				"%s and %s when enabled", DomainKey, EmailKey,
 		)
 	}
 
