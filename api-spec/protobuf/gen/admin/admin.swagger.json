@@ -1,0 +1,549 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "admin.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "Admin"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/address": {
+      "post": {
+        "summary": "FundingAddress returns one or more receiving addresses to deposit LBTC funds",
+        "operationId": "Admin_FundingAddress",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/FundingAddressReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FundingAddressRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/address/latest": {
+      "get": {
+        "summary": "LatestFundingAddressIndex returns the derivation index of the latest address derived owning LBTCs",
+        "operationId": "Admin_LatestFundingAddressIndex",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/LatestFundingAddressIndexReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/addresses": {
+      "get": {
+        "summary": "ListFundingAddresses returns a list of addresses of the taxi wallet with their derivation path",
+        "operationId": "Admin_ListFundingAddresses",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ListFundingAddressesReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "number",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "change",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/asset": {
+      "post": {
+        "summary": "AddAsset lets update the asset_hash with price if exists, or creates it",
+        "operationId": "Admin_AddAsset",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/AddAssetReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AddAssetRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/balance": {
+      "get": {
+        "summary": "Balance returns total unspent outputs (confirmed and unconfirmed), all\nconfirmed unspent outputs and all unconfirmed unspent outputs under control\nof the wallet.",
+        "operationId": "Admin_Balance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/BalanceReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/locks": {
+      "get": {
+        "operationId": "Admin_ListLocks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ListLocksReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/topups": {
+      "get": {
+        "summary": "ListTopups returns all the internal topups",
+        "operationId": "Admin_ListTopups",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/ListTopupsReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "assetHash",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/v1/withdraw": {
+      "post": {
+        "summary": "SendToMany sends funds to many outputs out of taxi wallet",
+        "operationId": "Admin_SendToMany",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/SendToManyReply"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SendToManyRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Admin"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "AddAssetReply": {
+      "type": "object"
+    },
+    "AddAssetRequest": {
+      "type": "object",
+      "properties": {
+        "assetHash": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number",
+          "format": "float"
+        },
+        "basisPoints": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "AddressInfo": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "derivationPath": {
+          "type": "string"
+        },
+        "publicKey": {
+          "type": "string"
+        },
+        "index": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "BalanceInfo": {
+      "type": "object",
+      "properties": {
+        "totalBalance": {
+          "type": "string",
+          "format": "uint64",
+          "title": "The balance of the wallet"
+        },
+        "confirmedBalance": {
+          "type": "string",
+          "format": "uint64",
+          "title": "The confirmed balance of a wallet(with \u003e= 1 confirmations)"
+        },
+        "unconfirmedBalance": {
+          "type": "string",
+          "format": "uint64",
+          "title": "The unconfirmed balance of a wallet(with 0 confirmations)"
+        }
+      }
+    },
+    "BalanceReply": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/BalanceInfo"
+          },
+          "title": "The balance info (total, confirmed, unconfirmed) of the wallet grouped by\nasset"
+        }
+      }
+    },
+    "FundingAddressReply": {
+      "type": "object",
+      "properties": {
+        "addresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "FundingAddressRequest": {
+      "type": "object",
+      "properties": {
+        "numOfAddresses": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "LatestFundingAddressIndexReply": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "ListFundingAddressesReply": {
+      "type": "object",
+      "properties": {
+        "addresses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AddressInfo"
+          }
+        }
+      }
+    },
+    "ListLocksReply": {
+      "type": "object",
+      "properties": {
+        "locks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Outpoint"
+          }
+        }
+      }
+    },
+    "ListTopupsReply": {
+      "type": "object",
+      "properties": {
+        "topups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TopupDetails"
+          }
+        }
+      }
+    },
+    "Outpoint": {
+      "type": "object",
+      "properties": {
+        "txid": {
+          "type": "string"
+        },
+        "vout": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "SendToManyReply": {
+      "type": "object",
+      "properties": {
+        "rawTx": {
+          "type": "string",
+          "format": "byte",
+          "description": "The serialized transaction sent out on the network."
+        }
+      }
+    },
+    "SendToManyRequest": {
+      "type": "object",
+      "properties": {
+        "outputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TxOut"
+          },
+          "description": "A slice of the outputs that should be created in the transaction produced."
+        },
+        "millisatPerByte": {
+          "type": "string",
+          "format": "int64",
+          "description": "The number of millisatoshis per byte that should be used when crafting\nthis transaction."
+        },
+        "push": {
+          "type": "boolean",
+          "title": "Optional: if true the transaction will be pushed to the network"
+        }
+      }
+    },
+    "Timestamps": {
+      "type": "object",
+      "properties": {
+        "requestedAt": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "settledAt": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "expiredAt": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "TopupDetails": {
+      "type": "object",
+      "properties": {
+        "topupId": {
+          "type": "string"
+        },
+        "partial": {
+          "type": "string"
+        },
+        "assetHash": {
+          "type": "string"
+        },
+        "assetAmount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "assetSpread": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "status": {
+          "$ref": "#/definitions/TopupDetailsStatus"
+        },
+        "feeAmount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "times": {
+          "$ref": "#/definitions/Timestamps"
+        },
+        "txid": {
+          "type": "string"
+        }
+      }
+    },
+    "TopupDetailsStatus": {
+      "type": "string",
+      "enum": [
+        "REQUESTED",
+        "COMPLETED",
+        "SETTLED"
+      ],
+      "default": "REQUESTED"
+    },
+    "TxOut": {
+      "type": "object",
+      "properties": {
+        "asset": {
+          "type": "string",
+          "title": "The asset being spent"
+        },
+        "value": {
+          "type": "string",
+          "format": "int64",
+          "description": "The value of the output being spent."
+        },
+        "address": {
+          "type": "string",
+          "description": "The confidential address of the output being spent."
+        }
+      }
+    },
+    "googlerpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    }
+  }
+}

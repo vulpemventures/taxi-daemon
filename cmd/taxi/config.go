@@ -7,6 +7,12 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+const (
+	rpcServerKey   = "rpcserver"
+	tlsCertPathKey = "tls_cert_path"
+	insecureKey    = "insecure"
+)
+
 var config = cli.Command{
 	Name:   "config",
 	Usage:  "Print local configuration of the taxi CLI",
@@ -23,9 +29,18 @@ var config = cli.Command{
 			Action: configInitAction,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:  "rpcserver",
+					Name:  rpcServerKey,
 					Usage: "taxi daemon address host:port",
 					Value: "localhost:7000",
+				},
+				&cli.StringFlag{
+					Name:  tlsCertPathKey,
+					Usage: "the path of the TLS certificate file to use",
+				},
+				&cli.BoolFlag{
+					Name:  insecureKey,
+					Usage: "to connect to a daemon with TLS disabled",
+					Value: false,
 				},
 			},
 		},
@@ -46,19 +61,14 @@ func configAction(ctx *cli.Context) error {
 }
 
 func configInitAction(c *cli.Context) error {
-	err := setState(map[string]string{
-		"rpcserver": c.String("rpcserver"),
+	return setState(map[string]string{
+		"rpcserver":     c.String(rpcServerKey),
+		"tls_cert_path": cleanAndExpandPath(c.String(tlsCertPathKey)),
+		"insecure":      c.String(insecureKey),
 	})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func configSetAction(c *cli.Context) error {
-
 	if c.NArg() < 2 {
 		return errors.New("key and value are missing")
 	}

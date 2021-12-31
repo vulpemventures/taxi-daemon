@@ -7,10 +7,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strconv"
 
 	"github.com/btcsuite/btcutil"
 	"github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
-	"github.com/vulpemventures/taxi-daemon/pkg/taxiclient"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 var (
@@ -74,7 +76,7 @@ func merge(maps ...map[string]string) map[string]string {
 	return merge
 }
 
-func getAdminClient() (admin.AdminClient, func() error, error) {
+func getAdminClient() (admin.AdminClient, func(), error) {
 	state, err := getState()
 	if err != nil {
 		return nil, nil, err
@@ -84,6 +86,29 @@ func getAdminClient() (admin.AdminClient, func() error, error) {
 	if !ok {
 		return nil, nil, errors.New("set rpcserver with `config set rpcserver`")
 	}
+	opts := make([]grpc.DialOption, 0)
 
-	return taxiclient.NewAdminClient(address)
+	insecure, _ := strconv.ParseBool(state["insecure"])
+
+	if insecure {
+		opts = append(opts, grpc.WithInsecure())
+	} else {
+		tlsCreds := credentials.NewTLS(nil)
+		if certPath, ok := state["tls_cert_path"]; ok {
+			tlsCreds, err = credentials.NewClientTLSFromFile(certPath, "")
+			if err != nil {
+				return nil, nil, fmt.Errorf("could not read TLS certificate:  %s", err)
+			}
+		}
+		opts = append(opts, grpc.WithTransportCredentials(tlsCreds))
+	}
+
+	conn, err := grpc.Dial(address, opts...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to connect to RPC server: %v", err)
+	}
+
+	cleanup := func() { conn.Close() }
+
+	return admin.NewAdminClient(conn), cleanup, nil
 }
