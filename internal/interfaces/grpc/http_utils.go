@@ -1,19 +1,15 @@
 package grpc
 
 import (
-	"context"
-	"crypto/tls"
 	"net/http"
 	"strings"
 
 	"github.com/caddyserver/certmagic"
-	"github.com/go-acme/lego/v3/challenge/tlsalpn01"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"golang.org/x/net/http2"
 	"google.golang.org/grpc"
 )
 
-func credsFromCertMagic(email, domain string) (*tls.Config, error) {
+func certmagicConfig(email, domain string) (*certmagic.Config, error) {
 	magic := certmagic.NewDefault()
 	myACME := certmagic.NewACMEManager(magic, certmagic.ACMEManager{
 		Agreed: true,
@@ -21,31 +17,11 @@ func credsFromCertMagic(email, domain string) (*tls.Config, error) {
 	})
 	magic.Issuer = myACME
 
-	// we run this server only for handling HTTP ACME challange
-	tempServer := &http.Server{
-		Addr: ":80",
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if myACME.HandleHTTPChallenge(w, r) {
-				return
-			}
-		}),
-	}
-	go tempServer.ListenAndServe()
-	defer tempServer.Close()
-
-	if err := magic.ManageAsync(
-		context.Background(), []string{domain},
-	); err != nil {
+	if err := magic.ManageSync([]string{domain}); err != nil {
 		return nil, err
 	}
 
-	config := &tls.Config{
-		NextProtos: []string{"http/1.1", http2.NextProtoTLS, "h2-14"}, // h2-14 is just for compatibility. will be eventually removed.
-	}
-	config.GetCertificate = magic.GetCertificate
-	config.NextProtos = append(config.NextProtos, tlsalpn01.ACMETLS1Protocol)
-
-	return config, nil
+	return magic, nil
 }
 
 func router(
@@ -54,7 +30,7 @@ func router(
 	grpcGateway http.Handler,
 ) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.Header.Get("Content-Type"), "application/json") {
+		if isHttpRequest(r) {
 			grpcGateway.ServeHTTP(w, r)
 			return
 		}
@@ -64,6 +40,11 @@ func router(
 		}
 		grpcServer.ServeHTTP(w, r)
 	})
+}
+
+func isHttpRequest(req *http.Request) bool {
+	return strings.ToLower(req.Method) == "get" ||
+		strings.Contains(req.Header.Get("Content-Type"), "application/json")
 }
 
 func isGrpcWebRequest(req *http.Request) bool {
