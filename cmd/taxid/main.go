@@ -96,22 +96,14 @@ func main() {
 	adminSvc := application.NewAdminService(adminSvcArgs)
 
 	service, err := grpc.NewService(grpc.ServiceOpts{
-		AdminSvc: adminSvc,
-		TaxiSvc:  taxiSvc,
-		AdminConfig: grpc.ServiceConfig{
-			Port:        adminPort,
-			TLSKeyPath:  tlsKeyPath,
-			TLSCertPath: tlsCertPath,
-			Email:       email,
-			Domain:      domain,
-		},
-		TaxiConfig: grpc.ServiceConfig{
-			Port:        taxiPort,
-			TLSKeyPath:  tlsKeyPath,
-			TLSCertPath: tlsCertPath,
-			Email:       email,
-			Domain:      domain,
-		},
+		AdminSvc:    adminSvc,
+		TaxiSvc:     taxiSvc,
+		AdminPort:   adminPort,
+		TaxiPort:    taxiPort,
+		TLSKeyPath:  tlsKeyPath,
+		TLSCertPath: tlsCertPath,
+		Email:       email,
+		Domain:      domain,
 	})
 	if err != nil {
 		log.Fatal(err)
