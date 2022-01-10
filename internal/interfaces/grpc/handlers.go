@@ -57,7 +57,7 @@ func newAdminHandlers(opts ServiceOpts, tlsConfig *tls.Config) (*handlers, error
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(tlsCreds))
 	}
 	conn, err := grpc.DialContext(
-		context.Background(), opts.clientAddr(opts.AdminPort), dialOpts...,
+		context.Background(), opts.adminClientAddr(), dialOpts...,
 	)
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func newTaxiHandlers(opts ServiceOpts, tlsConfig *tls.Config) (*handlers, error)
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(tlsCreds))
 	}
 	conn, err := grpc.DialContext(
-		context.Background(), opts.clientAddr(opts.TaxiPort), dialOpts...,
+		context.Background(), opts.taxiClientAddr(), dialOpts...,
 	)
 	if err != nil {
 		return nil, err

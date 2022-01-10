@@ -11,14 +11,16 @@ import (
 )
 
 type ServiceOpts struct {
-	AdminPort   int
-	TaxiPort    int
-	TLSKeyPath  string
-	TLSCertPath string
-	Domain      string
-	Email       string
-	AdminSvc    application.AdminService
-	TaxiSvc     application.TaxiService
+	AdminPort        int
+	TaxiPort         int
+	TLSKeyPath       string
+	TLSCertPath      string
+	Domain           string
+	Email            string
+	AdminExternalURL string
+	TaxiExternalURL  string
+	AdminSvc         application.AdminService
+	TaxiSvc          application.TaxiService
 
 	certmagicConfig *certmagic.Config
 }
@@ -68,11 +70,24 @@ func (o ServiceOpts) serverAddr(port int) string {
 	return fmt.Sprintf(":%d", port)
 }
 
-func (o ServiceOpts) clientAddr(port int) string {
-	if o.Domain == "" {
-		return fmt.Sprintf("localhost:%d", port)
+func (o ServiceOpts) adminClientAddr() string {
+	if o.AdminExternalURL != "" {
+		return fmt.Sprintf("dns:%s", o.AdminExternalURL)
 	}
-	return fmt.Sprintf("dns:%s:%d", o.Domain, port)
+	if o.Domain == "" {
+		return fmt.Sprintf("localhost:%d", o.AdminPort)
+	}
+	return fmt.Sprintf("dns:%s:%d", o.Domain, o.AdminPort)
+}
+
+func (o ServiceOpts) taxiClientAddr() string {
+	if o.TaxiExternalURL != "" {
+		return fmt.Sprintf("dns:%s", o.TaxiExternalURL)
+	}
+	if o.Domain == "" {
+		return fmt.Sprintf("localhost:%d", o.TaxiPort)
+	}
+	return fmt.Sprintf("dns:%s:%d", o.Domain, o.TaxiPort)
 }
 
 func (o ServiceOpts) tlsConfig() (*tls.Config, error) {
