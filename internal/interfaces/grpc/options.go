@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"fmt"
-	"math"
 
 	"github.com/caddyserver/certmagic"
 	"github.com/vulpemventures/taxi-daemon/internal/application"
@@ -34,9 +33,6 @@ func (o ServiceOpts) validate() error {
 	if o.AdminPort == o.TaxiPort {
 		return fmt.Errorf("admin and taxi ports must not be equal")
 	}
-	if math.Abs(float64(o.AdminPort-o.TaxiPort)) <= 1 {
-		return fmt.Errorf("admin and taxi ports must not be 2 consecutive ports")
-	}
 
 	tlsKeySet, tlsCertSet := o.TLSKeyPath != "", o.TLSCertPath != ""
 	if tlsKeySet != tlsCertSet {
@@ -48,10 +44,7 @@ func (o ServiceOpts) validate() error {
 
 	emailSet, domainSet := o.Email != "", o.Domain != ""
 	if emailSet != domainSet {
-		return fmt.Errorf(
-			"both email and domain must be either defined to use certmagic " +
-				"or not to source TLS key/cert from existing files",
-		)
+		return fmt.Errorf("both email and domain must be defined to use certmagic")
 	}
 
 	if o.AdminSvc == nil {
