@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"net"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/btcsuite/btcutil"
@@ -47,12 +49,28 @@ const (
 	// EmailKey is the email used for TLS certificates communications.
 	// Mandatory if TAXI_DOMAIN is given
 	EmailKey = "EMAIL"
+	// AdminExternalUrlKey is used by the internal grpc gateway to connect to
+	// the Admin grpc server when using certificates release by a CA.
+	// If not defined the url formed with TAXI_DOMAIN:TAXI_ADMIN_PORT will be
+	// used.
+	AdminExternalUrlKey = "ADMIN_EXTERNAL_URL"
+	// TaxiExternalUrlKey is used by the internal grpc gateway to connect to the
+	// Taxi grpc server when using certificates release by a CA.
+	// If not defined the url formed with TAXI_DOMAIN:TAXI_PORT will be used.
+	TaxiExternalUrlKey = "EXTERNAL_URL"
 	// UtxoCacheIntervalKey is the number of seconds between two getUnspents process in fragments cache
 	UtxoCacheIntervalKey = "CACHE_INTERVAL"
 )
 
 var (
 	vip *viper.Viper
+
+	rxDNSName = regexp.MustCompile(
+		`^([a-zA-Z]{1}[a-zA-Z0-9-]{0,62}){1}(\.[a-zA-Z0-9]{1}[a-zA-Z0-9-]{0,62})*[\.]?$`,
+	)
+	rxIP = regexp.MustCompile(
+		`^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$`,
+	)
 )
 
 func init() {
@@ -137,6 +155,18 @@ func validate() error {
 		)
 	}
 
+	if url := GetString(AdminExternalUrlKey); url != "" {
+		if err := validateURL(url); err != nil {
+			return fmt.Errorf("invalid external url for admin server: %s", err)
+		}
+	}
+
+	if url := GetString(TaxiExternalUrlKey); url != "" {
+		if err := validateURL(url); err != nil {
+			return fmt.Errorf("invalid external url for taxi server: %s", err)
+		}
+	}
+
 	return nil
 }
 
@@ -146,6 +176,32 @@ func validatePort(port int) error {
 		return err
 	}
 	ln.Close()
+	return nil
+}
+
+func validateURL(urlStr string) error {
+	validateIp := func(str string) bool {
+		return net.ParseIP(str) != nil && rxIP.MatchString(str)
+	}
+	validateDomain := func(str string) bool {
+		if str == "" || len(strings.Replace(str, ".", "", -1)) > 255 {
+			// Domain must not be longer than 255 chars.
+			return false
+		}
+		return rxDNSName.MatchString(str)
+	}
+	parts := strings.Split(urlStr, ":")
+	if len(parts) != 2 {
+		return fmt.Errorf("url must be in the form 'host:port'")
+	}
+	host, port := parts[0], parts[1]
+	if _, err := strconv.Atoi(port); err != nil {
+		return fmt.Errorf("port must be a positive number")
+	}
+
+	if !validateDomain(host) && !validateIp(host) {
+		return fmt.Errorf("host must be either a valid ip or domain")
+	}
 	return nil
 }
 

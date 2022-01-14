@@ -22,12 +22,14 @@ var (
 	cacheInterval  = time.Duration(config.GetInt(config.UtxoCacheIntervalKey)) * time.Second
 	fixedFeeAmount = uint64(config.GetInt(config.FixedFeeAmountKey))
 
-	adminPort   = config.GetInt(config.AdminPortKey)
-	taxiPort    = config.GetInt(config.TaxiPortKey)
-	tlsKeyPath  = config.GetString(config.TLSKeyPathKey)
-	tlsCertPath = config.GetString(config.TLSCertPathKey)
-	email       = config.GetString(config.EmailKey)
-	domain      = config.GetString(config.DomainKey)
+	adminPort        = config.GetInt(config.AdminPortKey)
+	taxiPort         = config.GetInt(config.TaxiPortKey)
+	tlsKeyPath       = config.GetString(config.TLSKeyPathKey)
+	tlsCertPath      = config.GetString(config.TLSCertPathKey)
+	email            = config.GetString(config.EmailKey)
+	domain           = config.GetString(config.DomainKey)
+	adminExternalURL = config.GetString(config.AdminExternalUrlKey)
+	taxiExternalURL  = config.GetString(config.TaxiExternalUrlKey)
 )
 
 func main() {
@@ -96,22 +98,16 @@ func main() {
 	adminSvc := application.NewAdminService(adminSvcArgs)
 
 	service, err := grpc.NewService(grpc.ServiceOpts{
-		AdminSvc: adminSvc,
-		TaxiSvc:  taxiSvc,
-		AdminConfig: grpc.ServiceConfig{
-			Port:        adminPort,
-			TLSKeyPath:  tlsKeyPath,
-			TLSCertPath: tlsCertPath,
-			Email:       email,
-			Domain:      domain,
-		},
-		TaxiConfig: grpc.ServiceConfig{
-			Port:        taxiPort,
-			TLSKeyPath:  tlsKeyPath,
-			TLSCertPath: tlsCertPath,
-			Email:       email,
-			Domain:      domain,
-		},
+		AdminSvc:         adminSvc,
+		TaxiSvc:          taxiSvc,
+		AdminPort:        adminPort,
+		TaxiPort:         taxiPort,
+		TLSKeyPath:       tlsKeyPath,
+		TLSCertPath:      tlsCertPath,
+		Email:            email,
+		Domain:           domain,
+		AdminExternalURL: adminExternalURL,
+		TaxiExternalURL:  taxiExternalURL,
 	})
 	if err != nil {
 		log.Fatal(err)

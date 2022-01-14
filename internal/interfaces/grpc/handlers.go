@@ -2,9 +2,7 @@ package grpc
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/tls"
-	"fmt"
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -26,43 +24,13 @@ type handlers struct {
 	httpServer  *http.Server
 }
 
-func newAdminHandlers(opts ServiceOpts) (*handlers, error) {
+func newAdminHandlers(opts ServiceOpts, tlsConfig *tls.Config) (*handlers, error) {
 	// grpc server for admin service
 	serverOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(interceptor.UnaryLogger),
 		grpc.StreamInterceptor(interceptor.StreamLogger),
 	}
-	withInsecure := opts.AdminConfig.insecure()
-	withCertMagic := opts.AdminConfig.withCertMagic()
-	var tlsConfig *tls.Config
-
-	if !withInsecure {
-		if withCertMagic {
-			var err error
-			tlsConfig, err = credsFromCertMagic(
-				opts.AdminConfig.Email, opts.AdminConfig.Domain,
-			)
-			if err != nil {
-				return nil, fmt.Errorf(
-					"failed to create TLS credentials for admin svc: %s", err,
-				)
-			}
-		} else {
-			cert, err := tls.LoadX509KeyPair(
-				opts.AdminConfig.TLSCertPath, opts.AdminConfig.TLSKeyPath,
-			)
-			if err != nil {
-				return nil, err
-			}
-			tlsConfig = &tls.Config{
-				NextProtos:   []string{"http/1.1", http2.NextProtoTLS, "h2-14"}, // h2-14 is just for compatibility. will be eventually removed.
-				Certificates: []tls.Certificate{cert},
-				CipherSuites: []uint16{
-					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-				},
-				Rand: rand.Reader,
-			}
-		}
+	if tlsConfig != nil {
 		serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(tlsConfig)))
 	}
 
@@ -79,17 +47,17 @@ func newAdminHandlers(opts ServiceOpts) (*handlers, error) {
 
 	// grpc gateway
 	dialOpts := make([]grpc.DialOption, 0)
-	if opts.AdminConfig.insecure() {
+	if opts.insecure() {
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	} else {
 		tlsCreds := credentials.NewTLS(nil)
-		if !withCertMagic {
-			tlsCreds, _ = credentials.NewClientTLSFromFile(opts.AdminConfig.TLSCertPath, "")
+		if !opts.withCertMagic() {
+			tlsCreds, _ = credentials.NewClientTLSFromFile(opts.TLSCertPath, "")
 		}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(tlsCreds))
 	}
 	conn, err := grpc.DialContext(
-		context.Background(), opts.AdminConfig.clientAddr(), dialOpts...,
+		context.Background(), opts.adminClientAddr(), dialOpts...,
 	)
 	if err != nil {
 		return nil, err
@@ -101,12 +69,12 @@ func newAdminHandlers(opts ServiceOpts) (*handlers, error) {
 	// http server routing requests to either grpc|grpcweb|grpcgateway handler
 	// based on their header
 	handler := router(grpcServer, grpcWebServer, grpcGateway)
-	if withInsecure {
+	if opts.insecure() {
 		handler = h2c.NewHandler(handler, &http2.Server{})
 	}
 
 	httpServer := &http.Server{
-		Addr:      opts.AdminConfig.serverAddr(),
+		Addr:      opts.serverAddr(opts.AdminPort),
 		Handler:   handler,
 		TLSConfig: tlsConfig,
 	}
@@ -114,43 +82,14 @@ func newAdminHandlers(opts ServiceOpts) (*handlers, error) {
 	return &handlers{grpcServer, grpcWebServer, grpcGateway, httpServer}, nil
 }
 
-func newTaxiHandlers(opts ServiceOpts) (*handlers, error) {
+func newTaxiHandlers(opts ServiceOpts, tlsConfig *tls.Config) (*handlers, error) {
 	// grpc server for taxi service
 	serverOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(interceptor.UnaryLogger),
 		grpc.StreamInterceptor(interceptor.StreamLogger),
 	}
-	withInsecure := opts.TaxiConfig.insecure()
-	withCertMagic := opts.TaxiConfig.withCertMagic()
-	var tlsConfig *tls.Config
 
-	if !withInsecure {
-		if withCertMagic {
-			var err error
-			tlsConfig, err = credsFromCertMagic(
-				opts.TaxiConfig.Email, opts.TaxiConfig.Domain,
-			)
-			if err != nil {
-				return nil, fmt.Errorf(
-					"failed to create TLS credentials for taxi svc: %s", err,
-				)
-			}
-		} else {
-			cert, err := tls.LoadX509KeyPair(
-				opts.TaxiConfig.TLSCertPath, opts.TaxiConfig.TLSKeyPath,
-			)
-			if err != nil {
-				return nil, err
-			}
-			tlsConfig = &tls.Config{
-				NextProtos:   []string{"http/1.1", http2.NextProtoTLS, "h2-14"}, // h2-14 is just for compatibility. will be eventually removed.
-				Certificates: []tls.Certificate{cert},
-				CipherSuites: []uint16{
-					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-				},
-				Rand: rand.Reader,
-			}
-		}
+	if tlsConfig != nil {
 		serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(tlsConfig)))
 	}
 
@@ -167,17 +106,17 @@ func newTaxiHandlers(opts ServiceOpts) (*handlers, error) {
 
 	// grpc gateway
 	dialOpts := make([]grpc.DialOption, 0)
-	if opts.TaxiConfig.insecure() {
+	if opts.insecure() {
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	} else {
 		tlsCreds := credentials.NewTLS(nil)
-		if !withCertMagic {
-			tlsCreds, _ = credentials.NewClientTLSFromFile(opts.TaxiConfig.TLSCertPath, "")
+		if !opts.withCertMagic() {
+			tlsCreds, _ = credentials.NewClientTLSFromFile(opts.TLSCertPath, "")
 		}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(tlsCreds))
 	}
 	conn, err := grpc.DialContext(
-		context.Background(), opts.TaxiConfig.clientAddr(), dialOpts...,
+		context.Background(), opts.taxiClientAddr(), dialOpts...,
 	)
 	if err != nil {
 		return nil, err
@@ -189,15 +128,28 @@ func newTaxiHandlers(opts ServiceOpts) (*handlers, error) {
 	// http server routing requests to either grpc|grpcweb|grpcgateway handler
 	// based on their header
 	handler := router(grpcServer, grpcWebServer, grpcGateway)
-	if withInsecure {
+	if opts.insecure() {
 		handler = h2c.NewHandler(handler, &http2.Server{})
 	}
 
 	httpServer := &http.Server{
-		Addr:      opts.TaxiConfig.serverAddr(),
+		Addr:      opts.serverAddr(opts.TaxiPort),
 		Handler:   handler,
 		TLSConfig: tlsConfig,
 	}
 
 	return &handlers{grpcServer, grpcWebServer, grpcGateway, httpServer}, nil
+}
+
+func (h handlers) start(withInsecure bool) {
+	if withInsecure {
+		go h.httpServer.ListenAndServe()
+		return
+	}
+
+	go h.httpServer.ListenAndServeTLS("", "")
+}
+
+func (h handlers) stop() {
+	h.httpServer.Shutdown(context.Background())
 }
