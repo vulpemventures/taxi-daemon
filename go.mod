@@ -6,15 +6,14 @@ require (
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/alecthomas/units v0.0.0-20201120081800-1786d5ef83d4 // indirect
-	github.com/btcsuite/btcd v0.21.0-beta
-	github.com/btcsuite/btcutil v1.0.2
+	github.com/btcsuite/btcd v0.22.0-beta
+	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
 	github.com/caddyserver/certmagic v0.12.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.2
 	github.com/dgraph-io/ristretto v0.0.3 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/go-acme/lego/v3 v3.9.0
 	github.com/gogo/protobuf v1.2.1
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/uuid v1.1.4
@@ -29,7 +28,6 @@ require (
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/smartystreets/assertions v1.2.0 // indirect
-	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/afero v1.5.1 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
@@ -40,13 +38,12 @@ require (
 	github.com/timshannon/badgerhold/v2 v2.0.0-20201228162759-17050a01e34c
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli/v2 v2.3.0
-	github.com/vulpemventures/go-elements v0.1.1
+	github.com/vulpemventures/go-elements v0.3.6
 	github.com/vulpemventures/taxi-protobuf v0.1.1
-	golang.org/x/crypto v0.0.0-20210317152858-513c2a44f670 // indirect
-	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
+	golang.org/x/crypto v0.0.0-20220112180741-5e0467b6c7ce // indirect
+	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 	google.golang.org/genproto v0.0.0-20211129164237-f09f9a12af12
 	google.golang.org/grpc v1.42.0
-	google.golang.org/grpc/examples v0.0.0-20210113212343-5e3cbb54d230 // indirect
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect

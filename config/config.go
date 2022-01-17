@@ -228,6 +228,8 @@ func GetNetwork() *network.Network {
 		return &network.Regtest
 	case "liquid":
 		return &network.Liquid
+	case "testnet":
+		return &network.Testnet
 	default:
 		return nil
 	}
