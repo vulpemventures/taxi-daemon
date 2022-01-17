@@ -9,6 +9,8 @@ services:
       - TAXI_DOMAIN=${DOMAIN}
       - TAXI_EMAIL=${EMAIL}
       - TAXI_MNEMONIC=${MNEMONIC}
+      - TAXI_EXTERNAL_URL=${EXTERNAL_URL}
+      - TAXI_ADMIN_EXTERNAL_URL=${ADMIN_EXTERNAL_URL}
       - TAXI_LOG_LEVEL=9
     ports:
       - "80:80"

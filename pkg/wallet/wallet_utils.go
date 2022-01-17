@@ -23,7 +23,7 @@ func generateSigningMasterKey(seed []byte, rootPath DerivationPath) ([]byte, err
 		return nil, err
 	}
 	for _, step := range rootPath {
-		hdNode, err = hdNode.Child(step)
+		hdNode, err = hdNode.Derive(step)
 		if err != nil {
 			return nil, err
 		}
@@ -54,7 +54,7 @@ func deriveSigningKeyPair(masterKey []byte, path string) (
 
 	derivationPath, _ := ParseDerivationPath(path)
 	for _, step := range derivationPath {
-		hdNode, err = hdNode.Child(step)
+		hdNode, err = hdNode.Derive(step)
 		if err != nil {
 			return nil, nil, err
 		}

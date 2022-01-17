@@ -1,9 +1,20 @@
 #!/bin/bash
 
-user_host=$1
-if [ -z "$1" ]; then
+compose="compose"
+user_host=""
+for (( i=1; i<=$#; i++)); do
+	if [ "${!i}" = "--testnet" ]; then
+		compose="compose-testnet"
+	fi
+	if [ "${!i}" = "--host" ]; then
+		next=$((i+1))
+		user_host=${!next}
+	fi
+done
+
+if [ -z "$user_host" ]; then
 	user_host=$(terraform -chdir=./resources/terraform output -raw user_host)
 fi
 
-scp -r ./resources/compose ${user_host}:./
+scp -r ./resources/${compose} ${user_host}:./
 docker save ghcr.io/vulpemventures/taxid:latest | ssh -C ${user_host} docker load
