@@ -1,0 +1,22 @@
+version: "3.7"
+
+services:
+  taxid:
+    container_name: "taxid-testnet"
+    image: ghcr.io/vulpemventures/taxid:latest
+    restart: unless-stopped
+    environment:
+      - TAXI_DOMAIN=${TESTNET_DOMAIN}
+      - TAXI_EMAIL=${TESTNET_EMAIL}
+      - TAXI_MNEMONIC=${TESTNET_MNEMONIC}
+      - TAXI_EXTERNAL_URL=${TESTNET_EXTERNAL_URL}
+      - TAXI_ADMIN_EXTERNAL_URL=${TESTNET_ADMIN_EXTERNAL_URL}
+      - TAXI_EXPLORER_ENDPOINT="https://blockstream.info/liquidtestnet/api"
+      - TAXI_NETWORK=testnet
+      - TAXI_LOG_LEVEL=9
+    ports:
+      - "18000:8000"
+      - "17000:7000"
+    volumes:
+      - ./data:/.taxid
+      - ./certs:/.certmagic
