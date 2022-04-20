@@ -10,7 +10,7 @@ import (
 	"strconv"
 
 	"github.com/btcsuite/btcutil"
-	"github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
+	pb "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/go/taxi-daemon/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -76,7 +76,7 @@ func merge(maps ...map[string]string) map[string]string {
 	return merge
 }
 
-func getAdminClient() (admin.AdminClient, func(), error) {
+func getAdminClient() (pb.AdminServiceClient, func(), error) {
 	state, err := getState()
 	if err != nil {
 		return nil, nil, err
@@ -110,5 +110,5 @@ func getAdminClient() (admin.AdminClient, func(), error) {
 
 	cleanup := func() { conn.Close() }
 
-	return admin.NewAdminClient(conn), cleanup, nil
+	return pb.NewAdminServiceClient(conn), cleanup, nil
 }
