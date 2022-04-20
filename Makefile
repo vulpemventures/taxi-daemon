@@ -1,34 +1,33 @@
-.PHONY: build clean deploy-dev deploy-prod run test proto
+.PHONY: build build-server build-cli build-linux clean fmt proto-lint proto run alltest test servertest integrationtest create-cert infra-up infra-down infra-load
 
-## build the taxi server
-build-server: 
-	export GO111MODULE=on; \
+## build-server: builds taxid into ./bin
+build-server:
+	@echo "Building taxid..."
+	@export GO111MODULE=on; \
 	env go build -tags netgo -ldflags="-s -w" -o bin/taxid cmd/taxid/main.go
 
-## build only the taxi CLI
+## build-cli: builds taxi CLI into ./bin
 build-cli:
-	export GO111MODULE=on; \
+	@echo "Building CLI..."
+	@export GO111MODULE=on; \
 	env go build -tags netgo -ldflags="-s -w" -o bin/taxi cmd/taxi/*.go
 
-## build the project (CLI + server)
+## build: builds taxid + CLI into ./bin
 build: clean build-server build-cli
 
-## buildlinux: use a docker container with ubuntu to build binaries and move into bin folder
-buildlinux: 	
-	chmod u+x ./scripts/buildlinux
-	bash ./scripts/buildlinux
+## build-linux: uses a dockerized Linux environment to build binaries into ./bin
+build-linux:
+	@echo "Building taxid Linux..."
+	@chmod u+x ./scripts/buildlinux
+	@bash ./scripts/buildlinux
 
-## remove the compiled binaries in ./bin
+## clean: remove the compiled binaries
 clean: 
-	@echo "Clean..."
+	@echo "Cleaning..."
+	@go clean
 	@rm -rf ./bin
 
-## remove the test data directory
-cleantest:
-	@echo "Clean test datadir..."
-	@rm -rf ./cmd/taxid/test-taxi-datadir/
-
-## gofmt: Go Format
+## gofmt: runs Go Format
 fmt:
 	@echo "Gofmt..."
 	@if [ -n "$(gofmt -l .)" ]; then echo "Go code is not formatted"; exit 1; fi
@@ -38,63 +37,47 @@ help:
 	@echo "Usage: \n"
 	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' |  sed -e 's/^/ /'
 
-## generate protobuf admin stubs
-proto:
-	chmod u+x ./scripts/compile-proto
-	./scripts/compile-proto
+## proto-lint: lints protos
+proto-lint:
+	@echo "Linting protos..."
+	@buf lint
 
-## run the service (for tests)
-run:
-	export TAXI_CACHE_INTERVAL=5; \
-	export TAXI_NETWORK=regtest; \
-	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
-	export TAXI_LOG_LEVEL=9; \
-	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
-	go run cmd/taxid/main.go
+## proto: compiles proto stubs
+proto: proto-lint
+	@echo "Compiling stubs..."
+	@buf generate buf.build/vulpemventures/taxi && buf generate
 
-## run all the tests
-alltest: fmt 
-	export TAXI_NETWORK=regtest; \
-	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
-	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
-	export TAXI_DATADIR="./test-taxi-datadir"; \
-	go test -v -race ./...
+## run: runs the service (for development)
+run: clean
+	@echo "Running service..."
+	@export TAXI_LOG_LEVEL=5; \
+	export TAXI_OCEAN_ADDRESS=localhost:18000; \
+	go run ./cmd/taxid
 
-## run the short tests
+## test: runs short unit tests
 test: fmt 
-	export TAXI_NETWORK=regtest; \
-	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
-	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
-	export TAXI_DATADIR="./test-taxi-datadir"; \
-	go test -v -short -race ./...
+	@echo "Unit testing..."
+	@go test -v -race ./...
 
-## integration test
-servertest: fmt
-	export TAXI_NETWORK=regtest; \
-	export TAXI_EXPLORER_ENDPOINT=http://localhost:3001; \
-	export TAXI_MNEMONIC="clown skin ramp arctic diet fun crowd expect pride gift public twice alpha crazy help swamp soccer prepare clown act joy drive year mask"; \
-	export TAXI_DATADIR="./test-taxi-datadir"; \
-	export TAXI_CACHE_INTERVAL=1; \
-	go test -v -count=1 ./cmd/taxid;
-
-## integration test + cleaning test datadir
-integrationtest: servertest	cleantest
-
-## create-cert: creates localhost ssl certficate and key
+## create-cert: creates localhost TLS certficate and key
 create-cert:
-	chmod u+x ./scripts/sslcert
-	bash ./scripts/sslcert
+	@echo "Generating TLS keypair..."
+	@chmod u+x ./scripts/sslcert
+	@bash ./scripts/sslcert
 
-## infra-up: create infra on Hetzner with Docker & Docker-Compose
+## infra-up: creates infra on Hetzner with Docker & Docker-Compose
 infra-up:
-	terraform -chdir=./resources/terraform  init
-	terraform -chdir=./resources/terraform  apply -auto-approve
+	@echo "Building infrastructure (Terraform)..."
+	@terraform -chdir=./resources/terraform  init
+	@terraform -chdir=./resources/terraform  apply -auto-approve
 
-## infra-down: tear down infra on Hetzner
+## infra-down: tears down infra on Hetzner
 infra-down:
-	terraform -chdir=./resources/terraform  destroy -auto-approve
+	@echo "Tearing down infrastructure (Terraform)..."
+	@terraform -chdir=./resources/terraform  destroy -auto-approve
 
-## infra-load: load remote infra
+## infra-load: loads taxid binary to remote host
 infra-load:
-	chmod u+x ./scripts/provision-docker
-	bash ./scripts/provision-docker
+	@echo "Loading binary to remote host..."
+	@chmod u+x ./scripts/provision-docker
+	@bash ./scripts/provision-docker
