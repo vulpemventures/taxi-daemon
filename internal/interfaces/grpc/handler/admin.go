@@ -3,153 +3,127 @@ package handler
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 
 	"github.com/shopspring/decimal"
-	"github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
-	"github.com/vulpemventures/taxi-daemon/internal/application"
-	"github.com/vulpemventures/taxi-daemon/pkg/wallet"
+	pb "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/go/taxi-daemon/v1"
+	"github.com/vulpemventures/taxi-daemon/internal/core/application"
+	"github.com/vulpemventures/taxi-daemon/internal/core/domain"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type adminServer struct {
-	admin.UnimplementedAdminServer
+	pb.UnimplementedAdminServiceServer
 	adminSvc application.AdminService
 }
 
-// NewAdminHandler returns a types implementing the admin.AdminServer grpc interface
-func NewAdminHandler(adminSvc application.AdminService) admin.AdminServer {
-	return &adminServer{
-		adminSvc: adminSvc,
-	}
+func NewAdminHandler(adminSvc application.AdminService) pb.AdminServiceServer {
+	return &adminServer{adminSvc: adminSvc}
 }
 
-func (a *adminServer) ListLocks(ctx context.Context, req *admin.ListLocksRequest) (*admin.ListLocksReply, error) {
-	locks, err := a.adminSvc.ListLocks(ctx)
+func (a *adminServer) AddAsset(
+	ctx context.Context, req *pb.AddAssetRequest,
+) (*pb.AddAssetResponse, error) {
+	asset, err := parseAsset(req.GetAssetHash())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	price, err := parsePrice(req.GetPrice())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	bp := req.GetBasisPoints()
+
+	if err := a.adminSvc.AddAsset(ctx, asset, price, bp); err != nil {
+		return nil, err
+	}
+	return &pb.AddAssetResponse{}, nil
+}
+
+func (a *adminServer) AddWhitelistedAddresses(
+	ctx context.Context, req *pb.AddWhitelistedAddressesRequest,
+) (*pb.AddWhitelistedAddressesResponse, error) {
+	addresses := req.GetAddresses()
+	if err := a.adminSvc.AddWhitelistedAddresses(ctx, addresses); err != nil {
+		return nil, err
+	}
+	return &pb.AddWhitelistedAddressesResponse{}, nil
+}
+
+func (a *adminServer) ListTopups(ctx context.Context, req *pb.ListTopupsRequest) (*pb.ListTopupsResponse, error) {
+	assetFilter := req.GetAssetHash()
+	topups, err := a.adminSvc.ListTopups(ctx, assetFilter)
 	if err != nil {
 		return nil, err
 	}
 
-	utxoKeys := make([]*admin.Outpoint, len(locks), len(locks))
-	for i, lock := range locks {
-		utxoKeys[i] = &admin.Outpoint{
-			Txid: lock.TxID,
-			Vout: uint64(lock.Vout),
-		}
-	}
-
-	return &admin.ListLocksReply{
-		Locks: utxoKeys,
-	}, nil
-}
-
-func (a *adminServer) AddAsset(ctx context.Context, req *admin.AddAssetRequest) (*admin.AddAssetReply, error) {
-	priceAmountAsDecimal := decimal.NewFromFloat32(req.GetPrice())
-
-	return &admin.AddAssetReply{}, a.adminSvc.AddAsset(
-		ctx,
-		req.GetAssetHash(),
-		priceAmountAsDecimal,
-		req.GetBasisPoints(),
-	)
-}
-
-func (a *adminServer) FundingAddress(ctx context.Context, req *admin.FundingAddressRequest) (*admin.FundingAddressReply, error) {
-	addresses, err := a.adminSvc.GetFundingAddresses(ctx, uint(req.GetNumOfAddresses()))
-	if err != nil {
-		return nil, err
-	}
-
-	return &admin.FundingAddressReply{
-		Addresses: addresses,
-	}, nil
-}
-
-func (a *adminServer) ListTopups(ctx context.Context, req *admin.ListTopupsRequest) (*admin.ListTopupsReply, error) {
-	topups, err := a.adminSvc.ListTopups(ctx, req.GetAssetHash())
-	if err != nil {
-		return nil, err
-	}
-
-	reply := make([]*admin.TopupDetails, 0)
+	list := make([]*pb.TopupDetails, 0, len(topups))
 	for _, t := range topups {
-		reply = append(reply, t.ToTopupDetailsMessage())
+		list = append(list, toTopupDetailProto(t))
 	}
 
-	return &admin.ListTopupsReply{
-		Topups: reply,
-	}, nil
+	return &pb.ListTopupsResponse{Topups: list}, nil
 }
 
-func (a *adminServer) ListFundingAddresses(ctx context.Context, req *admin.ListFundingAddressesRequest) (*admin.ListFundingAddressesReply, error) {
-	startIndex := uint(req.GetStart())
-	numOfAddrs := uint(req.GetNumber())
-	list, err := a.adminSvc.ListFundingAddresses(ctx, startIndex, numOfAddrs, req.GetChange())
+func parseAsset(str string) (string, error) {
+	if str == "" {
+		return "", fmt.Errorf("missing asset hash")
+	}
+	buf, err := hex.DecodeString(str)
 	if err != nil {
-		return nil, err
+		return "", fmt.Errorf("invalid asset hash format, must be hex")
 	}
-
-	addrInfoList := make([]*admin.AddressInfo, len(list), len(list))
-	for i, info := range list {
-		addrInfoList[i] = &admin.AddressInfo{
-			Address:        info.Address,
-			DerivationPath: info.DerivationPath,
-			Index:          int64(info.Index),
-			PublicKey:      info.PublicKey,
-		}
+	if len(buf) != 32 {
+		return "", fmt.Errorf("invalid asset hash length, must be exactly 32 bytes")
 	}
-	return &admin.ListFundingAddressesReply{
-		Addresses: addrInfoList,
-	}, nil
+	return str, nil
 }
 
-func (a *adminServer) LatestFundingAddressIndex(ctx context.Context, _ *admin.LatestFundingAddressIndexRequest) (*admin.LatestFundingAddressIndexReply, error) {
-	latestIndex, err := a.adminSvc.LatestFundingAddressIndex(ctx)
-	if err != nil {
-		return nil, err
+func parsePrice(val float64) (dec decimal.Decimal, err error) {
+	if val == 0 {
+		err = fmt.Errorf("missing price")
+		return
 	}
-	return &admin.LatestFundingAddressIndexReply{
-		Index: int64(latestIndex),
-	}, nil
+	if val < 0 {
+		err = fmt.Errorf("invalid price, must be a positive number")
+		return
+	}
+	dec = decimal.NewFromFloat(val)
+	return
 }
 
-func (a *adminServer) Balance(ctx context.Context, _ *admin.BalanceRequest) (*admin.BalanceReply, error) {
-	balanceInfosMap, err := a.adminSvc.Balance(ctx)
-	if err != nil {
-		return nil, err
+func toTopupDetailProto(t *domain.Topup) *pb.TopupDetails {
+	requestedAt := t.RequestedAt.Unix()
+	if requestedAt < 0 {
+		requestedAt = 0
 	}
-
-	protobufMap := make(map[string]*admin.BalanceInfo, len(balanceInfosMap))
-
-	for asset, balanceInfo := range balanceInfosMap {
-		protobufMap[asset] = &admin.BalanceInfo{
-			TotalBalance:       balanceInfo.TotalBalance,
-			ConfirmedBalance:   balanceInfo.ConfirmedBalance,
-			UnconfirmedBalance: balanceInfo.UnconfirmedBalance,
-		}
+	completedAt := t.CompletedAt.Unix()
+	if completedAt < 0 {
+		completedAt = 0
 	}
-
-	return &admin.BalanceReply{
-		Balance: protobufMap,
-	}, nil
-}
-
-func (a *adminServer) SendToMany(ctx context.Context, req *admin.SendToManyRequest) (*admin.SendToManyReply, error) {
-	outputs := make([]wallet.Receiver, len(req.Outputs), len(req.Outputs))
-	for i, out := range req.Outputs {
-		outputs[i] = wallet.Receiver{
-			Address: out.Address,
-			Asset:   out.Asset,
-			Amount:  uint64(out.Value),
-		}
+	settledAt := t.SettledAt.Unix()
+	if settledAt < 0 {
+		settledAt = 0
 	}
-
-	txHex, err := a.adminSvc.SendToMany(ctx, outputs, req.MillisatPerByte, req.Push)
-	if err != nil {
-		return nil, err
+	expiredAt := t.ExpireAt.Unix()
+	if expiredAt < 0 {
+		expiredAt = 0
 	}
-
-	bytes, err := hex.DecodeString(txHex)
-
-	return &admin.SendToManyReply{
-		RawTx: bytes,
-	}, err
+	times := &pb.Timestamps{
+		RequestedAt: requestedAt,
+		CompletedAt: completedAt,
+		SettledAt:   settledAt,
+		ExpiredAt:   expiredAt,
+	}
+	return &pb.TopupDetails{
+		TopupId:     t.ID,
+		Partial:     t.Partial,
+		AssetHash:   t.AssetHash,
+		AssetAmount: t.AssetAmount,
+		AssetSpread: t.SpreadAmount,
+		Status:      pb.TopupDetails_Status(t.Status),
+		FeeAmount:   t.FeeAmount,
+		Times:       times,
+	}
 }
