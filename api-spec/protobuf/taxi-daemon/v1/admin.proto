@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package taxi_daemon.v1;
+
+import "google/api/annotations.proto";
+
+service AdminService {
+  // AddAsset lets update the asset_hash with price if exists, or creates it
+  rpc AddAsset(AddAssetRequest) returns (AddAssetResponse) {
+    option (google.api.http) = {
+      post: "/v1/asset"
+      body: "*"
+    };
+  }
+  // AddWhitelistedAddresses lets add one or more known payout addresses.
+  // If an incoming topup request includes one or more of these addresses
+  // witihin the tx outputs, the service will just add ins and outs to pay fees
+  // for such tx
+  rpc AddWhitelistedAddresses(AddWhitelistedAddressesRequest) returns (AddWhitelistedAddressesResponse) {
+    option (google.api.http) = {
+      post: "/v1/addresses"
+      body: "*"
+    };
+  }
+  // ListTopups returns all the internal topups
+  rpc ListTopups(ListTopupsRequest) returns (ListTopupsResponse) {
+    option (google.api.http) = {
+      get: "/v1/topups"
+    };
+  }
+}
+
+message AddAssetRequest {
+  string asset_hash = 1; // The asset_hash to update (or to create if the taxi doesn't know it)
+  double price = 2; // The quantity of asset to get 1 satoshi of LBTC
+  uint32 basis_points = 3; // The % taken as service fee expressed in basis points
+}
+message AddAssetResponse {}
+
+message AddWhitelistedAddressesRequest {
+  repeated string addresses = 1; // The list of known addresses to add to taxi
+}
+message AddWhitelistedAddressesResponse {}
+
+message ListTopupsRequest {
+  string asset_hash = 1; // the asset hash to filter the topups. If empty, all topups of all assets will be returned
+}
+message ListTopupsResponse {
+  repeated TopupDetails topups = 1;
+}
+
+message TopupDetails {
+  enum Status {
+    STATUS_REQUESTED = 0; // when the request for a topup has been received by the taxi
+    STATUS_COMPLETED = 1; // when the reply with a partially signed topup has been delivered to the client 
+    STATUS_SETTLED = 2; // when the topup has been included in the blockchain
+    STATUS_EXPIRED = 3; // when the topup has expired
+  }
+  string topup_id = 1; //random identifier of the currer topup
+  string partial = 2; // PSET signed with SIGHASH_SINGLE | ANYONECANPAY
+  string asset_hash = 3; // the asset hash used as payout for bitcoin fees
+  uint64 asset_amount = 4; // the asset denominated amount expressed in satoshis to be used as payout. It includes also the spread as taxi service fee
+  uint64 asset_spread = 5; // the amount expressed in satoshis as taxi service fee (part of asset_amount)
+  Status status = 6;
+  uint64 fee_amount = 7; // amount in satoshis of bitcoin needed to cover the fees
+  Timestamps times = 8; // the timestamps of each status change
+  string txid = 9; // the tx hash when the topup is settled (status = 2), empty otherwise
+}
+
+message Timestamps {
+  int64 requested_at = 1; // the unix timestamp of when the taxi received the request of a topup from a client
+  int64 completed_at = 2; // the unix timestamp of when the taxi completed the topup and responded to client
+  int64 settled_at = 3; // the unix timestamp of the block in wich the topup is included in the chain.
+  int64 expired_at = 4; // the unix timestamp after wich the locked bitcoin input could have been double-spent (if any)
+}
+

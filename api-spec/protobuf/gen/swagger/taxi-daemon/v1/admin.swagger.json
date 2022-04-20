@@ -1,0 +1,256 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "taxi-daemon/v1/admin.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "AdminService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/addresses": {
+      "post": {
+        "summary": "AddWhitelistedAddresses lets add one or more known payout addresses.\nIf an incoming topup request includes one or more of these addresses\nwitihin the tx outputs, the service will just add ins and outs to pay fees\nfor such tx",
+        "operationId": "AdminService_AddWhitelistedAddresses",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AddWhitelistedAddressesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1AddWhitelistedAddressesRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AdminService"
+        ]
+      }
+    },
+    "/v1/asset": {
+      "post": {
+        "summary": "AddAsset lets update the asset_hash with price if exists, or creates it",
+        "operationId": "AdminService_AddAsset",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AddAssetResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1AddAssetRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AdminService"
+        ]
+      }
+    },
+    "/v1/topups": {
+      "get": {
+        "summary": "ListTopups returns all the internal topups",
+        "operationId": "AdminService_ListTopups",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListTopupsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "assetHash",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "AdminService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "googlerpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "v1AddAssetRequest": {
+      "type": "object",
+      "properties": {
+        "assetHash": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number",
+          "format": "double"
+        },
+        "basisPoints": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "v1AddAssetResponse": {
+      "type": "object"
+    },
+    "v1AddWhitelistedAddressesRequest": {
+      "type": "object",
+      "properties": {
+        "addresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "v1AddWhitelistedAddressesResponse": {
+      "type": "object"
+    },
+    "v1ListTopupsResponse": {
+      "type": "object",
+      "properties": {
+        "topups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1TopupDetails"
+          }
+        }
+      }
+    },
+    "v1Timestamps": {
+      "type": "object",
+      "properties": {
+        "requestedAt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "settledAt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "expiredAt": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "v1TopupDetails": {
+      "type": "object",
+      "properties": {
+        "topupId": {
+          "type": "string"
+        },
+        "partial": {
+          "type": "string"
+        },
+        "assetHash": {
+          "type": "string"
+        },
+        "assetAmount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "assetSpread": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "status": {
+          "$ref": "#/definitions/v1TopupDetailsStatus"
+        },
+        "feeAmount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "times": {
+          "$ref": "#/definitions/v1Timestamps"
+        },
+        "txid": {
+          "type": "string"
+        }
+      }
+    },
+    "v1TopupDetailsStatus": {
+      "type": "string",
+      "enum": [
+        "STATUS_REQUESTED",
+        "STATUS_COMPLETED",
+        "STATUS_SETTLED",
+        "STATUS_EXPIRED"
+      ],
+      "default": "STATUS_REQUESTED"
+    }
+  }
+}
