@@ -1,12 +1,11 @@
 package domain
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
-	admin "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
-	pb "github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 )
 
 // TopupStatus is an enum type
@@ -14,11 +13,25 @@ type TopupStatus int32
 
 const (
 	// Requested is assigned to topup newly created
-	Requested TopupStatus = 0
+	Requested TopupStatus = iota
 	// Completed is assigned to topup when the taxi PSET is created
-	Completed TopupStatus = 1
+	Completed
 	// Settled is assigned to topup if the user broadcast the taxi PSET
-	Settled TopupStatus = 2
+	Settled
+	// Expired is assigned to topup if it's not broadcasted within the expiration date
+	Expired
+)
+
+var (
+	// ErrTopupNotRequested is returned if attempting to complete a topup which
+	// is not in Requested status.
+	ErrTopupNotRequested = errors.New("topup must be requested to be completed")
+	// ErrTopupNotCompleted is returned if attempting to settle a topup which
+	// is not in Completed status.
+	ErrTopupNotCompleted = errors.New("topup must be completed to be settled")
+	// ErrTopupForbiddenExpiration is returned is attempting to set a topup as
+	// expired before its expiration date.
+	ErrTopupForbiddenExpiration = errors.New("topup cannot expire before expiration date")
 )
 
 // Topup represents the deal between taxi service and the user
@@ -29,8 +42,6 @@ type Topup struct {
 	// Status is the current status of the Topup (Requested -> Completed -> Settled)
 	Status TopupStatus
 	// Partial is the base64 encoded taxi PSET (empty string until Completed status)
-	// A taxi PSET = 1 LBTC input from taxi account + 2 outputs (payout to taxi + fee)
-	// the transaction MUST be signed
 	Partial string
 	// AssetHash is the asset used by the user to pay the fee
 	AssetHash string
@@ -52,14 +63,14 @@ type Topup struct {
 	SpreadAmount uint64
 }
 
-// NewTopup is a factory function used to create an base topup
-func NewTopup(
+// NewTopupWithAsset is a factory function used to create an base topup
+func NewTopupWithAsset(
 	assetHash string,
 	totalFee uint64,
 	assetPrice decimal.Decimal,
 	expireAt time.Time,
-) Topup {
-	return Topup{
+) *Topup {
+	return &Topup{
 		ID:          uuid.New().String(),
 		Status:      Requested,
 		Partial:     "",
@@ -71,62 +82,46 @@ func NewTopup(
 	}
 }
 
+func NewTopupWithPartial(partial string, expireAt time.Time) *Topup {
+	return &Topup{
+		ID:       uuid.New().String(),
+		Status:   Requested,
+		Partial:  partial,
+		ExpireAt: expireAt,
+	}
+}
+
 // Complete sets partial and assetAmount field + timestamp the complete time + update the status
 func (t *Topup) Complete(partial string, assetAmount uint64, spreadAmount uint64) error {
-	if t.Status == Requested {
-		t.CompletedAt = time.Now()
-		t.Status = Completed
-		t.Partial = partial
-		t.AssetAmount = assetAmount
-		t.SpreadAmount = spreadAmount
-		return nil
+	if t.Status != Requested {
+		return ErrTopupNotRequested
 	}
 
-	return ErrTopupNeedToBeRequested
+	t.CompletedAt = time.Now()
+	t.Status = Completed
+	t.Partial = partial
+	t.AssetAmount = assetAmount
+	t.SpreadAmount = spreadAmount
+	return nil
+
 }
 
 // Settle timestamp the settle time and update the topup status
 func (t *Topup) Settle() error {
-	if t.Status == Completed {
-		t.SettledAt = time.Now()
-		t.Status = Settled
-		return nil
+	if t.Status != Completed {
+		return ErrTopupNotCompleted
 	}
 
-	return ErrTopupNeedToBeCompleted
+	t.SettledAt = time.Now()
+	t.Status = Settled
+	return nil
 }
 
-// ToTopupMessage maps topup domain to taxi.Topup message type
-func (t *Topup) ToTopupMessage() *pb.Topup {
-	return &pb.Topup{
-		TopupId:     t.ID,
-		Partial:     t.Partial,
-		AssetHash:   t.AssetHash,
-		AssetAmount: t.AssetAmount,
-		AssetSpread: t.SpreadAmount,
+func (t *Topup) Expire() error {
+	if time.Now().Before(t.ExpireAt) {
+		return ErrTopupForbiddenExpiration
 	}
-}
 
-// ToTopupDetailsMessage maps topup domain to admin.TopupDetails message type
-func (t *Topup) ToTopupDetailsMessage() *admin.TopupDetails {
-	return &admin.TopupDetails{
-		TopupId:     t.ID,
-		Partial:     t.Partial,
-		AssetHash:   t.AssetHash,
-		AssetAmount: t.AssetAmount,
-		AssetSpread: t.SpreadAmount,
-		Status:      admin.TopupDetails_Status(t.Status),
-		FeeAmount:   t.FeeAmount,
-		Times:       t.toProtobufTimestampsMessage(),
-		Txid:        "",
-	}
-}
-
-func (t *Topup) toProtobufTimestampsMessage() *admin.Timestamps {
-	return &admin.Timestamps{
-		RequestedAt: uint64(t.RequestedAt.Unix()),
-		CompletedAt: uint64(t.CompletedAt.Unix()),
-		SettledAt:   uint64(t.SettledAt.Unix()),
-		ExpiredAt:   uint64(t.ExpireAt.Unix()),
-	}
+	t.Status = Expired
+	return nil
 }

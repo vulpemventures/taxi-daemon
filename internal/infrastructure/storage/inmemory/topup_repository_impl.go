@@ -2,88 +2,68 @@ package inmemory
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"sync"
 
-	"github.com/vulpemventures/taxi-daemon/internal/domain"
+	"github.com/vulpemventures/taxi-daemon/internal/core/domain"
 )
 
-type inmemoryTopupRepository struct {
-	topups           map[string]domain.Topup
-	repositoryLocker sync.Locker
+type topupRepository struct {
+	topups map[string]*domain.Topup
+	lock   *sync.RWMutex
 }
 
-// NewInmemoryTopupRepository creates a new inmemory TopupRepository implementation
-func NewInmemoryTopupRepository() domain.TopupRepository {
-	return newInmemoryTopupRepository()
+// NewTopupRepository creates a new inmemory TopupRepository implementation
+func NewTopupRepository() domain.TopupRepository {
+	return newTopupRepository()
 }
 
-func newInmemoryTopupRepository() *inmemoryTopupRepository {
-	return &inmemoryTopupRepository{
-		topups:           make(map[string]domain.Topup),
-		repositoryLocker: &sync.Mutex{},
+func newTopupRepository() *topupRepository {
+	return &topupRepository{
+		topups: make(map[string]*domain.Topup),
+		lock:   &sync.RWMutex{},
 	}
 }
 
-func (r *inmemoryTopupRepository) AddTopup(ctx context.Context, topup domain.Topup) error {
-	r.repositoryLocker.Lock()
-	defer r.repositoryLocker.Unlock()
+func (r *topupRepository) AddTopup(_ context.Context, topup *domain.Topup) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
+	if _, ok := r.topups[topup.ID]; ok {
+		return fmt.Errorf("topup with id %s already existing", topup.ID)
+	}
 	r.topups[topup.ID] = topup
-
 	return nil
 }
 
-func (r *inmemoryTopupRepository) GetAllTopups(ctx context.Context) ([]domain.Topup, error) {
-	r.repositoryLocker.Lock()
-	defer r.repositoryLocker.Unlock()
+func (r *topupRepository) GetAllTopups(ctx context.Context) ([]*domain.Topup, error) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
 
-	topups := make([]domain.Topup, 0)
-
+	topups := make([]*domain.Topup, 0)
 	for _, v := range r.topups {
 		topups = append(topups, v)
 	}
-
 	return topups, nil
 }
 
-func (r *inmemoryTopupRepository) MarkAsCompleted(
-	ctx context.Context,
-	topupID string,
-	partial string,
-	assetAmount uint64,
-	spreadAmount uint64,
-) (*domain.Topup, error) {
-	r.repositoryLocker.Lock()
-	defer r.repositoryLocker.Unlock()
+func (r *topupRepository) UpdateTopup(
+	ctx context.Context, topupID string,
+	updatefn func(*domain.Topup) (*domain.Topup, error),
+) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	topup, ok := r.topups[topupID]
 	if !ok {
-		return nil, errors.New("Topup does not exist")
+		return fmt.Errorf("topup %s does not exist", topupID)
 	}
 
-	err := topup.Complete(partial, assetAmount, spreadAmount)
+	updatedTopup, err := updatefn(topup)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	r.topups[topupID] = topup
-
-	return &topup, nil
-}
-
-func (r *inmemoryTopupRepository) MarkAsSettled(ctx context.Context, topupID string, txid string) (*domain.Topup, error) {
-	r.repositoryLocker.Lock()
-	defer r.repositoryLocker.Unlock()
-	topup, ok := r.topups[topupID]
-	if !ok {
-		return nil, errors.New("Topup does not exist")
-	}
-
-	err := topup.Settle()
-	if err != nil {
-		return nil, err
-	}
-	r.topups[topupID] = topup
-
-	return &topup, nil
+	r.topups[topupID] = updatedTopup
+	return nil
 }
