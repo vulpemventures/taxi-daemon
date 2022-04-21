@@ -48,7 +48,36 @@ $ ssh username@host
 
 ```sh
 $ cd compose
-$ TAXI_MNEMONIC="<your words>" docker-compose up -d
+# Start the ocean wallet with a list of node peers to connect to.
+$ NODE_PEERS=<peers> NETWORK=<network> docker-compose up -d oceand
+# Configure the CLI and create a new wallet
+$ ocean config init --no-tls
+$ ocean wallet create --password <password>
+# Make sure the backup the mnemonic of the wallet in response.
+$ ocean wallet unlock --password <password>
+
+# Start taxi
+$ EMAIL=info@example.com DOMAIN=taxi.example.com EXTERNAL_URL=taxi.example.com ADMIN_EXTERAL_URL="taxi.example.com:7000" docker-compose up -d taxid
+
+# If everything's ok, 2 new wallet's accounts 'lbtc" and 'payout' should have been created.
+$ ocean wallet info
+# {
+#   <...>
+#   "accounts": [s
+#     {
+#       "name": "lbtc",
+#       "index": 0,
+#       "derivationPath": "m/84'/0'/0'",
+#       "xpub": "<...>"
+#     },
+#     {
+#       "name": "payout",
+#       "index": 1,
+#       "derivationPath": "m/84'/0'/1'",
+#       "xpub": "<...>"
+#     }
+#   ]
+# }
 ```
 
 * get logs 
@@ -69,44 +98,42 @@ make infra-down
 
 ## Usage
 
-### Set the `taxid` RPC admin server into `taxi` CLI
+### Deposit LBTC
+
+Generate some receiving addresses from your Ocean wallet (example by using ocean CLI):
+```sh
+# in this example we derive 10 new addresses for the account named "lbtc".
+# This is the name of the wallet account taxi uses to pay for network fees,
+# and you should take care of keeping it funded with LBTC fragments intended
+# to be used for covering fee amounts without any change in return.
+$ ocean account derive --account-name lbtc --num-addresses 10
+```
+
+* Fragmenter
+
+The fragmenter is a utility service that makes use of an Elements node to send some funds to a list of receiving addresses with a single transaction. It requires an Elements node with a wallet funded with LBTCs.
+
+Compile the binary with (you can skip this step if you previously used `make build`):
+
+```sh
+$ make build-fragmenter
+```
+
+Use the fragmenter by providing a list of outputs as a list of comma separated pairs of `<addr>:<amount_in_sats>`:
+
+```sh
+$ ./bin/fragmenter --rpcserver http://admin1:123@localhost:18884 --outputs "el1qqtqts296m20vhptp2tens8nh40nn62h7hg04cpml3zntwy75qnlwetzywyyes0yayhzhr8un43vj4rxd28aeurcnkfwp07pc3=500","el1qq2rgldhypkjqkehnkypyhr0vhjsq6780sgp9kmne5ykwz3w8ur3d340puy2fx5ch8xkxssf4cpwz98a6ry4m7kqmwk7c92w6z=500,el1qqtcrkd0che6ed97muhy62w0wmv7lnjl8wj0e9swn2jf36y7mftymtkxkwhfmcjeud68sd35p3a4y9cnwfe4m6mp3ashr8tp3d=500,el1qqfjzrkawqz4usfgepc25wstleczknlpjst8gzu4tel0rwdnvjyctnzf9d385nzadvft2mh58s0k7ndg6y8d6shed30pvzdhl6=500,el1qqgqndw32cs6zyr6qhfhd8ppuzx3aku02lesuqg332ngppquakl5cxtsd0m45h08davmk5u604l8cuyv59c4pu6qagmvx77ajt=700,el1qqvxvjt5sscyy5pkdgz26mrx797sz7acks8rtrhvnx2vm9tsvx0a07raj0t583xv597tkew4sxqwsswhx8nz6692jz8htuywnp=700,el1qqfqvmj5yvlehk2mv4a23edqk5am2u95awqcp8ke3x5fkv0pxhxxd23nk862x0xljj5m8q0lyuc3rqa9fvy2tclqstdkwkngty=700,el1qq0et3gx2uzj2jwdp6y48yq0qvhnejxcj3w2clft372ke7zuaj67nudt7jl65r855e7mf8hmzcdfaherxyantqu8duc3umntwt=1000,el1qqgur9ttlcsrdq7kl8m3xqr9jyds3kjfw7zk2dg9qh5q64yrwsvf42yqf2fcw9ewr5hwu7gek9kt6hkhwgtmk5xzzh8g0r2ycd=1000,el1qq2usnr5penldzjtje8rvdk34afp5rlx6p94l5t46nugjkh2630e4ypzvgt55n6t4lf7msazutxrfkrm9vver5h32ve0y8hwku=1500"
+```
+
+### Configure Taxi CLI
 
 ```sh
 $ taxi config init
-# Optional: default is localhost:7000
-$ taxi config set rpcserver http://myremoteurl:7000
+# You can connect to an insecure taxi service (only for dev purposes)
+$ taxi config init --insecure
+# You can connect to a remote taxi service with the CLI installed on your local machine
+$ taxi config set rpcserver myremoteurl:7000
 ```
-
-### Get funding addresses for LBTC
-
-```sh
-# This gets 10 addresses. It means we can serve 10 concurrent topups
-$ taxi fund -n 10
-```
-
-### Deposit LBTC
-
-Use the previous addresses to send an exact amount defined in `TAXI_FIXED_FEE_AMOUNT` (by default 0.00001 LBTC / 1000 staoshis)
-
-If running an Elements instance, you can use the `fragment.py` script to make a deposit to many addresses in a single transaction.
-
-* Fragment script
-
-`resources/fragment/fragment.py` is a Python script used to create these fragments from an Elements/Liquid node.
-
-NOTICE: the number of addresses specified as argument determines the number of fragments created.
-
-```sh
-$ git clone git@github.com:vulpemventures/taxi-daemon.git && cd taxi-daemon
-$ python3 ./resources/fragment/fragment.py --url http://127.0.0.1:7041 \
-    --rpc_user admin1 \
-    --rpc_pass 123 \
-    --fragment_size 0.00001 \
-    --addresses XQFscDmxh6N9L5SknW6XxDHvjie4xfH8Bu XNqdSvixmaVqgrgEEpSA9s1EEtGfPoAZoH 
-```
-
-tips: use `-h` to print the script's help guide.
-
 
 ### Add an asset and price
 
@@ -114,7 +141,6 @@ tips: use `-h` to print the script's help guide.
 # Add Tether asset hash, make the USDt price per BTC of 34000 and use 10% as service fee for taxi
 $ taxi add --asset ce091c998b83c78bb71a632313ba3760f1763d9cfcffae02258ffa9865a37bd2 --price 34000 --basis_point 1000
 ```
-
 
 ## Development
 
@@ -151,10 +177,8 @@ $ make run
 
 ```sh
 # Run Nigiri first
-$ make test # Run short unit tests
-$ make integrationtest # Run integration tests
+$ make test # Run tests
 ```
-
 
 ## Docker
 
@@ -173,13 +197,7 @@ $ docker build --pull --rm -f "Dockerfile" -t taxid:latest "."
 For in depth documentation of the environment variables look [here](https://github.com/vulpemventures/taxi-daemon/blob/master/config/config.go)
 
 ```bash
-$ docker run -d -it --name taxid -p 7000:7000 -p 8000:8000 -v `pwd`/taxid:/.taxid -e TAXI_MNEMONIC="<seed words here>" taxid:latest
-```
-
-Run in regtest with Nigiri
-
-```
-$ docker run -d -it --name taxid --network host -v `pwd`/taxid:/.taxid -e TAXI_MNEMONIC="<seed words here>" -e TAXI_NETWORK=regtest -e TAXI_EXPLORER_ENDPOINT='http://127.0.0.1:3001' -e TAXI_CACHE_INTERVAL=5 -e TAXI_LOG_LEVEL=9 ghcr.io/vulpemventures/taxid:latest
+$ docker run -d -it --name taxid -p 7000:7000 -p 8000:8000 -v `pwd`/taxid:/.taxid -e TAXI_OCEAN_ADDRESS="<ocean wallet address>" taxid:latest
 ```
 
 #### Use the CLI
