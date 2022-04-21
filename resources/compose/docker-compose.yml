@@ -1,21 +1,37 @@
 version: "3.7"
 
 services:
+  oceand:
+    container_name: oceand
+    image: ghcr.io/vulpemventures/oceand:latest
+    restart: unless-stopped
+    environment:
+      - OCEAN_LOG_LEVEL=5
+      - OCEAN_NO_TLS=true
+      - OCEAN_NODE_PEERS=${NODE_PEERS}
+      - OCEAN_NETWORK=${NETWORK}
+      - OCEAN_UTXO_EXPIRY_DURATION_IN_SECONDS=240
+    ports:
+      - "18000:18000"
+    volumes:
+      - ./oceand/data:/.oceand
   taxid:
-    container_name: "taxid"
+    container_name: taxid
     image: ghcr.io/vulpemventures/taxid:latest
     restart: unless-stopped
+    depends_on:
+      - oceand
     environment:
       - TAXI_DOMAIN=${DOMAIN}
       - TAXI_EMAIL=${EMAIL}
-      - TAXI_MNEMONIC=${MNEMONIC}
       - TAXI_EXTERNAL_URL=${EXTERNAL_URL}
       - TAXI_ADMIN_EXTERNAL_URL=${ADMIN_EXTERNAL_URL}
-      - TAXI_LOG_LEVEL=9
+      - TAXI_OCEAN_ADDRESS=ocean:18000
+      - TAXI_LOG_LEVEL=5
     ports:
       - "80:80"
       - "443:8000"
       - "7000:7000"
     volumes:
-      - ./data:/.taxid
-      - ./certs:/.certmagic
+      - ./taxid/data:/.taxid
+      - ./taxid/certs:/.certmagic
