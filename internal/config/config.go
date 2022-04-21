@@ -14,8 +14,6 @@ import (
 )
 
 const (
-	// ConfigPathKey defines the config path
-	ConfigPathKey = "CONFIG_PATH"
 	// OceanWalletAddrKey is the address to connect to the ocean wallet service
 	OceanWalletAddrKey = "OCEAN_ADDRESS"
 	// LogLevelKey is the level used as logus' logger level
