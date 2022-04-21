@@ -39,13 +39,11 @@ $ make infra-load
 ### Run
 
 * Enter into the machine via SSH
-
 ```sh
 $ ssh username@host
 ```
 
-* start the taxi daemon 
-
+* Initialize and unlock the ocean wallet
 ```sh
 $ cd compose
 # Start the ocean wallet with a list of node peers to connect to.
@@ -55,7 +53,10 @@ $ ocean config init --no-tls
 $ ocean wallet create --password <password>
 # Make sure the backup the mnemonic of the wallet in response.
 $ ocean wallet unlock --password <password>
+```
 
+* Run taxi daemon:
+```sh
 # Start taxi
 $ EMAIL=info@example.com DOMAIN=taxi.example.com EXTERNAL_URL=taxi.example.com ADMIN_EXTERAL_URL="taxi.example.com:7000" docker-compose up -d taxid
 
@@ -80,12 +81,6 @@ $ ocean wallet info
 # }
 ```
 
-* get logs 
-
-```sh
-docker logs taxid
-```
-
 
 ### Tear down infrastructure
 
@@ -100,7 +95,7 @@ make infra-down
 
 ### Deposit LBTC
 
-Generate some receiving addresses from your Ocean wallet (example by using ocean CLI):
+* Generate some receiving addresses from your Ocean wallet:
 ```sh
 # in this example we derive 10 new addresses for the account named "lbtc".
 # This is the name of the wallet account taxi uses to pay for network fees,
