@@ -50,3 +50,19 @@ func (r *whitelistRepository) GetAddresses(_ context.Context) ([]string, error) 
 	}
 	return addresses, nil
 }
+
+func (r *whitelistRepository) RemoveAddresses(
+	_ context.Context, addresses []string,
+) (int, error) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	count := 0
+	for _, addr := range addresses {
+		if _, ok := r.whitelist[addr]; ok {
+			delete(r.whitelist, addr)
+			count++
+		}
+	}
+	return count, nil
+}

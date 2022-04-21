@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/shopspring/decimal"
+	"github.com/vulpemventures/go-elements/address"
 	pb "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/go/taxi-daemon/v1"
 	"github.com/vulpemventures/taxi-daemon/internal/core/application"
 	"github.com/vulpemventures/taxi-daemon/internal/core/domain"
@@ -14,7 +15,6 @@ import (
 )
 
 type adminServer struct {
-	pb.UnimplementedAdminServiceServer
 	adminSvc application.AdminService
 }
 
@@ -44,11 +44,37 @@ func (a *adminServer) AddAsset(
 func (a *adminServer) AddWhitelistedAddresses(
 	ctx context.Context, req *pb.AddWhitelistedAddressesRequest,
 ) (*pb.AddWhitelistedAddressesResponse, error) {
-	addresses := req.GetAddresses()
+	addresses, err := parseAddresses(req.GetAddresses())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 	if err := a.adminSvc.AddWhitelistedAddresses(ctx, addresses); err != nil {
 		return nil, err
 	}
 	return &pb.AddWhitelistedAddressesResponse{}, nil
+}
+
+func (a *adminServer) ListWhitelistedAddresses(
+	ctx context.Context, req *pb.ListWhitelistedAddressesRequest,
+) (*pb.ListWhitelistedAddressesResponse, error) {
+	addresses, err := a.adminSvc.ListWhitelistedAddresses(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ListWhitelistedAddressesResponse{Addresses: addresses}, nil
+}
+
+func (a *adminServer) DeleteWhitelistedAddresses(
+	ctx context.Context, req *pb.DeleteWhitelistedAddressesRequest,
+) (*pb.DeleteWhitelistedAddressesResponse, error) {
+	addresses, err := parseAddresses(req.GetAddresses())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if err := a.adminSvc.DeleteWhitelistedAddresses(ctx, addresses); err != nil {
+		return nil, err
+	}
+	return &pb.DeleteWhitelistedAddressesResponse{}, nil
 }
 
 func (a *adminServer) ListTopups(ctx context.Context, req *pb.ListTopupsRequest) (*pb.ListTopupsResponse, error) {
@@ -91,6 +117,18 @@ func parsePrice(val float64) (dec decimal.Decimal, err error) {
 	}
 	dec = decimal.NewFromFloat(val)
 	return
+}
+
+func parseAddresses(addresses []string) ([]string, error) {
+	if len(addresses) <= 0 {
+		return nil, fmt.Errorf("missing addresses")
+	}
+	for _, addr := range addresses {
+		if _, err := address.DecodeType(addr); err != nil {
+			return nil, fmt.Errorf("invalid address %s: %s", addr, err)
+		}
+	}
+	return addresses, nil
 }
 
 func toTopupDetailProto(t *domain.Topup) *pb.TopupDetails {

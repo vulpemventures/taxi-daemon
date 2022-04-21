@@ -63,9 +63,9 @@ func configAction(ctx *cli.Context) error {
 
 func configInitAction(c *cli.Context) error {
 	return setState(map[string]string{
-		"rpcserver":     c.String(rpcServerKey),
-		"tls_cert_path": cleanAndExpandPath(c.String(tlsCertPathKey)),
-		"insecure":      c.String(insecureKey),
+		rpcServerKey:   c.String(rpcServerKey),
+		tlsCertPathKey: cleanAndExpandPath(c.String(tlsCertPathKey)),
+		insecureKey:    c.String(insecureKey),
 	})
 }
 

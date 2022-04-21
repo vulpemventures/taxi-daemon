@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/shopspring/decimal"
+	log "github.com/sirupsen/logrus"
 	"github.com/vulpemventures/taxi-daemon/internal/core/domain"
 	"github.com/vulpemventures/taxi-daemon/internal/core/ports"
 )
@@ -17,10 +18,16 @@ type AdminService interface {
 	AddAsset(
 		ctx context.Context, assetHash string, price decimal.Decimal,
 		basisPoints uint32,
-	) error
+	) (err error)
 	AddWhitelistedAddresses(
 		ctx context.Context, addresses []string,
-	) error
+	) (err error)
+	ListWhitelistedAddresses(
+		ctx context.Context,
+	) (whitelist []string, err error)
+	DeleteWhitelistedAddresses(
+		ctx context.Context, addresses []string,
+	) (err error)
 }
 
 type adminService struct {
@@ -57,10 +64,37 @@ func (s *adminService) AddAsset(
 func (s *adminService) AddWhitelistedAddresses(
 	ctx context.Context, addresses []string,
 ) error {
-	if _, err := s.repoManager.WhitelistRepository().AddAddresses(
-		ctx, addresses,
-	); err != nil {
+	count, err := s.repoManager.WhitelistRepository().AddAddresses(ctx, addresses)
+	if err != nil {
 		return err
+	}
+	if count > 0 {
+		log.Debugf("added %d addresses to whitelist", count)
+	}
+	return nil
+}
+
+func (s *adminService) ListWhitelistedAddresses(
+	ctx context.Context,
+) ([]string, error) {
+	addresses, err := s.repoManager.WhitelistRepository().GetAddresses(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return addresses, nil
+}
+
+func (s *adminService) DeleteWhitelistedAddresses(
+	ctx context.Context, addresses []string,
+) error {
+	count, err := s.repoManager.WhitelistRepository().RemoveAddresses(
+		ctx, addresses,
+	)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		log.Debugf("removed %d addresses from whitelist", count)
 	}
 	return nil
 }

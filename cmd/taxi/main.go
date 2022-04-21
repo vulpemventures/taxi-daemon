@@ -25,7 +25,7 @@ func main() {
 	app.Name = "taxi admin CLI"
 	app.Usage = "CLI for taxi-server administration"
 	app.EnableBashCompletion = true
-	app.Commands = append(app.Commands, &config, &addAsset, &listTopups)
+	app.Commands = append(app.Commands, &config, &addAsset, &whitelist, &listTopups)
 
 	err := app.Run(os.Args)
 	if err != nil {

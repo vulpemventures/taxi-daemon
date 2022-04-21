@@ -8,7 +8,7 @@ service AdminService {
   // AddAsset lets update the asset_hash with price if exists, or creates it
   rpc AddAsset(AddAssetRequest) returns (AddAssetResponse) {
     option (google.api.http) = {
-      post: "/v1/asset"
+      post: "/v1/asset/add"
       body: "*"
     };
   }
@@ -18,59 +18,108 @@ service AdminService {
   // for such tx
   rpc AddWhitelistedAddresses(AddWhitelistedAddressesRequest) returns (AddWhitelistedAddressesResponse) {
     option (google.api.http) = {
-      post: "/v1/addresses"
+      post: "/v1/addresses/add"
+      body: "*"
+    };
+  }
+  // ListWhitelistedAddresses returns all the whitelisted addresses
+  rpc ListWhitelistedAddresses(ListWhitelistedAddressesRequest) returns (ListWhitelistedAddressesResponse) {
+    option (google.api.http) = {
+      post: "/v1/addresses/list"
+      body: "*"
+    };
+  }
+  // DeleteWhitelistedAddresses lets remove one or more addresses from the whitelist
+  rpc DeleteWhitelistedAddresses(DeleteWhitelistedAddressesRequest) returns (DeleteWhitelistedAddressesResponse) {
+    option (google.api.http) = {
+      post: "/v1/addresses/delete"
       body: "*"
     };
   }
   // ListTopups returns all the internal topups
   rpc ListTopups(ListTopupsRequest) returns (ListTopupsResponse) {
     option (google.api.http) = {
-      get: "/v1/topups"
+      post: "/v1/topups/list"
     };
   }
 }
 
 message AddAssetRequest {
-  string asset_hash = 1; // The asset_hash to update (or to create if the taxi doesn't know it)
-  double price = 2; // The quantity of asset to get 1 satoshi of LBTC
-  uint32 basis_points = 3; // The % taken as service fee expressed in basis points
+  // The asset to add or update
+  string asset_hash = 1;
+  // The quantity of asset equal to 1 satoshi of LBTC
+  double price = 2;
+  // The % taken as service fee expressed in basis points
+  uint32 basis_points = 3;
 }
 message AddAssetResponse {}
 
 message AddWhitelistedAddressesRequest {
-  repeated string addresses = 1; // The list of known addresses to add to taxi
+  // The list of known addresses to add
+  repeated string addresses = 1;
 }
 message AddWhitelistedAddressesResponse {}
 
+message ListWhitelistedAddressesRequest {}
+message ListWhitelistedAddressesResponse {
+  // The list of known addresses
+  repeated string addresses = 1;
+}
+
+message DeleteWhitelistedAddressesRequest {
+  // The list of known addresses to delete
+  repeated string addresses = 1;
+}
+message DeleteWhitelistedAddressesResponse {}
+
 message ListTopupsRequest {
-  string asset_hash = 1; // the asset hash to filter the topups. If empty, all topups of all assets will be returned
+  // The asset hash to filter the topups. If empty, all topups of all assets will be returned
+  string asset_hash = 1;
 }
 message ListTopupsResponse {
+  // The list of topups
   repeated TopupDetails topups = 1;
 }
 
 message TopupDetails {
   enum Status {
-    STATUS_REQUESTED = 0; // when the request for a topup has been received by the taxi
-    STATUS_COMPLETED = 1; // when the reply with a partially signed topup has been delivered to the client 
-    STATUS_SETTLED = 2; // when the topup has been included in the blockchain
-    STATUS_EXPIRED = 3; // when the topup has expired
+    // When the request for a topup has been received by the taxi
+    STATUS_REQUESTED = 0;
+    // When the reply with a partially signed topup has been delivered to the client 
+    STATUS_COMPLETED = 1;
+    // When the topup has been included in the blockchain
+    STATUS_SETTLED = 2;
+    // When the topup has expired
+    STATUS_EXPIRED = 3;
   }
-  string topup_id = 1; //random identifier of the currer topup
-  string partial = 2; // PSET signed with SIGHASH_SINGLE | ANYONECANPAY
-  string asset_hash = 3; // the asset hash used as payout for bitcoin fees
-  uint64 asset_amount = 4; // the asset denominated amount expressed in satoshis to be used as payout. It includes also the spread as taxi service fee
-  uint64 asset_spread = 5; // the amount expressed in satoshis as taxi service fee (part of asset_amount)
+  // Random identifier of the currer topup
+  string topup_id = 1; 
+  // Topup PSET
+  string partial = 2;
+  // The asset hash used as payout for bitcoin fees
+  string asset_hash = 3;
+  // The asset denominated amount expressed in satoshis to be used as payout. It includes also the spread as taxi service fee
+  uint64 asset_amount = 4;
+  // The amount expressed in satoshis as taxi service fee (part of asset_amount)
+  uint64 asset_spread = 5;
+  // Topup status
   Status status = 6;
-  uint64 fee_amount = 7; // amount in satoshis of bitcoin needed to cover the fees
-  Timestamps times = 8; // the timestamps of each status change
-  string txid = 9; // the tx hash when the topup is settled (status = 2), empty otherwise
+  // Amount in satoshis of bitcoin needed to cover the fees
+  uint64 fee_amount = 7;
+  // The timestamps of each status change
+  Timestamps times = 8;
+  // The tx hash when the topup is settled (status = 2), empty otherwise
+  string txid = 9;
 }
 
 message Timestamps {
-  int64 requested_at = 1; // the unix timestamp of when the taxi received the request of a topup from a client
-  int64 completed_at = 2; // the unix timestamp of when the taxi completed the topup and responded to client
-  int64 settled_at = 3; // the unix timestamp of the block in wich the topup is included in the chain.
-  int64 expired_at = 4; // the unix timestamp after wich the locked bitcoin input could have been double-spent (if any)
+  // The unix timestamp of when the taxi received the request of a topup from a client
+  int64 requested_at = 1;
+  // The unix timestamp of when the taxi completed the topup and responded to client
+  int64 completed_at = 2;
+  // The unix timestamp of the block in wich the topup is included in the chain.
+  int64 settled_at = 3;
+  // The unix timestamp after wich the locked bitcoin input could have been double-spent (if any)
+  int64 expired_at = 4;
 }
 

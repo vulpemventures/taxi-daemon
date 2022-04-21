@@ -50,6 +50,22 @@ func (r *whitelistRepository) GetAddresses(
 	return addresses, nil
 }
 
+func (r *whitelistRepository) RemoveAddresses(
+	ctx context.Context, addresses []string,
+) (int, error) {
+	count := 0
+	for _, addr := range addresses {
+		done, err := r.deleteAddress(ctx, addr)
+		if err != nil {
+			return -1, err
+		}
+		if done {
+			count++
+		}
+	}
+	return count, nil
+}
+
 func (r *whitelistRepository) close() {
 	r.store.Close()
 }
@@ -60,6 +76,20 @@ func (r *whitelistRepository) insertAddress(
 	item := address{addr}
 	if err := r.store.Insert(addr, item); err != nil {
 		if err == badgerhold.ErrKeyExists {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (r *whitelistRepository) deleteAddress(
+	_ context.Context, addr string,
+) (bool, error) {
+	item := address{addr}
+	if err := r.store.Delete(addr, item); err != nil {
+		if err == badgerhold.ErrNotFound {
 			return false, nil
 		}
 		return false, err

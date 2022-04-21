@@ -9,12 +9,13 @@ import (
 )
 
 const (
-	assetKey = "asset"
-	priceKey = "price"
+	assetKey      = "asset"
+	priceKey      = "price"
+	basisPointKey = "basis_point"
 )
 
 var addAsset = cli.Command{
-	Name:  "add",
+	Name:  "add-asset",
 	Usage: "add or update an asset/price",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
@@ -28,8 +29,8 @@ var addAsset = cli.Command{
 			Required: true,
 		},
 		&cli.IntFlag{
-			Name:     "basis_point",
-			Aliases:  []string{"bps"},
+			Name:     basisPointKey,
+			Aliases:  []string{"bp"},
 			Usage:    "the spread used in basis point",
 			Required: true,
 		},
@@ -45,9 +46,9 @@ func addAssetAction(ctx *cli.Context) error {
 
 	defer close()
 
-	assetHash := ctx.String("asset")
-	price := ctx.Float64("price")
-	basisPoints := ctx.Uint("basis_point")
+	assetHash := ctx.String(assetKey)
+	price := ctx.Float64(priceKey)
+	basisPoints := ctx.Uint(basisPointKey)
 
 	if _, err := adminClient.AddAsset(
 		context.Background(),
