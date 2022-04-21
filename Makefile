@@ -1,4 +1,4 @@
-.PHONY: build build-server build-cli build-linux clean fmt proto-lint proto run alltest test servertest integrationtest create-cert infra-up infra-down infra-load
+.PHONY: build build-server build-cli build-fragmenter build-linux clean fmt proto-lint proto run alltest test servertest integrationtest create-cert infra-up infra-down infra-load
 
 ## build-server: builds taxid into ./bin
 build-server:
@@ -12,8 +12,14 @@ build-cli:
 	@export GO111MODULE=on; \
 	env go build -tags netgo -ldflags="-s -w" -o bin/taxi cmd/taxi/*.go
 
-## build: builds taxid + CLI into ./bin
-build: clean build-server build-cli
+## build-fragmenter: builds fragmenter into ./bin
+build-fragmenter:
+	@echo "Building fragmenter..."
+	@export GO111MODULE=on; \
+	env go build -tags netgo -ldflags="-s -w" -o bin/fragmenter cmd/fragmenter/*.go
+
+## build: builds all binaries into ./bin
+build: clean build-server build-cli build-fragmenter
 
 ## build-linux: uses a dockerized Linux environment to build binaries into ./bin
 build-linux:
