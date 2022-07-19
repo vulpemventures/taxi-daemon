@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	addressesKey = "addresses"
+	addressKey = "address"
 )
 
 var whitelist = cli.Command{
@@ -26,7 +26,7 @@ var whitelist = cli.Command{
 			Usage: "add one or more addresses to the whitelist",
 			Flags: []cli.Flag{
 				&cli.StringSliceFlag{
-					Name:     addressesKey,
+					Name:     addressKey,
 					Usage:    "list of addresses to add",
 					Required: true,
 				},
@@ -38,7 +38,7 @@ var whitelist = cli.Command{
 			Usage: "add one or more addresses from the whitelist",
 			Flags: []cli.Flag{
 				&cli.StringSliceFlag{
-					Name:     addressesKey,
+					Name:     addressKey,
 					Usage:    "list of addresses to delete",
 					Required: true,
 				},
@@ -76,7 +76,7 @@ func addAddressesAction(ctx *cli.Context) error {
 
 	defer close()
 
-	addresses := ctx.StringSlice(addressesKey)
+	addresses := ctx.StringSlice(addressKey)
 
 	if _, err := adminClient.AddWhitelistedAddresses(
 		context.Background(),
@@ -98,7 +98,7 @@ func deleteAddressesAction(ctx *cli.Context) error {
 
 	defer close()
 
-	addresses := ctx.StringSlice(addressesKey)
+	addresses := ctx.StringSlice(addressKey)
 
 	if _, err := adminClient.DeleteWhitelistedAddresses(
 		context.Background(),

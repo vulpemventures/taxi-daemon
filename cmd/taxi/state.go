@@ -9,7 +9,7 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcd/btcutil"
 	pb "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/go/taxi-daemon/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
