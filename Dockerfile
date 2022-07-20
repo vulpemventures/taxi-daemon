@@ -1,5 +1,5 @@
 # first image used to build the sources
-FROM golang:1.15.5-buster AS builder
+FROM golang:1.17-buster AS builder
 
 ENV GO111MODULE=on \
   GOOS=linux \
