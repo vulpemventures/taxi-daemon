@@ -13,6 +13,7 @@ docker build -t taxi-builder:latest -f resources/linuxbuild/Dockerfile .
 docker run --name linux-build taxi-builder:latest
 docker cp linux-build:/taxi-daemon/bin/taxid ./bin/taxid
 docker cp linux-build:/taxi-daemon/bin/taxi ./bin/taxi
+docker cp linux-build:/taxi-daemon/bin/fragmenter ./bin/fragmenter
 docker rm linux-build
-#docker rmi taxi-builder:latest
+docker rmi taxi-builder:latest
 popd

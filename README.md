@@ -134,7 +134,7 @@ $ taxi config set rpcserver myremoteurl:7000
 
 ```sh
 # Add Tether asset hash, make the USDt price per BTC of 34000 and use 10% as service fee for taxi
-$ taxi add --asset ce091c998b83c78bb71a632313ba3760f1763d9cfcffae02258ffa9865a37bd2 --price 34000 --basis_point 1000
+$ taxi add --asset ce091c998b83c78bb71a632313ba3760f1763d9cfcffae02258ffa9865a37bd2 --price 34000 --basis-point 1000
 ```
 
 ## Development

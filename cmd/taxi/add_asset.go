@@ -11,7 +11,7 @@ import (
 const (
 	assetKey      = "asset"
 	priceKey      = "price"
-	basisPointKey = "basis_point"
+	basisPointKey = "basis-point"
 )
 
 var addAsset = cli.Command{

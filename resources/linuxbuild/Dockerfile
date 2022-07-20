@@ -1,4 +1,4 @@
-FROM ghcr.io/vulpemventures/golang:1.15.7-ubuntu20.04
+FROM ghcr.io/vulpemventures/golang:1.17-ubuntu20.04
 
 ENV GO111MODULE=on \
   GOOS=linux \
@@ -15,3 +15,4 @@ COPY . .
 RUN mkdir -p bin
 RUN go build --ldflags '-linkmode external' -o ./bin/taxid cmd/taxid/main.go
 RUN go build --ldflags '-linkmode external' -o ./bin/taxi cmd/taxi/*
+RUN go build --ldflags '-linkmode external' -o ./bin/fragmenter cmd/fragmenter/*
