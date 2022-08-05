@@ -1,4 +1,4 @@
-# Instructions
+# Instructions
 
 Instructions to start a taxi daemon locally on regtest network.
 
