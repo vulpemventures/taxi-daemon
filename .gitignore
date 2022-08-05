@@ -32,3 +32,5 @@ dist/
 *.tfvars
 *.tfstate*
 *.hcl
+resources/**/oceand
+resources/**/taxid

@@ -3,16 +3,22 @@ version: "3.7"
 services:
   oceand:
     container_name: oceand-testnet
-    image: ghcr.io/vulpemventures/oceand:latest
+    image: ghcr.io/vulpemventures/oceand:v0.1.0-rc.9
     restart: unless-stopped
     environment:
       - OCEAN_LOG_LEVEL=5
       - OCEAN_NO_TLS=true
-      - OCEAN_NODE_PEERS="liquid-testnet.blockstream.com:18892"
+      - OCEAN_NO_PROFILER=true
+      - OCEAN_NODE_PEERS=liquid-testnet.blockstream.com:18892
       - OCEAN_NETWORK=testnet
+      - OCEAN_ESPLORA_URL=https://blockstream.info/liquidtestnet/api
       - OCEAN_UTXO_EXPIRY_DURATION_IN_SECONDS=240
     ports:
       - "28000:18000"
+      - "28001:18001"
+    volumes:
+      - ./oceand/data:/home/user/.ocean-wallet
+      - ./oceand/cli:/home/user/.ocean-cli
   taxid:
     container_name: taxid-testnet
     image: ghcr.io/vulpemventures/taxid:latest
@@ -24,11 +30,11 @@ services:
       - TAXI_EMAIL=${TESTNET_EMAIL}
       - TAXI_EXTERNAL_URL=${TESTNET_EXTERNAL_URL}
       - TAXI_ADMIN_EXTERNAL_URL=${TESTNET_ADMIN_EXTERNAL_URL}
-      - TAXI_OCEAN_ADDRESS=ocean:28000
-      - TAXI_LOG_LEVEL=9
+      - TAXI_OCEAN_ADDRESS=oceand-testnet:28000
+      - TAXI_LOG_LEVEL=5
     ports:
-      - "18000:8000"
-      - "17000:7000"
+      - "8200:8000"
+      - "7200:7000"
     volumes:
       - ./taxid/data:/.taxid
       - ./taxid/certs:/.certmagic

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -28,9 +29,9 @@ import (
 )
 
 var (
+	taxiAddr         = flag.String("taxi-addr", "localhost:8300", "<host>:<port> of Taxi daemon to interact with")
 	ctx              = context.Background()
 	regtest          = &network.Regtest
-	taxiURL          = "localhost:8000"
 	explorerURL      = "http://localhost:3001"
 	fundingAmount    = 10 * uint64(math.Pow10(8))
 	spendingAmount   = 1 * uint64(math.Pow10(8))
@@ -38,6 +39,8 @@ var (
 )
 
 func main() {
+	flag.Parse()
+
 	fmt.Println("Creating ephemeral single key wallet...")
 	privkey, err := btcec.NewPrivateKey()
 	if err != nil {
@@ -60,9 +63,9 @@ func main() {
 	fmt.Println("Confidential address:", addr)
 
 	fmt.Printf("\n\n")
-	fmt.Printf("Connecting to taxi service at %s...\n", taxiURL)
+	fmt.Printf("Connecting to taxi service at %s...\n", *taxiAddr)
 	conn, err := grpc.Dial(
-		taxiURL, grpc.WithTransportCredentials(insecure.NewCredentials()),
+		*taxiAddr, grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
 		log.Fatalf("failed to connect to taxi service: %s", err)
