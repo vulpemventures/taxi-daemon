@@ -7,10 +7,10 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
+	admin "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/go/taxi-daemon/v1"
+	taxi "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/go/taxi/v1"
 	"github.com/vulpemventures/taxi-daemon/internal/interfaces/grpc/handler"
 	"github.com/vulpemventures/taxi-daemon/internal/interfaces/grpc/interceptor"
-	"github.com/vulpemventures/taxi-protobuf/generated/go/taxi"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
@@ -36,7 +36,7 @@ func newAdminHandlers(opts ServiceOpts, tlsConfig *tls.Config) (*handlers, error
 
 	grpcHandler := handler.NewAdminHandler(opts.AdminSvc)
 	grpcServer := grpc.NewServer(serverOpts...)
-	admin.RegisterAdminServer(grpcServer, grpcHandler)
+	admin.RegisterAdminServiceServer(grpcServer, grpcHandler)
 
 	// grpcweb wrapped server
 	grpcWebServer := grpcweb.WrapServer(
@@ -63,7 +63,7 @@ func newAdminHandlers(opts ServiceOpts, tlsConfig *tls.Config) (*handlers, error
 		return nil, err
 	}
 	gwmux := runtime.NewServeMux()
-	admin.RegisterAdminHandler(context.Background(), gwmux, conn)
+	admin.RegisterAdminServiceHandler(context.Background(), gwmux, conn)
 	grpcGateway := http.Handler(gwmux)
 
 	// http server routing requests to either grpc|grpcweb|grpcgateway handler
@@ -95,7 +95,7 @@ func newTaxiHandlers(opts ServiceOpts, tlsConfig *tls.Config) (*handlers, error)
 
 	grpcHandler := handler.NewTaxiHandler(opts.TaxiSvc)
 	grpcServer := grpc.NewServer(serverOpts...)
-	taxi.RegisterTaxiServer(grpcServer, grpcHandler)
+	taxi.RegisterTaxiServiceServer(grpcServer, grpcHandler)
 
 	// grpcweb wrapped server
 	grpcWebServer := grpcweb.WrapServer(
@@ -122,7 +122,7 @@ func newTaxiHandlers(opts ServiceOpts, tlsConfig *tls.Config) (*handlers, error)
 		return nil, err
 	}
 	gwmux := runtime.NewServeMux()
-	taxi.RegisterTaxiHandler(context.Background(), gwmux, conn)
+	taxi.RegisterTaxiServiceHandler(context.Background(), gwmux, conn)
 	grpcGateway := http.Handler(gwmux)
 
 	// http server routing requests to either grpc|grpcweb|grpcgateway handler

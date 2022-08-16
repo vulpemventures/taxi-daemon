@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/user"
@@ -26,30 +25,12 @@ func main() {
 	app.Name = "taxi admin CLI"
 	app.Usage = "CLI for taxi-server administration"
 	app.EnableBashCompletion = true
-	app.Commands = append(
-		app.Commands,
-		&addAsset,
-		&config,
-		&fundingAddress,
-		&listTopups,
-		&balance,
-		&listFundingAddresses,
-	)
+	app.Commands = append(app.Commands, &config, &addAsset, &whitelist, &listTopups)
 
 	err := app.Run(os.Args)
 	if err != nil {
 		fatal(err)
 	}
-}
-
-func fatal(err error) {
-	var e *invalidUsageError
-	if errors.As(err, &e) {
-		_ = cli.ShowCommandHelp(e.ctx, e.command)
-	} else {
-		_, _ = fmt.Fprintf(os.Stderr, "[taxi-cli] %v\n", err)
-	}
-	os.Exit(1)
 }
 
 /*

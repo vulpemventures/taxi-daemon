@@ -2,58 +2,55 @@ package inmemory
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
-	"github.com/vulpemventures/taxi-daemon/internal/domain"
+	"github.com/vulpemventures/taxi-daemon/internal/core/domain"
 )
 
-type inmemoryPriceRepository struct {
-	assetToPriceMap map[string]domain.Price
-	locker          sync.Locker
+type priceRepository struct {
+	prices map[string]*domain.Price
+	lock   *sync.RWMutex
 }
 
-// NewInmemoryPriceRepository creates a new inmemory PriceRepository implementation
-func NewInmemoryPriceRepository() domain.PriceRepository {
-	return newInmemoryPriceRepository()
+// NewPriceRepository creates a new inmemory PriceRepository implementation
+func NewPriceRepository() domain.PriceRepository {
+	return newPriceRepository()
 }
 
-func newInmemoryPriceRepository() *inmemoryPriceRepository {
-	return &inmemoryPriceRepository{
-		assetToPriceMap: make(map[string]domain.Price),
-		locker:          &sync.Mutex{},
+func newPriceRepository() *priceRepository {
+	return &priceRepository{
+		prices: make(map[string]*domain.Price),
+		lock:   &sync.RWMutex{},
 	}
 }
 
-func (r *inmemoryPriceRepository) UpdateOrCreatePrice(_ context.Context, price domain.Price) error {
-	r.locker.Lock()
-	defer r.locker.Unlock()
+func (r *priceRepository) UpsertPrice(_ context.Context, price *domain.Price) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
-	r.assetToPriceMap[price.AssetHash] = price
+	r.prices[price.AssetHash] = price
 	return nil
 }
 
-func (r *inmemoryPriceRepository) GetPrice(_ context.Context, assetHash string) (*domain.Price, error) {
-	r.locker.Lock()
-	defer r.locker.Unlock()
+func (r *priceRepository) GetPrice(_ context.Context, assetHash string) (*domain.Price, error) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
 
-	if price, ok := r.assetToPriceMap[assetHash]; ok {
-		return &price, nil
+	price, ok := r.prices[assetHash]
+	if !ok {
+		return nil, fmt.Errorf("price not found for asset hash %s", assetHash)
 	}
-
-	return nil, nil
+	return price, nil
 }
 
-func (r *inmemoryPriceRepository) GetAllPrices(_ context.Context) ([]domain.Price, error) {
-	r.locker.Lock()
-	defer r.locker.Unlock()
+func (r *priceRepository) GetAllPrices(_ context.Context) ([]*domain.Price, error) {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
 
-	prices := make([]domain.Price, len(r.assetToPriceMap), len(r.assetToPriceMap))
-
-	i := 0
-	for _, p := range r.assetToPriceMap {
-		prices[i] = p
-		i++
+	prices := make([]*domain.Price, 0, len(r.prices))
+	for _, p := range r.prices {
+		prices = append(prices, p)
 	}
-
 	return prices, nil
 }

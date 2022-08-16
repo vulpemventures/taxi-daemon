@@ -1,0 +1,265 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "taxi/v1/taxi.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "TaxiService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/asset/topup": {
+      "post": {
+        "summary": "TopupWithAsset rpc returns a transaction (pset) with a LBTC input and a payout with defined asset fot taxi.\nThe transaction is signed with SIGHASH_SINGLE | ANYONECANPAY",
+        "operationId": "TaxiService_TopupWithAsset",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1TopupWithAssetResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1TopupWithAssetRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TaxiService"
+        ]
+      }
+    },
+    "/v1/assets": {
+      "get": {
+        "summary": "ListAssets rpc returns a subset of supported elements assets that could be accepted as payment\nfor topups",
+        "operationId": "TaxiService_ListAssets",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListAssetsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "TaxiService"
+        ]
+      }
+    },
+    "/v1/payout/topup": {
+      "post": {
+        "summary": "TopupWithKnownPayout adds ins and outs to the given transaction if this contains at least one\nknown payout, ie. one output with a \"whitelisted\" script.",
+        "operationId": "TaxiService_TopupWithKnownPayout",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1TopupWithKnownPayoutResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1TopupWithKnownPayoutRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TaxiService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1AssetDetails": {
+      "type": "object",
+      "properties": {
+        "assetHash": {
+          "type": "string"
+        },
+        "basisPoint": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "assetPrice": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "v1BlindingData": {
+      "type": "object",
+      "properties": {
+        "asset": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "assetBlinder": {
+          "type": "string",
+          "format": "byte"
+        },
+        "valueBlinder": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "v1ListAssetsResponse": {
+      "type": "object",
+      "properties": {
+        "assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1AssetDetails"
+          }
+        }
+      }
+    },
+    "v1Topup": {
+      "type": "object",
+      "properties": {
+        "topupId": {
+          "type": "string"
+        },
+        "partial": {
+          "type": "string"
+        }
+      }
+    },
+    "v1TopupWithAssetRequest": {
+      "type": "object",
+      "properties": {
+        "assetHash": {
+          "type": "string"
+        },
+        "estimatedTxSize": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "millisatPerByte": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "v1TopupWithAssetResponse": {
+      "type": "object",
+      "properties": {
+        "topup": {
+          "$ref": "#/definitions/v1Topup"
+        },
+        "expiry": {
+          "type": "string",
+          "format": "int64"
+        },
+        "assetHash": {
+          "type": "string"
+        },
+        "assetAmount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "assetSpread": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "inBlindingData": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1BlindingData"
+          }
+        }
+      }
+    },
+    "v1TopupWithKnownPayoutRequest": {
+      "type": "object",
+      "properties": {
+        "partial": {
+          "type": "string"
+        },
+        "millisatPerByte": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "v1TopupWithKnownPayoutResponse": {
+      "type": "object",
+      "properties": {
+        "topup": {
+          "$ref": "#/definitions/v1Topup"
+        },
+        "expiry": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    }
+  }
+}

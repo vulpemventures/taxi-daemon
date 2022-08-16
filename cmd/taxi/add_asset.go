@@ -5,26 +5,32 @@ import (
 	"fmt"
 
 	"github.com/urfave/cli/v2"
-	"github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/admin"
+	pb "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/go/taxi-daemon/v1"
+)
+
+const (
+	assetKey      = "asset"
+	priceKey      = "price"
+	basisPointKey = "basis-point"
 )
 
 var addAsset = cli.Command{
-	Name:  "add",
-	Usage: "add (update if exists) an asset/price",
+	Name:  "add-asset",
+	Usage: "add or update an asset/price",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:     "asset",
-			Usage:    "the asset hash to add/update (string)",
+			Name:     assetKey,
+			Usage:    "the asset hash to add/update (hex string)",
 			Required: true,
 		},
 		&cli.StringFlag{
-			Name:     "price",
-			Usage:    "the number of assets needed to get 1 satoshi of LBTC (float)",
+			Name:     priceKey,
+			Usage:    "the quantity of asset needed to get 1 satoshi of LBTC",
 			Required: true,
 		},
 		&cli.IntFlag{
-			Name:     "basis_point",
-			Aliases:  []string{"bps"},
+			Name:     basisPointKey,
+			Aliases:  []string{"bp"},
 			Usage:    "the spread used in basis point",
 			Required: true,
 		},
@@ -40,19 +46,18 @@ func addAssetAction(ctx *cli.Context) error {
 
 	defer close()
 
-	assetHash := ctx.String("asset")
-	price := float32(ctx.Float64("price"))
-	basisPoints := ctx.Int("basis_point")
+	assetHash := ctx.String(assetKey)
+	price := ctx.Float64(priceKey)
+	basisPoints := ctx.Uint(basisPointKey)
 
-	_, err = adminClient.AddAsset(
+	if _, err := adminClient.AddAsset(
 		context.Background(),
-		&admin.AddAssetRequest{
+		&pb.AddAssetRequest{
 			AssetHash:   assetHash,
 			Price:       price,
 			BasisPoints: uint32(basisPoints),
-		})
-
-	if err != nil {
+		},
+	); err != nil {
 		return err
 	}
 

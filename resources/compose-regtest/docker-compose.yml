@@ -1,0 +1,39 @@
+version: "3.7"
+
+services:
+  oceand:
+    container_name: oceand-regtest
+    image: ghcr.io/vulpemventures/oceand:v0.1.0-rc.9
+    restart: unless-stopped
+    environment:
+      - OCEAN_LOG_LEVEL=5
+      - OCEAN_NO_TLS=true
+      - OCEAN_STATS_INTERVAL=120
+      - OCEAN_NODE_PEERS=liquid:18886
+      - OCEAN_NETWORK=regtest
+      - OCEAN_ESPLORA_URL=http://chopsticks-liquid:3000
+      - OCEAN_UTXO_EXPIRY_DURATION_IN_SECONDS=240
+    ports:
+      - "38000:18000"
+      - "38001:18001"
+    volumes:
+      - ./oceand/data:/home/user/.ocean-wallet
+      - ./oceand/cli:/home/user/.ocean-cli
+  taxid:
+    container_name: taxid-regtest
+    image: ghcr.io/vulpemventures/taxid:latest
+    restart: unless-stopped
+    depends_on:
+      - oceand
+    environment:
+      - TAXI_OCEAN_ADDRESS=oceand-regtest:18000
+      - TAXI_LOG_LEVEL=5
+    ports:
+      - "8300:8000"
+      - "7300:7000"
+    volumes:
+      - ./taxid/data:/.taxid
+networks:
+  default:
+    name: nigiri
+    external: true

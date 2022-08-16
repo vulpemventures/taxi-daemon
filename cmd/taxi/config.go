@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/urfave/cli/v2"
 )
@@ -62,9 +63,9 @@ func configAction(ctx *cli.Context) error {
 
 func configInitAction(c *cli.Context) error {
 	return setState(map[string]string{
-		"rpcserver":     c.String(rpcServerKey),
-		"tls_cert_path": cleanAndExpandPath(c.String(tlsCertPathKey)),
-		"insecure":      c.String(insecureKey),
+		rpcServerKey:   c.String(rpcServerKey),
+		tlsCertPathKey: cleanAndExpandPath(c.String(tlsCertPathKey)),
+		insecureKey:    c.String(insecureKey),
 	})
 }
 
@@ -76,8 +77,18 @@ func configSetAction(c *cli.Context) error {
 	key := c.Args().Get(0)
 	value := c.Args().Get(1)
 
-	err := setState(map[string]string{key: value})
-	if err != nil {
+	partialState := map[string]string{key: value}
+
+	if key == insecureKey {
+		if val, _ := strconv.ParseBool(value); val {
+			partialState[tlsCertPathKey] = ""
+		}
+	}
+	if key == tlsCertPathKey {
+		partialState[insecureKey] = "false"
+	}
+
+	if err := setState(partialState); err != nil {
 		return err
 	}
 

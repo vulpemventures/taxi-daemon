@@ -1,0 +1,372 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "taxi-daemon/v1/admin.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "AdminService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/addresses/add": {
+      "post": {
+        "summary": "AddWhitelistedAddresses lets add one or more known payout addresses.\nIf an incoming topup request includes one or more of these addresses\nwitihin the tx outputs, the service will just add ins and outs to pay fees\nfor such tx",
+        "operationId": "AdminService_AddWhitelistedAddresses",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AddWhitelistedAddressesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1AddWhitelistedAddressesRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AdminService"
+        ]
+      }
+    },
+    "/v1/addresses/delete": {
+      "post": {
+        "summary": "DeleteWhitelistedAddresses lets remove one or more addresses from the whitelist",
+        "operationId": "AdminService_DeleteWhitelistedAddresses",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteWhitelistedAddressesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1DeleteWhitelistedAddressesRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AdminService"
+        ]
+      }
+    },
+    "/v1/addresses/list": {
+      "post": {
+        "summary": "ListWhitelistedAddresses returns all the whitelisted addresses",
+        "operationId": "AdminService_ListWhitelistedAddresses",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListWhitelistedAddressesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ListWhitelistedAddressesRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AdminService"
+        ]
+      }
+    },
+    "/v1/asset/add": {
+      "post": {
+        "summary": "AddAsset lets update the asset_hash with price if exists, or creates it",
+        "operationId": "AdminService_AddAsset",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AddAssetResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1AddAssetRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AdminService"
+        ]
+      }
+    },
+    "/v1/topups/list": {
+      "post": {
+        "summary": "ListTopups returns all the internal topups",
+        "operationId": "AdminService_ListTopups",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListTopupsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "assetHash",
+            "description": "The asset hash to filter the topups. If empty, all topups of all assets will be returned",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "AdminService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "googlerpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "v1AddAssetRequest": {
+      "type": "object",
+      "properties": {
+        "assetHash": {
+          "type": "string",
+          "title": "The asset to add or update"
+        },
+        "price": {
+          "type": "number",
+          "format": "double",
+          "title": "The quantity of asset equal to 1 satoshi of LBTC"
+        },
+        "basisPoints": {
+          "type": "integer",
+          "format": "int64",
+          "title": "The % taken as service fee expressed in basis points"
+        }
+      }
+    },
+    "v1AddAssetResponse": {
+      "type": "object"
+    },
+    "v1AddWhitelistedAddressesRequest": {
+      "type": "object",
+      "properties": {
+        "addresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "The list of known addresses to add"
+        }
+      }
+    },
+    "v1AddWhitelistedAddressesResponse": {
+      "type": "object"
+    },
+    "v1DeleteWhitelistedAddressesRequest": {
+      "type": "object",
+      "properties": {
+        "addresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "The list of known addresses to delete"
+        }
+      }
+    },
+    "v1DeleteWhitelistedAddressesResponse": {
+      "type": "object"
+    },
+    "v1ListTopupsResponse": {
+      "type": "object",
+      "properties": {
+        "topups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1TopupDetails"
+          },
+          "title": "The list of topups"
+        }
+      }
+    },
+    "v1ListWhitelistedAddressesRequest": {
+      "type": "object"
+    },
+    "v1ListWhitelistedAddressesResponse": {
+      "type": "object",
+      "properties": {
+        "addresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "The list of known addresses"
+        }
+      }
+    },
+    "v1Timestamps": {
+      "type": "object",
+      "properties": {
+        "requestedAt": {
+          "type": "string",
+          "format": "int64",
+          "title": "The unix timestamp of when the taxi received the request of a topup from a client"
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "int64",
+          "title": "The unix timestamp of when the taxi completed the topup and responded to client"
+        },
+        "settledAt": {
+          "type": "string",
+          "format": "int64",
+          "description": "The unix timestamp of the block in wich the topup is included in the chain."
+        },
+        "expiredAt": {
+          "type": "string",
+          "format": "int64",
+          "title": "The unix timestamp after wich the locked bitcoin input could have been double-spent (if any)"
+        }
+      }
+    },
+    "v1TopupDetails": {
+      "type": "object",
+      "properties": {
+        "topupId": {
+          "type": "string",
+          "title": "Random identifier of the currer topup"
+        },
+        "partial": {
+          "type": "string",
+          "title": "Topup PSET"
+        },
+        "assetHash": {
+          "type": "string",
+          "title": "The asset hash used as payout for bitcoin fees"
+        },
+        "assetAmount": {
+          "type": "string",
+          "format": "uint64",
+          "title": "The asset denominated amount expressed in satoshis to be used as payout. It includes also the spread as taxi service fee"
+        },
+        "assetSpread": {
+          "type": "string",
+          "format": "uint64",
+          "title": "The amount expressed in satoshis as taxi service fee (part of asset_amount)"
+        },
+        "status": {
+          "$ref": "#/definitions/v1TopupDetailsStatus",
+          "title": "Topup status"
+        },
+        "feeAmount": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Amount in satoshis of bitcoin needed to cover the fees"
+        },
+        "times": {
+          "$ref": "#/definitions/v1Timestamps",
+          "title": "The timestamps of each status change"
+        },
+        "txid": {
+          "type": "string",
+          "title": "The tx hash when the topup is settled (status = 2), empty otherwise"
+        }
+      }
+    },
+    "v1TopupDetailsStatus": {
+      "type": "string",
+      "enum": [
+        "STATUS_REQUESTED",
+        "STATUS_COMPLETED",
+        "STATUS_SETTLED",
+        "STATUS_EXPIRED"
+      ],
+      "default": "STATUS_REQUESTED",
+      "title": "- STATUS_REQUESTED: When the request for a topup has been received by the taxi\n - STATUS_COMPLETED: When the reply with a partially signed topup has been delivered to the client\n - STATUS_SETTLED: When the topup has been included in the blockchain\n - STATUS_EXPIRED: When the topup has expired"
+    }
+  }
+}

@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/caddyserver/certmagic"
-	"github.com/vulpemventures/taxi-daemon/internal/application"
+	"github.com/vulpemventures/taxi-daemon/internal/core/application"
 	"golang.org/x/net/http2"
 )
 

@@ -1,0 +1,103 @@
+#!/bin/bash
+
+set -e
+
+# CLIs
+ocean="docker exec oceand-regtest ocean"
+taxi="docker exec taxid-regtest taxi"
+fragmenter="docker exec taxid-regtest fragmenter"
+
+COMPOSE_PATH=resources/compose-regtest/docker-compose.yml
+USDT=$(nigiri rpc --liquid issueasset 1000000 0 | jq -r .asset)
+KNOWN_PAYOUT_ADDRESS="el1qqtcxcrfyf8cd68g2hd69gpx3gj7cgd7qa26ff9tfpsnw5mkzd32swt54sqdyfee8gw3vghwp5r7aspqkhnsh29f2yuyen9x37"
+PASSWORD=ciaociao
+
+echo "Cleaning containers datadir"
+rm -rf resources/compose-regtest/oceand &> /dev/null
+rm -rf resources/compose-regtest/taxid &> /dev/null
+
+# Start Ocean wallet
+echo "Starting Ocean wallet"
+docker-compose -f $COMPOSE_PATH up -d oceand
+
+# Config Ocean CLI
+$ocean config init --no-tls &> /dev/null
+
+walletStatus=$($ocean wallet status)
+walletInitialized=$(echo $walletStatus | jq -r .initialized)
+walletUnlocked=$(echo $walletStatus | jq -r .unlocked)
+
+if [ "$walletInitialized" == "true" ];
+then
+  echo ""
+  echo "Wallet already initialized, skipping creation from new mnemonic"
+else
+  echo ""
+  echo "Creating wallet with password: $PASSWORD"
+  $ocean wallet create --password ciaociao
+fi
+
+if [ "$walletUnloclked" == "true" ];
+then
+  echo ""
+  echo "Wallet already unlocked, skipping unlocking"
+else
+  echo ""
+  echo "Unlocking wallet with password: $PASSWORD"
+  $ocean wallet unlock --password ciaociao
+fi
+
+echo ""
+echo "Starting Taxi daemon"
+# Start Taxi daemon
+docker-compose -f $COMPOSE_PATH up -d taxid
+
+# Config Taxi CLI
+$taxi config init --insecure
+
+echo ""
+echo "Adding USDt asset: $USDT"
+# Add USDt asset to list of those supported by Taxi
+$taxi add-asset --asset $USDT --price 25000 --basis-point 100
+
+# Add known payout address to whitelist
+whitelist=$($taxi whitelist list | jq -r .addresses)
+if [ "$whitelist" == "[]" ]; then 
+  echo ""
+  echo "Whitelisting known payout address: $KNOWN_PAYOUT_ADDRESS"
+  $taxi whitelist add --address $KNOWN_PAYOUT_ADDRESS
+fi
+
+lbtcBalance=$($ocean account balance --account-name lbtc | jq -r .balance)
+if [ "$lbtcBalance" == "{}" ]; then
+  echo ""
+  echo "Funding 'lbtc' wallet account with utxo fragments..."
+  addresses=( $($ocean account derive --account-name lbtc -n 20 | jq -r .addresses | tr -d '[],\n"') )
+  outputs=''
+  i=0
+  for addr in "${addresses[@]}"
+  do
+  if (( $i < 10 )); then
+    outputs="${outputs}${addr}=500,"
+  fi
+  if (( $i >= 10 && $i <  15 )); then
+    outputs="${outputs}${addr}=700,"
+  fi
+  if (( $i >= 15 && $i < 18 )); then
+    outputs="${outputs}${addr}=1000,"
+  fi
+  if (( $i == 18 )); then
+    outputs="${outputs}${addr}=1500,"
+  fi
+  if (( $i == 19 )); then
+    outputs="${outputs}${addr}=1500"
+  fi
+  i=$i+1
+  done
+
+  $fragmenter \
+  --rpcserver http://admin1:123@liquid:18884 \
+  --y --outputs $outputs
+fi
+
+echo "Setup complete."

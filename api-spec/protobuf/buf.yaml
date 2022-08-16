@@ -1,0 +1,15 @@
+version: v1
+name: buf.build/vulpemventures/taxi-daemon
+deps:
+  - buf.build/googleapis/googleapis
+  - buf.build/vulpemventures/taxi
+lint:
+  use:
+    - DEFAULT
+  except:
+    - ENUM_ZERO_VALUE_SUFFIX
+    - PACKAGE_DIRECTORY_MATCH
+breaking:
+  use:
+    - FILE
+  ignore_unstable_packages: true
