@@ -3,7 +3,7 @@ version: "3.7"
 services:
   oceand:
     container_name: oceand-regtest
-    image: ghcr.io/vulpemventures/oceand:v0.1.0-rc.9
+    image: ghcr.io/vulpemventures/oceand:latest
     restart: unless-stopped
     environment:
       - OCEAN_LOG_LEVEL=5

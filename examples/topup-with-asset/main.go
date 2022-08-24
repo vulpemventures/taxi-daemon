@@ -157,7 +157,7 @@ func main() {
 			RangeProof:      prevTx.Outputs[in.TxIndex].RangeProof,
 			SurjectionProof: prevTx.Outputs[in.TxIndex].SurjectionProof,
 		}
-		updater.AddInWitnessUtxo(witnessUtxo, originalInputCount+i)
+		updater.AddInWitnessUtxo(originalInputCount+i, witnessUtxo)
 
 		revelead, err := confidential.UnblindOutputWithKey(witnessUtxo, blindPrivkey.Serialize())
 		if err != nil {
@@ -367,7 +367,7 @@ func signTransactionP2WPKH(
 	pubkey := privkey.PubKey()
 
 	for _, i := range inIndexesToSign {
-		signer.AddInSighashType(sighashType, i)
+		signer.AddInSighashType(i, sighashType)
 
 		in := p.Inputs[i]
 		prevout := in.GetUtxo()
