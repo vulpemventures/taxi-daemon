@@ -51,7 +51,9 @@ proto-lint:
 ## proto: compiles proto stubs
 proto: proto-lint
 	@echo "Compiling stubs..."
-	@buf generate buf.build/vulpemventures/taxi && buf generate
+	@buf generate buf.build/vulpemventures/taxi; \
+	buf generate buf.build/vulpemventures/ocean; \
+	buf generate
 
 ## run: runs the service (for development)
 run: clean
