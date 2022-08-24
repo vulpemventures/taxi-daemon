@@ -9,7 +9,7 @@ services:
       - OCEAN_LOG_LEVEL=5
       - OCEAN_NO_TLS=true
       - OCEAN_NO_PROFILER=true
-      - OCEAN_NODE_PEERS=liquid-testnet.blockstream.com:18892
+      - OCEAN_NODE_PEERS=liquid-testnet.sevenlabs.dev:18886
       - OCEAN_NETWORK=testnet
       - OCEAN_ESPLORA_URL=https://blockstream.info/liquidtestnet/api
       - OCEAN_UTXO_EXPIRY_DURATION_IN_SECONDS=240
