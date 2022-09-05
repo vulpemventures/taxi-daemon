@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "taxi/v1/types.proto",
+    "title": "ocean/v1/types.proto",
     "version": "version not set"
   },
   "consumes": [
@@ -12,7 +12,16 @@
   ],
   "paths": {},
   "definitions": {
-    "googlerpcStatus": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
       "type": "object",
       "properties": {
         "code": {
@@ -29,15 +38,6 @@
           }
         }
       }
-    },
-    "protobufAny": {
-      "type": "object",
-      "properties": {
-        "@type": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": {}
     }
   }
 }

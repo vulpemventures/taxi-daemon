@@ -3,13 +3,13 @@ version: "3.7"
 services:
   oceand:
     container_name: oceand-regtest
-    image: ghcr.io/vulpemventures/oceand:v0.1.0-rc.9
+    image: ghcr.io/vulpemventures/oceand:latest
     restart: unless-stopped
     environment:
       - OCEAN_LOG_LEVEL=5
       - OCEAN_NO_TLS=true
       - OCEAN_STATS_INTERVAL=120
-      - OCEAN_NODE_PEERS=liquid:18886
+      - OCEAN_NODE_RPC_ADDR=http://admin1:123@liquid:18884
       - OCEAN_NETWORK=regtest
       - OCEAN_ESPLORA_URL=http://chopsticks-liquid:3000
       - OCEAN_UTXO_EXPIRY_DURATION_IN_SECONDS=240

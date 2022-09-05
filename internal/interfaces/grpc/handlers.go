@@ -3,8 +3,10 @@ package grpc
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net/http"
 
+	"github.com/go-openapi/runtime/middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	admin "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/go/taxi-daemon/v1"
@@ -15,6 +17,13 @@ import (
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+var (
+	swaggerBasePath = "api-spec/protobuf/gen/swagger"
+	taxiSpecPath    = http.Dir(fmt.Sprintf("%s/taxi/v1", swaggerBasePath))
+	adminSpecPath   = http.Dir(fmt.Sprintf("%s/taxi-daemon/v1", swaggerBasePath))
 )
 
 type handlers struct {
@@ -48,7 +57,8 @@ func newAdminHandlers(opts ServiceOpts, tlsConfig *tls.Config) (*handlers, error
 	// grpc gateway
 	dialOpts := make([]grpc.DialOption, 0)
 	if opts.insecure() {
-		dialOpts = append(dialOpts, grpc.WithInsecure())
+		creds := insecure.NewCredentials()
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
 	} else {
 		tlsCreds := credentials.NewTLS(nil)
 		if !opts.withCertMagic() {
@@ -69,13 +79,27 @@ func newAdminHandlers(opts ServiceOpts, tlsConfig *tls.Config) (*handlers, error
 	// http server routing requests to either grpc|grpcweb|grpcgateway handler
 	// based on their header
 	handler := router(grpcServer, grpcWebServer, grpcGateway)
+	mux := http.NewServeMux()
+	mux.Handle("/", handler)
+
+	// swagger json file
+	mux.Handle("/admin.swagger.json", http.FileServer(adminSpecPath))
+	// swagger API doc
+	swOpts := middleware.SwaggerUIOpts{
+		SpecURL: "/admin.swagger.json",
+		Path:    "/v1/docs",
+	}
+	sh := middleware.SwaggerUI(swOpts, nil)
+	mux.Handle("/v1/docs", sh)
+
+	httpServerHandler := http.Handler(mux)
 	if opts.insecure() {
-		handler = h2c.NewHandler(handler, &http2.Server{})
+		httpServerHandler = h2c.NewHandler(httpServerHandler, &http2.Server{})
 	}
 
 	httpServer := &http.Server{
 		Addr:      opts.serverAddr(opts.AdminPort),
-		Handler:   handler,
+		Handler:   httpServerHandler,
 		TLSConfig: tlsConfig,
 	}
 
@@ -107,7 +131,8 @@ func newTaxiHandlers(opts ServiceOpts, tlsConfig *tls.Config) (*handlers, error)
 	// grpc gateway
 	dialOpts := make([]grpc.DialOption, 0)
 	if opts.insecure() {
-		dialOpts = append(dialOpts, grpc.WithInsecure())
+		creds := insecure.NewCredentials()
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
 	} else {
 		tlsCreds := credentials.NewTLS(nil)
 		if !opts.withCertMagic() {
@@ -128,16 +153,28 @@ func newTaxiHandlers(opts ServiceOpts, tlsConfig *tls.Config) (*handlers, error)
 	// http server routing requests to either grpc|grpcweb|grpcgateway handler
 	// based on their header
 	handler := router(grpcServer, grpcWebServer, grpcGateway)
-	if opts.insecure() {
-		handler = h2c.NewHandler(handler, &http2.Server{})
-	}
+	mux := http.NewServeMux()
+	mux.Handle("/", handler)
 
+	// swagger json file
+	mux.Handle("/taxi.swagger.json", http.FileServer(taxiSpecPath))
+	// swagger API doc
+	swOpts := middleware.SwaggerUIOpts{
+		SpecURL: "/taxi.swagger.json",
+		Path:    "/v1/docs",
+	}
+	sh := middleware.SwaggerUI(swOpts, nil)
+	mux.Handle("/v1/docs", sh)
+
+	httpServerHandler := http.Handler(mux)
+	if opts.insecure() {
+		httpServerHandler = h2c.NewHandler(httpServerHandler, &http2.Server{})
+	}
 	httpServer := &http.Server{
 		Addr:      opts.serverAddr(opts.TaxiPort),
-		Handler:   handler,
+		Handler:   httpServerHandler,
 		TLSConfig: tlsConfig,
 	}
-
 	return &handlers{grpcServer, grpcWebServer, grpcGateway, httpServer}, nil
 }
 

@@ -3,13 +3,13 @@ version: "3.7"
 services:
   oceand:
     container_name: oceand
-    image: ghcr.io/vulpemventures/oceand:v0.1.0-rc.9
+    image: ghcr.io/vulpemventures/oceand:latest
     restart: unless-stopped
     environment:
       - OCEAN_LOG_LEVEL=4
       - OCEAN_NO_TLS=true
       - OCEAN_STATS_INTERVAL=120
-      - OCEAN_NODE_PEERS=${NODE_PEERS}
+      - OCEAN_NODE_RPC_ADDR=${NODE_RPC_ADDR}
       - OCEAN_NETWORK=${NETWORK}
       - OCEAN_UTXO_EXPIRY_DURATION_IN_SECONDS=240
     ports:

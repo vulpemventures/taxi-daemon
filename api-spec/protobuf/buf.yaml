@@ -3,6 +3,7 @@ name: buf.build/vulpemventures/taxi-daemon
 deps:
   - buf.build/googleapis/googleapis
   - buf.build/vulpemventures/taxi
+  - buf.build/vulpemventures/ocean
 lint:
   use:
     - DEFAULT
