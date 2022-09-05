@@ -27,12 +27,10 @@ services:
       - TAXI_DOMAIN=${DOMAIN}
       - TAXI_EMAIL=${EMAIL}
       - TAXI_EXTERNAL_URL=${EXTERNAL_URL}
-      - TAXI_ADMIN_EXTERNAL_URL=${ADMIN_EXTERNAL_URL}
       - TAXI_OCEAN_ADDRESS=oceand:18000
       - TAXI_LOG_LEVEL=5
     ports:
       - "8000:8000"
-      - "7000:7000"
     volumes:
       - ./taxid/data:/.taxid
       - ./taxid/certs:/.certmagic

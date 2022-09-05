@@ -30,7 +30,6 @@ services:
       - TAXI_LOG_LEVEL=5
     ports:
       - "8300:8000"
-      - "7300:7000"
     volumes:
       - ./taxid/data:/.taxid
 networks:

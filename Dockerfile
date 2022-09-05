@@ -39,7 +39,6 @@ RUN mkdir -p "$DIR/.taxid/"
 VOLUME $DIR/.taxid/
 
 # Expose ports of grpc server and profiler
-EXPOSE 7000
 EXPOSE 8000
 
 ENV XDG_DATA_HOME="/.certmagic"
