@@ -20,10 +20,8 @@ const (
 	LogLevelKey = "LOG_LEVEL"
 	// DatadirKey is the path of the directory used to store the taxi's database files
 	DatadirKey = "DATADIR"
-	// AdminPortKey serves the port for admin server
-	AdminPortKey = "ADMIN_PORT"
-	// TaxiPortKey defines the port to run in a standalone context
-	TaxiPortKey = "PORT"
+	// PortKey defines the port to run in a standalone context
+	PortKey = "PORT"
 	// TLSKeyPathKey is the path to the TLS private key for taxi|admin interface
 	TLSKeyPathKey = "TLS_KEY"
 	// TLSCertPathKey is the path to the TLS certificate for taxi|admin
@@ -35,15 +33,10 @@ const (
 	// EmailKey is the email used for TLS certificates communications.
 	// Mandatory if TAXI_DOMAIN is given
 	EmailKey = "EMAIL"
-	// AdminExternalUrlKey is used by the internal grpc gateway to connect to
-	// the Admin grpc server when using certificates release by a CA.
-	// If not defined the url formed with TAXI_DOMAIN:TAXI_ADMIN_PORT will be
-	// used.
-	AdminExternalUrlKey = "ADMIN_EXTERNAL_URL"
-	// TaxiExternalUrlKey is used by the internal grpc gateway to connect to the
-	// Taxi grpc server when using certificates release by a CA.
+	// ExternalUrlKey is used by the internal grpc gateway to connect to the
+	// grpc server when using certificates released by a CA.
 	// If not defined the url formed with TAXI_DOMAIN:TAXI_PORT will be used.
-	TaxiExternalUrlKey = "EXTERNAL_URL"
+	ExternalUrlKey = "EXTERNAL_URL"
 )
 
 var (
@@ -62,8 +55,7 @@ func init() {
 	vip.SetEnvPrefix("TAXI")
 	vip.AutomaticEnv()
 
-	vip.SetDefault(AdminPortKey, 7000)
-	vip.SetDefault(TaxiPortKey, 8000)
+	vip.SetDefault(PortKey, 8000)
 	vip.SetDefault(LogLevelKey, log.InfoLevel)
 	vip.SetDefault(DatadirKey, btcutil.AppDataDir("taxid", false))
 
@@ -92,22 +84,10 @@ func validate() error {
 		return fmt.Errorf("missing ocean wallet address")
 	}
 
-	adminPort := vip.GetInt(AdminPortKey)
-	taxiPort := vip.GetInt(TaxiPortKey)
-
-	if adminPort == taxiPort {
-		return fmt.Errorf("admin and taxi ports must not be equal")
-	}
-
-	if err := validatePort(adminPort); err != nil {
+	port := vip.GetInt(PortKey)
+	if err := validatePort(port); err != nil {
 		return fmt.Errorf(
-			"port %d not available for admin server: %s", adminPort, err,
-		)
-	}
-
-	if err := validatePort(taxiPort); err != nil {
-		return fmt.Errorf(
-			"port %d not available for taxi server: %s", adminPort, err,
+			"port %d not available: %s", port, err,
 		)
 	}
 
@@ -137,15 +117,9 @@ func validate() error {
 		)
 	}
 
-	if url := vip.GetString(AdminExternalUrlKey); url != "" {
+	if url := vip.GetString(ExternalUrlKey); url != "" {
 		if err := validateURL(url); err != nil {
-			return fmt.Errorf("invalid external url for admin server: %s", err)
-		}
-	}
-
-	if url := vip.GetString(TaxiExternalUrlKey); url != "" {
-		if err := validateURL(url); err != nil {
-			return fmt.Errorf("invalid external url for taxi server: %s", err)
+			return fmt.Errorf("invalid external url: %s", err)
 		}
 	}
 

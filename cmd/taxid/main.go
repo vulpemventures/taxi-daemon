@@ -18,14 +18,12 @@ var (
 	oceanWalletAddr = config.GetString(config.OceanWalletAddrKey)
 	logLevel        = config.GetInt(config.LogLevelKey)
 
-	adminPort        = config.GetInt(config.AdminPortKey)
-	taxiPort         = config.GetInt(config.TaxiPortKey)
-	tlsKeyPath       = config.GetString(config.TLSKeyPathKey)
-	tlsCertPath      = config.GetString(config.TLSCertPathKey)
-	email            = config.GetString(config.EmailKey)
-	domain           = config.GetString(config.DomainKey)
-	adminExternalURL = config.GetString(config.AdminExternalUrlKey)
-	taxiExternalURL  = config.GetString(config.TaxiExternalUrlKey)
+	port        = config.GetInt(config.PortKey)
+	tlsKeyPath  = config.GetString(config.TLSKeyPathKey)
+	tlsCertPath = config.GetString(config.TLSCertPathKey)
+	email       = config.GetString(config.EmailKey)
+	domain      = config.GetString(config.DomainKey)
+	externalURL = config.GetString(config.ExternalUrlKey)
 )
 
 func main() {
@@ -54,16 +52,14 @@ func main() {
 	taxiSvc := application.NewTaxiService(wallet, repoManager)
 
 	service, err := grpc.NewService(grpc.ServiceOpts{
-		AdminSvc:         adminSvc,
-		TaxiSvc:          taxiSvc,
-		AdminPort:        adminPort,
-		TaxiPort:         taxiPort,
-		TLSKeyPath:       tlsKeyPath,
-		TLSCertPath:      tlsCertPath,
-		Email:            email,
-		Domain:           domain,
-		AdminExternalURL: adminExternalURL,
-		TaxiExternalURL:  taxiExternalURL,
+		AdminSvc:    adminSvc,
+		TaxiSvc:     taxiSvc,
+		Port:        port,
+		TLSKeyPath:  tlsKeyPath,
+		TLSCertPath: tlsCertPath,
+		Email:       email,
+		Domain:      domain,
+		ExternalURL: externalURL,
 	})
 	if err != nil {
 		log.Fatal(err)
