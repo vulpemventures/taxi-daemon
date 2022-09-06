@@ -46,8 +46,8 @@ $ ssh username@host
 * Initialize and unlock the ocean wallet
 ```sh
 $ cd compose
-# Start the ocean wallet with a list of node peers to connect to.
-$ NODE_PEERS=<peers> NETWORK=<network> docker-compose up -d oceand
+# Start the ocean wallet connected to rpc port of an elments node.
+$ NODE_RPC_ADDR=<rpc_addr> NETWORK=<network> docker-compose up -d oceand
 # Configure the CLI and create a new wallet
 $ ocean config init --no-tls
 $ ocean wallet create --password <password>
@@ -58,7 +58,7 @@ $ ocean wallet unlock --password <password>
 * Run taxi daemon:
 ```sh
 # Start taxi
-$ EMAIL=info@example.com DOMAIN=taxi.example.com EXTERNAL_URL=taxi.example.com ADMIN_EXTERAL_URL="taxi.example.com:7000" docker-compose up -d taxid
+$ EMAIL=info@example.com DOMAIN=taxi.example.com EXTERNAL_URL=taxi.example.com docker-compose up -d taxid
 
 # If everything's ok, 2 new wallet's accounts 'lbtc" and 'payout' should have been created.
 $ ocean wallet info
@@ -127,7 +127,7 @@ $ taxi config init
 # You can connect to an insecure taxi service (only for dev purposes)
 $ taxi config init --insecure
 # You can connect to a remote taxi service with the CLI installed on your local machine
-$ taxi config set rpcserver myremoteurl:7000
+$ taxi config set rpcserver myremoteurl:8000
 ```
 
 ### Add an asset and price
@@ -192,7 +192,7 @@ $ docker build --pull --rm -f "Dockerfile" -t taxid:latest "."
 For in depth documentation of the environment variables look [here](https://github.com/vulpemventures/taxi-daemon/blob/master/config/config.go)
 
 ```bash
-$ docker run -d -it --name taxid -p 7000:7000 -p 8000:8000 -v `pwd`/taxid:/.taxid -e TAXI_OCEAN_ADDRESS="<ocean wallet address>" taxid:latest
+$ docker run -d -it --name taxid -p 8000:8000 -v `pwd`/taxid:/.taxid -e TAXI_OCEAN_ADDRESS="<ocean wallet address>" taxid:latest
 ```
 
 #### Use the CLI

@@ -29,12 +29,10 @@ services:
       - TAXI_DOMAIN=${TESTNET_DOMAIN}
       - TAXI_EMAIL=${TESTNET_EMAIL}
       - TAXI_EXTERNAL_URL=${TESTNET_EXTERNAL_URL}
-      - TAXI_ADMIN_EXTERNAL_URL=${TESTNET_ADMIN_EXTERNAL_URL}
       - TAXI_OCEAN_ADDRESS=oceand-testnet:28000
       - TAXI_LOG_LEVEL=5
     ports:
       - "8200:8000"
-      - "7200:7000"
     volumes:
       - ./taxid/data:/.taxid
       - ./taxid/certs:/.certmagic

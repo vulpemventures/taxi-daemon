@@ -32,7 +32,7 @@ var config = cli.Command{
 				&cli.StringFlag{
 					Name:  rpcServerKey,
 					Usage: "taxi daemon address host:port",
-					Value: "localhost:7000",
+					Value: "localhost:8000",
 				},
 				&cli.StringFlag{
 					Name:  tlsCertPathKey,
