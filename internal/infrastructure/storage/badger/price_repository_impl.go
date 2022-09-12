@@ -20,7 +20,7 @@ func newPriceRepository(store *badgerhold.Store) *priceRepository {
 	return &priceRepository{store}
 }
 
-func (r *priceRepository) UpsertPrice(_ context.Context, price *domain.Price) error {
+func (r *priceRepository) UpsertPrice(ctx context.Context, price *domain.Price) error {
 	return r.store.Upsert(price.AssetHash, *price)
 }
 
@@ -42,7 +42,8 @@ func (r *priceRepository) GetAllPrices(_ context.Context) ([]*domain.Price, erro
 	}
 
 	list := make([]*domain.Price, 0, len(prices))
-	for _, p := range prices {
+	for i := range prices {
+		p := prices[i]
 		list = append(list, &p)
 	}
 	return list, nil
