@@ -23,14 +23,8 @@ import (
 )
 
 const (
-	minPort         = 1024
-	maxPort         = 49151
-	swaggerBasePath = "api-spec/protobuf/gen/swagger"
-)
-
-var (
-	taxiSpecPath  = http.Dir(fmt.Sprintf("%s/taxi/v1", swaggerBasePath))
-	adminSpecPath = http.Dir(fmt.Sprintf("%s/taxi-daemon/v1", swaggerBasePath))
+	minPort = 1024
+	maxPort = 49151
 )
 
 type service struct {
@@ -125,15 +119,27 @@ func newServer(opts ServiceOpts, tlsConfig *tls.Config) (*http.Server, error) {
 	mux.Handle("/", handler)
 
 	// swagger json file
-	mux.Handle("/admin.swagger.json", http.FileServer(adminSpecPath))
-	mux.Handle("/taxi.swagger.json", http.FileServer(taxiSpecPath))
-	// swagger API doc
-	adminSwOpts := middleware.SwaggerUIOpts{
-		SpecURL: "/taxi.swagger.json",
-		Path:    "/v1/docs",
+	if opts.withSwagger() {
+		if opts.TaxiSwagger != "" {
+			mux.Handle("/taxi.swagger.json", http.FileServer(http.Dir(opts.TaxiSwagger)))
+		}
+		if opts.AdminSwagger != "" {
+			mux.Handle("/admin.swagger.json", http.FileServer(http.Dir(opts.AdminSwagger)))
+		}
+
+		specURL := "/taxi.swagger.json"
+		if opts.TaxiSwagger == "" {
+			specURL = "/admin.swagger.json"
+		}
+
+		// swagger API doc
+		swOpts := middleware.SwaggerUIOpts{
+			SpecURL: specURL,
+			Path:    "/v1/docs",
+		}
+		sh := middleware.SwaggerUI(swOpts, nil)
+		mux.Handle("/v1/docs", sh)
 	}
-	adminSh := middleware.SwaggerUI(adminSwOpts, nil)
-	mux.Handle("/v1/docs", adminSh)
 
 	httpServerHandler := http.Handler(mux)
 	if opts.insecure() {

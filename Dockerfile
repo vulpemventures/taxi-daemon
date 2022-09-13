@@ -32,6 +32,10 @@ RUN adduser --disabled-password \
             "$USER"
 USER $USER
 
+# Copy swagger files
+RUN mkdir -p $DIR/swagger
+COPY --from=builder /app/api-spec/protobuf/gen/swagger $DIR/swagger
+
 # Prevents `VOLUME $DIR/.taxid/` being created as owned by `root`
 RUN mkdir -p "$DIR/.taxid/"
 
@@ -42,5 +46,7 @@ VOLUME $DIR/.taxid/
 EXPOSE 8000
 
 ENV XDG_DATA_HOME="/.certmagic"
+ENV TAXI_SWAGGER_PATH=$DIR/swagger/taxi/v1
+ENV TAXI_ADMIN_SWAGGER_PATH=$DIR/swagger/taxi-daemon/v1
 
 ENTRYPOINT [ "taxid" ]

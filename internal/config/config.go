@@ -37,6 +37,12 @@ const (
 	// grpc server when using certificates released by a CA.
 	// If not defined the url formed with TAXI_DOMAIN:TAXI_PORT will be used.
 	ExternalUrlKey = "EXTERNAL_URL"
+	// TaxiSwaggerKey is used to specify the folder containing the json swagger
+	// file for taxi interface.
+	TaxiSwaggerKey = "SWAGGER_PATH"
+	// AdminSwaggerKey is used to specify the folder containing the json swagger
+	// file for admin interface.
+	AdminSwaggerKey = "ADMIN_SWAGGER_PATH"
 )
 
 var (

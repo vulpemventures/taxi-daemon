@@ -59,7 +59,9 @@ proto: proto-lint
 run: clean
 	@echo "Running service..."
 	@export TAXI_LOG_LEVEL=5; \
-	export TAXI_OCEAN_ADDRESS=localhost:18000; \
+	export TAXI_OCEAN_ADDRESS=localhost:38000; \
+	export TAXI_SWAGGER_PATH=api-spec/protobuf/gen/swagger/taxi/v1; \
+	export TAXI_ADMIN_SWAGGER_PATH=api-spec/protobuf/gen/swagger/taxi-daemon/v1; \
 	go run ./cmd/taxid
 
 ## test: runs short unit tests

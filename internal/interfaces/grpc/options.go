@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 
 	"github.com/caddyserver/certmagic"
 	"github.com/vulpemventures/taxi-daemon/internal/core/application"
@@ -11,14 +13,16 @@ import (
 )
 
 type ServiceOpts struct {
-	Port        int
-	TLSKeyPath  string
-	TLSCertPath string
-	Domain      string
-	Email       string
-	ExternalURL string
-	AdminSvc    application.AdminService
-	TaxiSvc     application.TaxiService
+	Port         int
+	TLSKeyPath   string
+	TLSCertPath  string
+	Domain       string
+	Email        string
+	ExternalURL  string
+	AdminSwagger string
+	TaxiSwagger  string
+	AdminSvc     application.AdminService
+	TaxiSvc      application.TaxiService
 
 	certmagicConfig *certmagic.Config
 }
@@ -47,6 +51,21 @@ func (o ServiceOpts) validate() error {
 	if o.TaxiSvc == nil {
 		return fmt.Errorf("missing taxi service")
 	}
+
+	if o.AdminSwagger != "" {
+		if _, err := ioutil.ReadFile(filepath.Join(o.AdminSwagger, "admin.swagger.json")); err != nil {
+			return fmt.Errorf(
+				"failed to open admin swagger file '%s': %s", o.AdminSwagger, err,
+			)
+		}
+	}
+	if o.TaxiSwagger != "" {
+		if _, err := ioutil.ReadFile(filepath.Join(o.TaxiSwagger, "taxi.swagger.json")); err != nil {
+			return fmt.Errorf(
+				"failed to open taxi swagger file '%s': %s", o.TaxiSwagger, err,
+			)
+		}
+	}
 	return nil
 }
 
@@ -56,6 +75,10 @@ func (o ServiceOpts) insecure() bool {
 
 func (o ServiceOpts) withCertMagic() bool {
 	return o.Domain != "" && o.Email != ""
+}
+
+func (o ServiceOpts) withSwagger() bool {
+	return o.AdminSwagger != "" || o.TaxiSwagger != ""
 }
 
 func (o ServiceOpts) serverAddr() string {
