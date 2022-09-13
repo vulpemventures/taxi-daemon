@@ -16,7 +16,8 @@ services:
       - "18000:18000"
       - "18001:18001"
     volumes:
-      - ./oceand/data:/.oceand
+      - ./oceand/data:/home/ocean/.ocean-wallet
+      - ./oceand/cli:/home/ocean/.ocean-cli
   taxid:
     container_name: taxid
     image: ghcr.io/vulpemventures/taxid:latest
@@ -32,5 +33,6 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./taxid/data:/.taxid
+      - ./taxid/data:/home/taxi/.taxid
+      - ./taxid/cli:/home/taxi/.taxi-admin-cli
       - ./taxid/certs:/.certmagic
