@@ -126,6 +126,10 @@
         "xpub": {
           "type": "string",
           "description": "Xpub."
+        },
+        "derivationPath": {
+          "type": "string",
+          "title": "Derivation path"
         }
       }
     },
@@ -149,7 +153,7 @@
     "v1DeleteAccountResponse": {
       "type": "object"
     },
-    "v1DeriveAddressResponse": {
+    "v1DeriveAddressesResponse": {
       "type": "object",
       "properties": {
         "addresses": {
@@ -160,7 +164,7 @@
         }
       }
     },
-    "v1DeriveChangeAddressResponse": {
+    "v1DeriveChangeAddressesResponse": {
       "type": "object",
       "properties": {
         "addresses": {
@@ -186,12 +190,10 @@
       "type": "object",
       "properties": {
         "spendableUtxos": {
-          "$ref": "#/definitions/v1Utxos",
-          "description": "List of spendable utxos."
+          "$ref": "#/definitions/v1Utxos"
         },
         "lockedUtxos": {
-          "$ref": "#/definitions/v1Utxos",
-          "description": "List of currently locked utxos."
+          "$ref": "#/definitions/v1Utxos"
         }
       }
     },
@@ -250,12 +252,10 @@
           "description": "Name of the account owning the utxo."
         },
         "spentStatus": {
-          "$ref": "#/definitions/v1UtxoStatus",
-          "description": "Info about utxo's spent status."
+          "$ref": "#/definitions/v1UtxoStatus"
         },
         "confirmedStatus": {
-          "$ref": "#/definitions/v1UtxoStatus",
-          "description": "Info about utxo's confirmation status."
+          "$ref": "#/definitions/v1UtxoStatus"
         }
       }
     },
@@ -267,6 +267,9 @@
         },
         "blockInfo": {
           "$ref": "#/definitions/v1BlockDetails"
+        },
+        "txhex": {
+          "type": "string"
         }
       }
     },

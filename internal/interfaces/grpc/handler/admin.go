@@ -54,14 +54,14 @@ func (a *adminServer) AddWhitelistedAddresses(
 	return &pb.AddWhitelistedAddressesResponse{}, nil
 }
 
-func (a *adminServer) ListWhitelistedAddresses(
-	ctx context.Context, req *pb.ListWhitelistedAddressesRequest,
-) (*pb.ListWhitelistedAddressesResponse, error) {
-	addresses, err := a.adminSvc.ListWhitelistedAddresses(ctx)
+func (a *adminServer) ListWhitelistedScripts(
+	ctx context.Context, req *pb.ListWhitelistedScriptsRequest,
+) (*pb.ListWhitelistedScriptsResponse, error) {
+	scripts, err := a.adminSvc.ListWhitelistedScripts(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &pb.ListWhitelistedAddressesResponse{Addresses: addresses}, nil
+	return &pb.ListWhitelistedScriptsResponse{Scripts: scripts}, nil
 }
 
 func (a *adminServer) DeleteWhitelistedAddresses(

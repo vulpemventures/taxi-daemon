@@ -3,7 +3,7 @@ package domain
 import "context"
 
 type WhitelistRepository interface {
-	AddAddresses(ctx context.Context, addresses []string) (int, error)
-	GetAddresses(ctx context.Context) ([]string, error)
-	RemoveAddresses(ctx context.Context, addresses []string) (int, error)
+	AddScripts(ctx context.Context, scripts []string) (int, error)
+	GetScripts(ctx context.Context) ([]string, error)
+	RemoveScripts(ctx context.Context, scripts []string) (int, error)
 }

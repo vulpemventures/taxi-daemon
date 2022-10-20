@@ -56,8 +56,8 @@ func listAddressesAction(ctx *cli.Context) error {
 
 	defer close()
 
-	whitelist, err := adminClient.ListWhitelistedAddresses(
-		context.Background(), &pb.ListWhitelistedAddressesRequest{},
+	whitelist, err := adminClient.ListWhitelistedScripts(
+		context.Background(), &pb.ListWhitelistedScriptsRequest{},
 	)
 	if err != nil {
 		return err

@@ -22,36 +22,36 @@ func TestWhitelistRepository(t *testing.T) {
 }
 
 func testWhitelistRepository(t *testing.T, repo domain.WhitelistRepository) {
-	testAddGetAddresses(t, repo)
+	testAddGetScripts(t, repo)
 }
 
-func testAddGetAddresses(t *testing.T, repo domain.WhitelistRepository) {
-	whitelist, err := repo.GetAddresses(ctx)
+func testAddGetScripts(t *testing.T, repo domain.WhitelistRepository) {
+	whitelist, err := repo.GetScripts(ctx)
 	require.NoError(t, err)
 	require.Empty(t, whitelist)
 
-	addresses := randomAddresses()
-	count, err := repo.AddAddresses(ctx, addresses)
+	scripts := randomScripts()
+	count, err := repo.AddScripts(ctx, scripts)
 	require.NoError(t, err)
-	require.Equal(t, len(addresses), count)
+	require.Equal(t, len(scripts), count)
 
-	whitelist, err = repo.GetAddresses(ctx)
+	whitelist, err = repo.GetScripts(ctx)
 	require.NoError(t, err)
 	require.NotEmpty(t, whitelist)
-	require.Len(t, whitelist, len(addresses))
-	require.ElementsMatch(t, whitelist, addresses)
+	require.Len(t, whitelist, len(scripts))
+	require.ElementsMatch(t, whitelist, scripts)
 
-	newAddresses := randomAddresses()
-	addresses = append(addresses, newAddresses...)
-	count, err = repo.AddAddresses(ctx, addresses)
+	newAddresses := randomScripts()
+	scripts = append(scripts, newAddresses...)
+	count, err = repo.AddScripts(ctx, scripts)
 	require.NoError(t, err)
 	require.Equal(t, len(newAddresses), count)
 
-	whitelist, err = repo.GetAddresses(ctx)
+	whitelist, err = repo.GetScripts(ctx)
 	require.NoError(t, err)
 	require.NotEmpty(t, whitelist)
-	require.Len(t, whitelist, len(addresses))
-	require.ElementsMatch(t, whitelist, addresses)
+	require.Len(t, whitelist, len(scripts))
+	require.ElementsMatch(t, whitelist, scripts)
 }
 
 func newWhitelistRepositories() (map[string]domain.WhitelistRepository, error) {
@@ -67,11 +67,11 @@ func newWhitelistRepositories() (map[string]domain.WhitelistRepository, error) {
 	}, nil
 }
 
-func randomAddresses() []string {
-	numOfAddresses := randomIntInRange(2, 6)
-	addresses := make([]string, 0, numOfAddresses)
-	for i := 0; i < numOfAddresses; i++ {
-		addresses = append(addresses, hex.EncodeToString(randomBytes(30)))
+func randomScripts() []string {
+	numOfScripts := randomIntInRange(2, 6)
+	scripts := make([]string, 0, numOfScripts)
+	for i := 0; i < numOfScripts; i++ {
+		scripts = append(scripts, hex.EncodeToString(randomBytes(30)))
 	}
-	return addresses
+	return scripts
 }

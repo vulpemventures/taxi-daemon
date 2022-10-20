@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"github.com/vulpemventures/go-elements/address"
 	"testing"
 	"time"
 
@@ -79,8 +80,13 @@ func newRepoManagerForTaxiService() (ports.RepoManager, error) {
 		return nil, err
 	}
 
-	if _, err := rm.WhitelistRepository().AddAddresses(
-		ctx, []string{knownPayout},
+	script, err := address.ToOutputScript(knownPayout)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := rm.WhitelistRepository().AddScripts(
+		ctx, []string{hex.EncodeToString(script)},
 	); err != nil {
 		return nil, err
 	}

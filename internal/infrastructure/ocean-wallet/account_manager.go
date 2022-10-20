@@ -31,7 +31,7 @@ func (am *accountManager) CreateAccount(
 func (am *accountManager) DeriveAddressesForAccount(
 	ctx context.Context, account string, numOfAddresses uint64,
 ) ([]string, error) {
-	res, err := am.client.DeriveAddress(ctx, &pb.DeriveAddressRequest{
+	res, err := am.client.DeriveAddresses(ctx, &pb.DeriveAddressesRequest{
 		AccountName:    account,
 		NumOfAddresses: numOfAddresses,
 	})
@@ -44,8 +44,8 @@ func (am *accountManager) DeriveAddressesForAccount(
 func (am *accountManager) DeriveChangeAddressForAccount(
 	ctx context.Context, account string, numOfAddresses uint64,
 ) ([]string, error) {
-	res, err := am.client.DeriveChangeAddress(
-		ctx, &pb.DeriveChangeAddressRequest{
+	res, err := am.client.DeriveChangeAddresses(
+		ctx, &pb.DeriveChangeAddressesRequest{
 			AccountName:    account,
 			NumOfAddresses: numOfAddresses,
 		},

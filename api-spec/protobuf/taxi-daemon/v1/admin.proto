@@ -22,10 +22,10 @@ service AdminService {
       body: "*"
     };
   }
-  // ListWhitelistedAddresses returns all the whitelisted addresses
-  rpc ListWhitelistedAddresses(ListWhitelistedAddressesRequest) returns (ListWhitelistedAddressesResponse) {
+  // ListWhitelistedScripts returns all the whitelisted scripts
+  rpc ListWhitelistedScripts(ListWhitelistedScriptsRequest) returns (ListWhitelistedScriptsResponse) {
     option (google.api.http) = {
-      post: "/v1/addresses/list"
+      post: "/v1/scripts/list"
       body: "*"
     };
   }
@@ -60,10 +60,10 @@ message AddWhitelistedAddressesRequest {
 }
 message AddWhitelistedAddressesResponse {}
 
-message ListWhitelistedAddressesRequest {}
-message ListWhitelistedAddressesResponse {
-  // The list of known addresses
-  repeated string addresses = 1;
+message ListWhitelistedScriptsRequest {}
+message ListWhitelistedScriptsResponse {
+  // The list of known scripts
+  repeated string scripts = 1;
 }
 
 message DeleteWhitelistedAddressesRequest {

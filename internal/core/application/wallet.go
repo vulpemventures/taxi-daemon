@@ -33,7 +33,7 @@ type Wallet interface {
 		expirationDate, feeAmount, payourAmount uint64, err error,
 	)
 	PartialContainsKnownPayout(
-		partial string, knownAddresses []string,
+		partial string, knownScripts []string,
 	) (bool, error)
 	PartialContainsKnownUtxos(
 		partial string, utxos []ports.Utxo,
@@ -264,7 +264,7 @@ func (w *wallet) CreatePartialWithFeesAndPayout(
 }
 
 func (w *wallet) PartialContainsKnownPayout(
-	partial string, knownAddresses []string,
+	partial string, knownScripts []string,
 ) (bool, error) {
 	ptx, err := psetv2.NewPsetFromBase64(partial)
 	if err != nil {
@@ -273,9 +273,9 @@ func (w *wallet) PartialContainsKnownPayout(
 
 	for _, out := range ptx.Outputs {
 		if len(out.Script) > 0 {
-			addr := w.getOutputAddress(out.Script, out.BlindingPubkey)
-			for _, knownAddr := range knownAddresses {
-				if addr == knownAddr {
+			outScript := hex.EncodeToString(out.Script)
+			for _, v := range knownScripts {
+				if v == outScript {
 					return true, nil
 				}
 			}

@@ -56,9 +56,9 @@ func (m *mockWallet) CreatePartialWithFeesAndPayout(
 }
 
 func (m *mockWallet) PartialContainsKnownPayout(
-	partial string, addresses []string,
+	partial string, scripts []string,
 ) (bool, error) {
-	args := m.Called(partial, addresses)
+	args := m.Called(partial, scripts)
 	var res bool
 	if a := args.Get(0); a != nil {
 		res = a.(bool)

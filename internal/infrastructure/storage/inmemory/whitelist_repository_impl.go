@@ -24,43 +24,43 @@ func newWhitelistRepository() *whitelistRepository {
 	}
 }
 
-func (r *whitelistRepository) AddAddresses(
-	_ context.Context, addresses []string,
+func (r *whitelistRepository) AddScripts(
+	_ context.Context, scripts []string,
 ) (int, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
 	count := 0
-	for _, addr := range addresses {
-		if _, ok := r.whitelist[addr]; !ok {
-			r.whitelist[addr] = struct{}{}
+	for _, script := range scripts {
+		if _, ok := r.whitelist[script]; !ok {
+			r.whitelist[script] = struct{}{}
 			count++
 		}
 	}
 	return count, nil
 }
 
-func (r *whitelistRepository) GetAddresses(_ context.Context) ([]string, error) {
+func (r *whitelistRepository) GetScripts(_ context.Context) ([]string, error) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
-	addresses := make([]string, 0, len(r.whitelist))
-	for addr := range r.whitelist {
-		addresses = append(addresses, addr)
+	scripts := make([]string, 0, len(r.whitelist))
+	for script := range r.whitelist {
+		scripts = append(scripts, script)
 	}
-	return addresses, nil
+	return scripts, nil
 }
 
-func (r *whitelistRepository) RemoveAddresses(
-	_ context.Context, addresses []string,
+func (r *whitelistRepository) RemoveScripts(
+	_ context.Context, scripts []string,
 ) (int, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
 	count := 0
-	for _, addr := range addresses {
-		if _, ok := r.whitelist[addr]; ok {
-			delete(r.whitelist, addr)
+	for _, script := range scripts {
+		if _, ok := r.whitelist[script]; ok {
+			delete(r.whitelist, script)
 			count++
 		}
 	}

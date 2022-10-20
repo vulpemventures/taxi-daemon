@@ -94,13 +94,13 @@ func (s *taxiService) TopupWithKnownPayout(
 		millisatPerByte = defaultMillisatPerByte
 	}
 
-	addresses, err := s.repoManager.WhitelistRepository().GetAddresses(ctx)
+	scripts, err := s.repoManager.WhitelistRepository().GetScripts(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	containsKnownPayout, err := s.wallet.PartialContainsKnownPayout(
-		partial, addresses,
+		partial, scripts,
 	)
 	if err != nil {
 		return nil, err

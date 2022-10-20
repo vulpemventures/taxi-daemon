@@ -19,12 +19,12 @@ func newWhitelistRepository(store *badgerhold.Store) *whitelistRepository {
 	return &whitelistRepository{store}
 }
 
-func (r *whitelistRepository) AddAddresses(
-	ctx context.Context, addresses []string,
+func (r *whitelistRepository) AddScripts(
+	ctx context.Context, scripts []string,
 ) (int, error) {
 	count := 0
-	for _, addr := range addresses {
-		done, err := r.insertAddress(ctx, addr)
+	for _, script := range scripts {
+		done, err := r.insertScript(ctx, script)
 		if err != nil {
 			return -1, err
 		}
@@ -35,27 +35,27 @@ func (r *whitelistRepository) AddAddresses(
 	return count, nil
 }
 
-func (r *whitelistRepository) GetAddresses(
+func (r *whitelistRepository) GetScripts(
 	_ context.Context,
 ) ([]string, error) {
-	whitelist := make([]address, 0)
+	whitelist := make([]scriptStruct, 0)
 	if err := r.store.Find(&whitelist, nil); err != nil {
 		return nil, err
 	}
 
-	addresses := make([]string, 0, len(whitelist))
+	scripts := make([]string, 0, len(whitelist))
 	for _, w := range whitelist {
-		addresses = append(addresses, w.Addr)
+		scripts = append(scripts, w.Script)
 	}
-	return addresses, nil
+	return scripts, nil
 }
 
-func (r *whitelistRepository) RemoveAddresses(
-	ctx context.Context, addresses []string,
+func (r *whitelistRepository) RemoveScripts(
+	ctx context.Context, scripts []string,
 ) (int, error) {
 	count := 0
-	for _, addr := range addresses {
-		done, err := r.deleteAddress(ctx, addr)
+	for _, script := range scripts {
+		done, err := r.deleteScript(ctx, script)
 		if err != nil {
 			return -1, err
 		}
@@ -70,11 +70,11 @@ func (r *whitelistRepository) close() {
 	r.store.Close()
 }
 
-func (r *whitelistRepository) insertAddress(
-	_ context.Context, addr string,
+func (r *whitelistRepository) insertScript(
+	_ context.Context, script string,
 ) (bool, error) {
-	item := address{addr}
-	if err := r.store.Insert(addr, item); err != nil {
+	item := scriptStruct{script}
+	if err := r.store.Insert(script, item); err != nil {
 		if err == badgerhold.ErrKeyExists {
 			return false, nil
 		}
@@ -84,11 +84,11 @@ func (r *whitelistRepository) insertAddress(
 	return true, nil
 }
 
-func (r *whitelistRepository) deleteAddress(
-	_ context.Context, addr string,
+func (r *whitelistRepository) deleteScript(
+	_ context.Context, script string,
 ) (bool, error) {
-	item := address{addr}
-	if err := r.store.Delete(addr, item); err != nil {
+	item := scriptStruct{script}
+	if err := r.store.Delete(script, item); err != nil {
 		if err == badgerhold.ErrNotFound {
 			return false, nil
 		}
@@ -98,6 +98,6 @@ func (r *whitelistRepository) deleteAddress(
 	return true, nil
 }
 
-type address struct {
-	Addr string
+type scriptStruct struct {
+	Script string
 }
