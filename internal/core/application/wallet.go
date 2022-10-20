@@ -335,8 +335,7 @@ func (w *wallet) getOutputAddress(script, blindingKey []byte) string {
 	scriptType := address.GetScriptType(script)
 	var addr string
 	switch scriptType {
-	case address.P2PkhScript:
-	case address.P2ShScript:
+	case address.P2PkhScript, address.P2ShScript:
 		version := w.network.PubKeyHash
 		if scriptType == address.P2Sh {
 			version = w.network.ScriptHash
@@ -349,7 +348,7 @@ func (w *wallet) getOutputAddress(script, blindingKey []byte) string {
 		addr, _ = address.ToBech32(&address.Bech32{
 			Prefix:  w.network.Bech32,
 			Version: script[0],
-			Program: script[1:],
+			Program: script[2:],
 		})
 	}
 
