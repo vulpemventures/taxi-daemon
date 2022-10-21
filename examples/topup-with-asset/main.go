@@ -17,6 +17,7 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/vulpemventures/go-elements/address"
 	"github.com/vulpemventures/go-elements/confidential"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
@@ -29,13 +30,14 @@ import (
 )
 
 var (
-	taxiAddr         = flag.String("taxi-addr", "localhost:8300", "<host>:<port> of Taxi daemon to interact with")
-	ctx              = context.Background()
-	regtest          = &network.Regtest
-	explorerURL      = "http://localhost:3001"
-	fundingAmount    = 10 * uint64(math.Pow10(8))
-	spendingAmount   = 1 * uint64(math.Pow10(8))
-	receivingAddress = "el1qqtcxcrfyf8cd68g2hd69gpx3gj7cgd7qa26ff9tfpsnw5mkzd32swt54sqdyfee8gw3vghwp5r7aspqkhnsh29f2yuyen9x37"
+	taxiAddr                = flag.String("taxi-addr", "localhost:8300", "<host>:<port> of Taxi daemon to interact with")
+	ctx                     = context.Background()
+	regtest                 = &network.Regtest
+	explorerURL             = "http://localhost:3001"
+	fundingAmount           = 10 * uint64(math.Pow10(8))
+	spendingAmount          = 1 * uint64(math.Pow10(8))
+	receivingAddress        = "el1qqtcxcrfyf8cd68g2hd69gpx3gj7cgd7qa26ff9tfpsnw5mkzd32swt54sqdyfee8gw3vghwp5r7aspqkhnsh29f2yuyen9x37"
+	receivingAddressInfo, _ = address.FromConfidential(receivingAddress)
 )
 
 func main() {
@@ -177,13 +179,15 @@ func main() {
 		{
 			Asset:        asset,
 			Amount:       spendingAmount,
-			Address:      receivingAddress,
+			Script:       receivingAddressInfo.Script,
+			BlindingKey:  receivingAddressInfo.BlindingKey,
 			BlinderIndex: 1,
 		},
 		{
 			Asset:        asset,
 			Amount:       changeAmount,
-			Address:      addr,
+			Script:       p2wpkh.WitnessScript,
+			BlindingKey:  p2wpkh.BlindingKey.SerializeCompressed(),
 			BlinderIndex: 1,
 		},
 	}
