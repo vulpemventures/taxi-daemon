@@ -29,8 +29,8 @@ type AdminServiceClient interface {
 	// witihin the tx outputs, the service will just add ins and outs to pay fees
 	// for such tx
 	AddWhitelistedAddresses(ctx context.Context, in *AddWhitelistedAddressesRequest, opts ...grpc.CallOption) (*AddWhitelistedAddressesResponse, error)
-	// ListWhitelistedAddresses returns all the whitelisted addresses
-	ListWhitelistedAddresses(ctx context.Context, in *ListWhitelistedAddressesRequest, opts ...grpc.CallOption) (*ListWhitelistedAddressesResponse, error)
+	// ListWhitelistedScripts returns all the whitelisted scripts
+	ListWhitelistedScripts(ctx context.Context, in *ListWhitelistedScriptsRequest, opts ...grpc.CallOption) (*ListWhitelistedScriptsResponse, error)
 	// DeleteWhitelistedAddresses lets remove one or more addresses from the whitelist
 	DeleteWhitelistedAddresses(ctx context.Context, in *DeleteWhitelistedAddressesRequest, opts ...grpc.CallOption) (*DeleteWhitelistedAddressesResponse, error)
 	// ListTopups returns all the internal topups
@@ -63,9 +63,9 @@ func (c *adminServiceClient) AddWhitelistedAddresses(ctx context.Context, in *Ad
 	return out, nil
 }
 
-func (c *adminServiceClient) ListWhitelistedAddresses(ctx context.Context, in *ListWhitelistedAddressesRequest, opts ...grpc.CallOption) (*ListWhitelistedAddressesResponse, error) {
-	out := new(ListWhitelistedAddressesResponse)
-	err := c.cc.Invoke(ctx, "/taxi_daemon.v1.AdminService/ListWhitelistedAddresses", in, out, opts...)
+func (c *adminServiceClient) ListWhitelistedScripts(ctx context.Context, in *ListWhitelistedScriptsRequest, opts ...grpc.CallOption) (*ListWhitelistedScriptsResponse, error) {
+	out := new(ListWhitelistedScriptsResponse)
+	err := c.cc.Invoke(ctx, "/taxi_daemon.v1.AdminService/ListWhitelistedScripts", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -101,8 +101,8 @@ type AdminServiceServer interface {
 	// witihin the tx outputs, the service will just add ins and outs to pay fees
 	// for such tx
 	AddWhitelistedAddresses(context.Context, *AddWhitelistedAddressesRequest) (*AddWhitelistedAddressesResponse, error)
-	// ListWhitelistedAddresses returns all the whitelisted addresses
-	ListWhitelistedAddresses(context.Context, *ListWhitelistedAddressesRequest) (*ListWhitelistedAddressesResponse, error)
+	// ListWhitelistedScripts returns all the whitelisted scripts
+	ListWhitelistedScripts(context.Context, *ListWhitelistedScriptsRequest) (*ListWhitelistedScriptsResponse, error)
 	// DeleteWhitelistedAddresses lets remove one or more addresses from the whitelist
 	DeleteWhitelistedAddresses(context.Context, *DeleteWhitelistedAddressesRequest) (*DeleteWhitelistedAddressesResponse, error)
 	// ListTopups returns all the internal topups
@@ -119,8 +119,8 @@ func (UnimplementedAdminServiceServer) AddAsset(context.Context, *AddAssetReques
 func (UnimplementedAdminServiceServer) AddWhitelistedAddresses(context.Context, *AddWhitelistedAddressesRequest) (*AddWhitelistedAddressesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddWhitelistedAddresses not implemented")
 }
-func (UnimplementedAdminServiceServer) ListWhitelistedAddresses(context.Context, *ListWhitelistedAddressesRequest) (*ListWhitelistedAddressesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListWhitelistedAddresses not implemented")
+func (UnimplementedAdminServiceServer) ListWhitelistedScripts(context.Context, *ListWhitelistedScriptsRequest) (*ListWhitelistedScriptsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListWhitelistedScripts not implemented")
 }
 func (UnimplementedAdminServiceServer) DeleteWhitelistedAddresses(context.Context, *DeleteWhitelistedAddressesRequest) (*DeleteWhitelistedAddressesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteWhitelistedAddresses not implemented")
@@ -176,20 +176,20 @@ func _AdminService_AddWhitelistedAddresses_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_ListWhitelistedAddresses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListWhitelistedAddressesRequest)
+func _AdminService_ListWhitelistedScripts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListWhitelistedScriptsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).ListWhitelistedAddresses(ctx, in)
+		return srv.(AdminServiceServer).ListWhitelistedScripts(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/taxi_daemon.v1.AdminService/ListWhitelistedAddresses",
+		FullMethod: "/taxi_daemon.v1.AdminService/ListWhitelistedScripts",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).ListWhitelistedAddresses(ctx, req.(*ListWhitelistedAddressesRequest))
+		return srv.(AdminServiceServer).ListWhitelistedScripts(ctx, req.(*ListWhitelistedScriptsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -246,8 +246,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_AddWhitelistedAddresses_Handler,
 		},
 		{
-			MethodName: "ListWhitelistedAddresses",
-			Handler:    _AdminService_ListWhitelistedAddresses_Handler,
+			MethodName: "ListWhitelistedScripts",
+			Handler:    _AdminService_ListWhitelistedScripts_Handler,
 		},
 		{
 			MethodName: "DeleteWhitelistedAddresses",

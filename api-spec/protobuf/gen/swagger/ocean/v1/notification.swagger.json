@@ -90,6 +90,9 @@
     "v1TransactionNotificationsResponse": {
       "type": "object",
       "properties": {
+        "eventType": {
+          "$ref": "#/definitions/v1TxEventType"
+        },
         "accountNames": {
           "type": "array",
           "items": {
@@ -97,17 +100,16 @@
           },
           "description": "Account names."
         },
+        "txhex": {
+          "type": "string",
+          "description": "Tx in hex format."
+        },
         "txid": {
           "type": "string",
           "description": "Txid of transaction."
         },
-        "eventType": {
-          "$ref": "#/definitions/v1TxEventType",
-          "description": "Tx event type."
-        },
         "blockDetails": {
-          "$ref": "#/definitions/v1BlockDetails",
-          "description": "Details of the block including the tx."
+          "$ref": "#/definitions/v1BlockDetails"
         }
       }
     },
@@ -163,12 +165,10 @@
           "description": "Name of the account owning the utxo."
         },
         "spentStatus": {
-          "$ref": "#/definitions/v1UtxoStatus",
-          "description": "Info about utxo's spent status."
+          "$ref": "#/definitions/v1UtxoStatus"
         },
         "confirmedStatus": {
-          "$ref": "#/definitions/v1UtxoStatus",
-          "description": "Info about utxo's confirmation status."
+          "$ref": "#/definitions/v1UtxoStatus"
         }
       }
     },
@@ -192,22 +192,24 @@
         },
         "blockInfo": {
           "$ref": "#/definitions/v1BlockDetails"
+        },
+        "txhex": {
+          "type": "string"
         }
       }
     },
     "v1UtxosNotificationsResponse": {
       "type": "object",
       "properties": {
+        "eventType": {
+          "$ref": "#/definitions/v1UtxoEventType"
+        },
         "utxos": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/v1Utxo"
           },
           "description": "List of utxos for which occured the event."
-        },
-        "eventType": {
-          "$ref": "#/definitions/v1UtxoEventType",
-          "description": "The event's type occured for the utxos."
         }
       }
     },

@@ -2,6 +2,9 @@ package application
 
 import (
 	"context"
+	"encoding/hex"
+	"fmt"
+	"github.com/vulpemventures/go-elements/address"
 
 	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
@@ -22,7 +25,7 @@ type AdminService interface {
 	AddWhitelistedAddresses(
 		ctx context.Context, addresses []string,
 	) (err error)
-	ListWhitelistedAddresses(
+	ListWhitelistedScripts(
 		ctx context.Context,
 	) (whitelist []string, err error)
 	DeleteWhitelistedAddresses(
@@ -64,7 +67,12 @@ func (s *adminService) AddAsset(
 func (s *adminService) AddWhitelistedAddresses(
 	ctx context.Context, addresses []string,
 ) error {
-	count, err := s.repoManager.WhitelistRepository().AddAddresses(ctx, addresses)
+	scripts, err := addressesToScripts(addresses)
+	if err != nil {
+		return err
+	}
+
+	count, err := s.repoManager.WhitelistRepository().AddScripts(ctx, scripts)
 	if err != nil {
 		return err
 	}
@@ -74,21 +82,26 @@ func (s *adminService) AddWhitelistedAddresses(
 	return nil
 }
 
-func (s *adminService) ListWhitelistedAddresses(
+func (s *adminService) ListWhitelistedScripts(
 	ctx context.Context,
 ) ([]string, error) {
-	addresses, err := s.repoManager.WhitelistRepository().GetAddresses(ctx)
+	scripts, err := s.repoManager.WhitelistRepository().GetScripts(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return addresses, nil
+	return scripts, nil
 }
 
 func (s *adminService) DeleteWhitelistedAddresses(
 	ctx context.Context, addresses []string,
 ) error {
-	count, err := s.repoManager.WhitelistRepository().RemoveAddresses(
-		ctx, addresses,
+	scripts, err := addressesToScripts(addresses)
+	if err != nil {
+		return err
+	}
+
+	count, err := s.repoManager.WhitelistRepository().RemoveScripts(
+		ctx, scripts,
 	)
 	if err != nil {
 		return err
@@ -116,4 +129,17 @@ func (s *adminService) ListTopups(ctx context.Context, assetHashFilter string) (
 		}
 	}
 	return filteredTopups, nil
+}
+
+func addressesToScripts(addresses []string) ([]string, error) {
+	scripts := make([]string, 0, len(addresses))
+	for _, addr := range addresses {
+		script, err := address.ToOutputScript(addr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid address %s: %s", addr, err)
+		}
+
+		scripts = append(scripts, hex.EncodeToString(script))
+	}
+	return scripts, nil
 }

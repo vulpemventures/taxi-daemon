@@ -82,39 +82,6 @@
         ]
       }
     },
-    "/v1/addresses/list": {
-      "post": {
-        "summary": "ListWhitelistedAddresses returns all the whitelisted addresses",
-        "operationId": "AdminService_ListWhitelistedAddresses",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1ListWhitelistedAddressesResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/v1ListWhitelistedAddressesRequest"
-            }
-          }
-        ],
-        "tags": [
-          "AdminService"
-        ]
-      }
-    },
     "/v1/asset/add": {
       "post": {
         "summary": "AddAsset lets update the asset_hash with price if exists, or creates it",
@@ -140,6 +107,39 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/v1AddAssetRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AdminService"
+        ]
+      }
+    },
+    "/v1/scripts/list": {
+      "post": {
+        "summary": "ListWhitelistedScripts returns all the whitelisted scripts",
+        "operationId": "AdminService_ListWhitelistedScripts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListWhitelistedScriptsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ListWhitelistedScriptsRequest"
             }
           }
         ],
@@ -273,18 +273,18 @@
         }
       }
     },
-    "v1ListWhitelistedAddressesRequest": {
+    "v1ListWhitelistedScriptsRequest": {
       "type": "object"
     },
-    "v1ListWhitelistedAddressesResponse": {
+    "v1ListWhitelistedScriptsResponse": {
       "type": "object",
       "properties": {
-        "addresses": {
+        "scripts": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "title": "The list of known addresses"
+          "title": "The list of known scripts"
         }
       }
     },
@@ -339,8 +339,7 @@
           "title": "The amount expressed in satoshis as taxi service fee (part of asset_amount)"
         },
         "status": {
-          "$ref": "#/definitions/v1TopupDetailsStatus",
-          "title": "Topup status"
+          "$ref": "#/definitions/v1TopupDetailsStatus"
         },
         "feeAmount": {
           "type": "string",
@@ -348,8 +347,7 @@
           "title": "Amount in satoshis of bitcoin needed to cover the fees"
         },
         "times": {
-          "$ref": "#/definitions/v1Timestamps",
-          "title": "The timestamps of each status change"
+          "$ref": "#/definitions/v1Timestamps"
         },
         "txid": {
           "type": "string",
