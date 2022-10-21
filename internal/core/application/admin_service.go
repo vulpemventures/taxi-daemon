@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"github.com/vulpemventures/go-elements/address"
 
 	"github.com/shopspring/decimal"
@@ -135,7 +136,7 @@ func addressesToScripts(addresses []string) ([]string, error) {
 	for _, addr := range addresses {
 		script, err := address.ToOutputScript(addr)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid address %s: %s", addr, err)
 		}
 
 		scripts = append(scripts, hex.EncodeToString(script))
