@@ -132,9 +132,10 @@ func toOutputsProto(outs []ports.Output) []*pb.Output {
 	outputs := make([]*pb.Output, 0, len(outs))
 	for _, out := range outs {
 		outputs = append(outputs, &pb.Output{
-			Asset:   out.Asset(),
-			Amount:  out.Value(),
-			Address: out.Address(),
+			Asset:          out.Asset(),
+			Amount:         out.Value(),
+			Script:         out.Script(),
+			BlindingPubkey: out.BlindingKey(),
 		})
 	}
 	return outputs

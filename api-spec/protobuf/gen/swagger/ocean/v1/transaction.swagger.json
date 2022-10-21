@@ -135,8 +135,7 @@
           "description": "Raw transaction in hex format."
         },
         "blockDetails": {
-          "$ref": "#/definitions/v1BlockDetails",
-          "description": "Deatils of the block including the transaction."
+          "$ref": "#/definitions/v1BlockDetails"
         }
       }
     },
@@ -178,6 +177,14 @@
         "address": {
           "type": "string",
           "description": "Address to send funds to."
+        },
+        "script": {
+          "type": "string",
+          "description": "ScriptPubkey to send funds to (alternative to address)."
+        },
+        "blindingPubkey": {
+          "type": "string",
+          "description": "Blinding public key to make output confidential (alternative to address)."
         }
       }
     },
@@ -256,6 +263,33 @@
         }
       }
     },
+    "v1UnblindedInput": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Index of the pset input."
+        },
+        "asset": {
+          "type": "string",
+          "description": "Revealed prevout asset."
+        },
+        "amount": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Revealed prevout amount."
+        },
+        "assetBlinder": {
+          "type": "string",
+          "description": "Prevout asset blinder."
+        },
+        "amountBlinder": {
+          "type": "string",
+          "description": "Prevout amount blinder."
+        }
+      }
+    },
     "v1UpdatePsetResponse": {
       "type": "object",
       "properties": {
@@ -306,12 +340,10 @@
           "description": "Name of the account owning the utxo."
         },
         "spentStatus": {
-          "$ref": "#/definitions/v1UtxoStatus",
-          "description": "Info about utxo's spent status."
+          "$ref": "#/definitions/v1UtxoStatus"
         },
         "confirmedStatus": {
-          "$ref": "#/definitions/v1UtxoStatus",
-          "description": "Info about utxo's confirmation status."
+          "$ref": "#/definitions/v1UtxoStatus"
         }
       }
     },
@@ -323,6 +355,9 @@
         },
         "blockInfo": {
           "$ref": "#/definitions/v1BlockDetails"
+        },
+        "txhex": {
+          "type": "string"
         }
       }
     }

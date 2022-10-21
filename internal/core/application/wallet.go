@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/shopspring/decimal"
 	"github.com/vulpemventures/go-elements/address"
@@ -19,6 +20,7 @@ import (
 const (
 	LBTCAccount   = "lbtc"
 	PayoutAccount = "payout"
+	dustLimit     = 300
 )
 
 type Wallet interface {
@@ -136,7 +138,7 @@ func (w *wallet) UpdatePartialWithFees(
 		return "", 0, fmt.Errorf("failed to estimate fee amount for tx: %s", err)
 	}
 
-	dummyFeeAmount = roundUpAmount(dummyFeeAmount)
+	dummyFeeAmount = roundUpFeeAmount(dummyFeeAmount)
 	rawLBTCAsset, _ := elementsutil.AssetHashToBytes(w.lbtcAsset)
 
 	insToAdd, change, expirationDate, err := w.selectLBTCUtxos(ctx, dummyFeeAmount)
@@ -144,7 +146,7 @@ func (w *wallet) UpdatePartialWithFees(
 		return "", 0, fmt.Errorf("failed to select %s utxos: %s", LBTCAccount, err)
 	}
 	outsToAdd := make([]ports.Output, 0)
-	if change > 0 {
+	if change > dustLimit {
 		addr, err := w.getLBTCChangeAddress(ctx)
 		if err != nil {
 			return "", 0, fmt.Errorf(
@@ -167,14 +169,17 @@ func (w *wallet) UpdatePartialWithFees(
 		return "", 0, fmt.Errorf("failed to estimate fee amount for tx: %s", err)
 	}
 
-	delta := int(dummyFeeAmount) - int(feeAmount)
-	if delta == 0 {
-		outsToAdd = make([]ports.Output, 0)
-	}
-	if delta > 0 {
-		out := outsToAdd[0].(output)
-		out.value += uint64(delta)
-		outsToAdd[0] = out
+	delta := dummyFeeAmount - feeAmount
+	change += (delta)
+	if change > dustLimit {
+		if len(outsToAdd) > 0 {
+			out := outsToAdd[0].(output)
+			out.value += delta
+			outsToAdd[0] = out
+		}
+	} else {
+		feeAmount += change
+		outsToAdd = append(outsToAdd, output{asset: rawLBTCAsset})
 	}
 	outsToAdd = append(outsToAdd, output{
 		asset: rawLBTCAsset,
@@ -191,12 +196,10 @@ func (w *wallet) UpdatePartialWithFees(
 		)
 	}
 
-	// Tx needs to be blinded if it cointans LBTC change output.
-	if len(outsToAdd) > 1 {
-		updatedPset, err = w.oceanSvc.TransactionManager().BlindTransaction(ctx, updatedPset, false)
-		if err != nil {
-			return "", 0, fmt.Errorf("failed to blind LBTC outs: %s", err)
-		}
+	// Tx needs to be blinded because it either contains change or dummy output.
+	updatedPset, err = w.oceanSvc.TransactionManager().BlindTransaction(ctx, updatedPset, true)
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to blind LBTC outs: %s", err)
 	}
 
 	sighash := uint32(txscript.SigHashAll)
@@ -356,7 +359,7 @@ func (w *wallet) getOutputAddress(script, blindingKey []byte) string {
 		return addr
 	}
 
-	addr, _ = address.ToConfidential(&address.ConfidentialAddress{
+	addr, _ = address.ToConfidential(&address.AddressInfo{
 		Address:     addr,
 		BlindingKey: blindingKey,
 	})
@@ -393,8 +396,11 @@ func (w *wallet) getPayoutAddress(ctx context.Context) (string, string, error) {
 	return addr[0], ca.Address, nil
 }
 
-func roundUpAmount(amount uint64) uint64 {
-	roundedAmount := float64(amount)
+// roundUpFeeAmount adds the average weight of a an input and a confidential
+// output to the given fee amount and rounds up to the next hundred/thousand
+// based on its order of magnitude.
+func roundUpFeeAmount(amount uint64) uint64 {
+	roundedAmount := float64(amount + 134)
 	orderOfMagnitude := 0
 	for roundedAmount > 10 {
 		roundedAmount /= 10
@@ -417,35 +423,6 @@ func getPayoutAmount(price *domain.Price, feeAmount uint64) uint64 {
 	return payoutAmount
 }
 
-type portableInput struct {
-	in psetv2.Input
-}
-
-func (i portableInput) TxID() string {
-	return elementsutil.TxIDFromBytes(i.in.PreviousTxid)
-}
-
-func (i portableInput) Index() uint32 {
-	return i.in.PreviousTxIndex
-}
-
-func (i portableInput) Asset() string {
-	prevout := i.in.GetUtxo()
-	if prevout.IsConfidential() {
-		return hex.EncodeToString(prevout.Asset)
-	}
-	return elementsutil.AssetHashFromBytes(prevout.Asset)
-}
-
-func (i portableInput) Value() uint64 {
-	prevout := i.in.GetUtxo()
-	if prevout.IsConfidential() {
-		return 0
-	}
-	val, _ := elementsutil.ValueFromBytes(prevout.Value)
-	return val
-}
-
 type input struct {
 	txid  []byte
 	index uint32
@@ -465,15 +442,45 @@ type output struct {
 }
 
 func (o output) Asset() string {
-	return elementsutil.AssetHashFromBytes(o.asset)
+	if len(o.asset) == 33 {
+		return elementsutil.AssetHashFromBytes(o.asset)
+	}
+	return hex.EncodeToString(elementsutil.ReverseBytes(o.asset))
 }
 
 func (o output) Value() uint64 {
 	return o.value
 }
 
-func (o output) Address() string {
-	return o.address
+func (o output) Script() string {
+	if o.address != "" {
+		script, _ := address.ToOutputScript(o.address)
+		return hex.EncodeToString(script)
+	}
+	// is fee out
+	if o.value > 0 {
+		return ""
+	}
+	// is dummy conf output, let's return OP_RETURN script
+	return hex.EncodeToString([]byte{txscript.OP_RETURN})
+}
+
+func (o output) BlindingKey() string {
+	if o.address != "" {
+		info, _ := address.FromConfidential(o.address)
+		// is unconfidential
+		if info == nil {
+			return ""
+		}
+		return hex.EncodeToString(info.BlindingKey)
+	}
+	// is fee out
+	if o.value > 0 {
+		return ""
+	}
+	// is dummy conf output, let's return an ephemeral pubkey
+	key, _ := btcec.NewPrivateKey()
+	return hex.EncodeToString(key.PubKey().SerializeCompressed())
 }
 
 type utxos []ports.Utxo

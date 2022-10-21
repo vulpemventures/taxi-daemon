@@ -4,12 +4,12 @@ deps:
   - remote: buf.build
     owner: googleapis
     repository: googleapis
-    commit: 80720a488c9a414bb8d4a9f811084989
+    commit: d1263fe26f8e430a967dc22a4d0cad18
   - remote: buf.build
     owner: vulpemventures
     repository: ocean
-    commit: c6031079a07042318a1598e181ff8429
+    commit: c1e9043370524e288fd4cd7141891337
   - remote: buf.build
     owner: vulpemventures
     repository: taxi
-    commit: d2afaa902c924faeb57f7dc6e97c60a6
+    commit: 6cadc24e833a4b6a8d7a2e8238bb75de

@@ -28,7 +28,7 @@ require (
 	github.com/stretchr/testify v1.7.2
 	github.com/timshannon/badgerhold/v4 v4.0.2
 	github.com/urfave/cli/v2 v2.3.0
-	github.com/vulpemventures/go-elements v0.4.0-rc.1
+	github.com/vulpemventures/go-elements v0.4.1
 	github.com/vulpemventures/taxi-protobuf v0.1.1
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
