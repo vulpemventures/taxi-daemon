@@ -207,7 +207,7 @@ func (w *wallet) UpdatePartialWithFees(
 		}
 
 		updatedPset, err = w.oceanSvc.TransactionManager().BlindTransaction(
-			ctx, updatedPset, false, unblindedInputs)
+			ctx, updatedPset, true, unblindedInputs)
 		if err != nil {
 			return "", 0, fmt.Errorf("failed to blind LBTC outs: %s", err)
 		}
