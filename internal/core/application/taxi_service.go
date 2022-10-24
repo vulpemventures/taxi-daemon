@@ -24,6 +24,7 @@ type TaxiService interface {
 	) (*domain.Topup, []ports.Utxo, error)
 	TopupWithKnownPayout(
 		ctx context.Context, psetBase64 string, millisatPerByte uint64,
+		userUnblindedInput UnblindedInput,
 	) (*domain.Topup, error)
 	ListAssets(ctx context.Context) ([]*domain.Price, error)
 }
@@ -86,12 +87,17 @@ func (s *taxiService) TopupWithAsset(
 
 func (s *taxiService) TopupWithKnownPayout(
 	ctx context.Context, partial string, millisatPerByte uint64,
+	userUnblindedInput UnblindedInput,
 ) (*domain.Topup, error) {
 	if len(partial) == 0 {
 		return nil, fmt.Errorf("missing partial transaction")
 	}
 	if millisatPerByte < minMillisatPerByte {
 		millisatPerByte = defaultMillisatPerByte
+	}
+
+	if err := userUnblindedInput.validate(); err != nil {
+		return nil, err
 	}
 
 	scripts, err := s.repoManager.WhitelistRepository().GetScripts(ctx)
@@ -110,7 +116,7 @@ func (s *taxiService) TopupWithKnownPayout(
 	}
 
 	updatedPartial, expirationDate, err := s.wallet.UpdatePartialWithFees(
-		ctx, partial, millisatPerByte,
+		ctx, partial, millisatPerByte, userUnblindedInput,
 	)
 	if err != nil {
 		return nil, err

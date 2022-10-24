@@ -81,10 +81,12 @@ func (tm *txManager) UpdateTransaction(
 
 func (tm *txManager) BlindTransaction(
 	ctx context.Context, psetBase64 string, lastBlinder bool,
+	userUnblindedInputs []*pb.UnblindedInput,
 ) (string, error) {
 	res, err := tm.client.BlindPset(ctx, &pb.BlindPsetRequest{
-		Pset:        psetBase64,
-		LastBlinder: lastBlinder,
+		Pset:                 psetBase64,
+		LastBlinder:          lastBlinder,
+		ExtraUnblindedInputs: userUnblindedInputs,
 	})
 	if err != nil {
 		return "", err

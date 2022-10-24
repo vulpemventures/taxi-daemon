@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"github.com/vulpemventures/go-elements/address"
+	"github.com/vulpemventures/go-elements/network"
 	"testing"
 	"time"
 
@@ -35,7 +36,7 @@ func TestTaxiService(t *testing.T) {
 		uint64(400), uint64(15150000), nil,
 	)
 	mockedWallet.On(
-		"UpdatePartialWithFees", mock.Anything, mock.Anything, mock.Anything,
+		"UpdatePartialWithFees", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 	).Return(randomPartial(), uint64(time.Now().Add(5*time.Minute).Unix()), nil)
 	mockedWallet.On("PartialContainsKnownPayout", mock.Anything, mock.Anything).
 		Return(true, nil)
@@ -60,7 +61,13 @@ func TestTaxiService(t *testing.T) {
 
 	partialWithKnownPayout := randomPartial()
 	topupWithKnownPayout, err := taxiSvc.TopupWithKnownPayout(
-		ctx, partialWithKnownPayout, millisatPerByte,
+		ctx, partialWithKnownPayout, millisatPerByte, application.UnblindedInput{
+			Index:         0,
+			Asset:         network.Regtest.AssetID,
+			Amount:        1,
+			AssetBlinder:  hex.EncodeToString([]byte("asset blinder")),
+			AmountBlinder: hex.EncodeToString([]byte("amount blinder")),
+		},
 	)
 	require.NoError(t, err)
 	require.NotNil(t, topupWithKnownPayout)

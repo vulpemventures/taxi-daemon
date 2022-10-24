@@ -1,6 +1,9 @@
 package ports
 
-import "context"
+import (
+	"context"
+	pb "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/go/ocean/v1"
+)
 
 type OceanWallet interface {
 	WalletManager() WalletManager
@@ -44,6 +47,7 @@ type TransactionManager interface {
 	) (updatedPset string, err error)
 	BlindTransaction(
 		ctx context.Context, psetBase64 string, lastBlinder bool,
+		userUnblindedInputs []*pb.UnblindedInput,
 	) (blindedPsetBase64 string, err error)
 	SignTransaction(
 		ctx context.Context, psetBase64 string, sighash uint32,

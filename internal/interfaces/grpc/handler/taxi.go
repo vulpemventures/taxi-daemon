@@ -85,7 +85,17 @@ func (h *taxiHandler) TopupWithKnownPayout(
 	}
 	millisatPerByte := req.GetMillisatPerByte()
 
-	topup, err := h.svc.TopupWithKnownPayout(ctx, psetBase64, millisatPerByte)
+	topup, err := h.svc.TopupWithKnownPayout(
+		ctx,
+		psetBase64,
+		millisatPerByte,
+		application.UnblindedInput{
+			Index:         int(req.GetUnblindedInput().GetIndex()),
+			Asset:         req.GetUnblindedInput().GetAsset(),
+			Amount:        int(req.GetUnblindedInput().GetAmount()),
+			AssetBlinder:  req.GetUnblindedInput().GetAssetBlinder(),
+			AmountBlinder: req.GetUnblindedInput().GetAmountBlinder(),
+		})
 	if err != nil {
 		return nil, err
 	}
