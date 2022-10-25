@@ -132,6 +132,10 @@ func (w *wallet) UpdatePartialWithFees(
 		return "", 0, fmt.Errorf("invalid partial transaction: %s", err)
 	}
 
+	if int(ptx.Global.InputCount) != len(userUnblindedInput) {
+		return "", 0, fmt.Errorf("invalid partial transaction: number of unblinded inputs must match number of tx inputs")
+	}
+
 	ins := make([]ports.Input, 0, ptx.Global.InputCount)
 	for _, in := range ptx.Inputs {
 		ins = append(ins, input{in.PreviousTxid, in.PreviousTxIndex})

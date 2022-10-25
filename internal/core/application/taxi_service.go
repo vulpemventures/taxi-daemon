@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"fmt"
-	"github.com/vulpemventures/go-elements/psetv2"
 	"strings"
 	"time"
 
@@ -101,15 +100,6 @@ func (s *taxiService) TopupWithKnownPayout(
 		if err := v.validate(); err != nil {
 			return nil, err
 		}
-	}
-
-	ptx, err := psetv2.NewPsetFromBase64(partial)
-	if err != nil {
-		return nil, fmt.Errorf("invalid partial transaction: %s", err)
-	}
-
-	if int(ptx.Global.InputCount) != len(userUnblindedInput) {
-		return nil, fmt.Errorf("invalid partial transaction: number of unblinded inputs does not match")
 	}
 
 	scripts, err := s.repoManager.WhitelistRepository().GetScripts(ctx)
