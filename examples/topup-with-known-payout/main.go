@@ -131,8 +131,7 @@ func main() {
 	updater.AddInSighashType(0, txscript.SigHashAll)
 
 	fmt.Printf("Done.\n\n")
-	fmt.Println("Blinding transaction...")
-	blindValidator := confidential.NewZKPValidator()
+	fmt.Println("Asking to taxi service for topup w/ known payout...")
 	blindGenerator := confidential.NewZKPGeneratorFromBlindingKeys([][]byte{
 		blindPrivkey.Serialize(),
 	}, nil)
@@ -141,29 +140,23 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to unblind tx inputs: %s", err)
 	}
-	outBlindingArgs, err := blindGenerator.BlindOutputs(pset, nil, nil)
-	if err != nil {
-		log.Fatalf("failed to generate blinding data for tx outputs: %s", err)
-	}
 
-	blinder, err := psetv2.NewBlinder(
-		pset, unblindedInputs, blindValidator, blindGenerator,
-	)
-	if err != nil {
-		log.Fatalf("failed to initialize blinder: %s", err)
+	unblindedIns := make([]*pb.UnblindedInput, 0, len(unblindedInputs))
+	for _, v := range unblindedInputs {
+		unblindedIns = append(unblindedIns, &pb.UnblindedInput{
+			Index:         v.Index,
+			Asset:         v.Asset,
+			Amount:        v.Value,
+			AssetBlinder:  hex.EncodeToString(v.AssetBlinder),
+			AmountBlinder: hex.EncodeToString(v.ValueBlinder),
+		})
 	}
-
-	if err := blinder.BlindNonLast(nil, outBlindingArgs); err != nil {
-		log.Fatalf("failed to add blind tx: %s", err)
-	}
-
-	fmt.Printf("Done.\n\n")
-	fmt.Println("Asking to taxi service for topup w/ known payout...")
 
 	psetBase64, _ := pset.ToBase64()
 	resp, err := client.TopupWithKnownPayout(ctx, &pb.TopupWithKnownPayoutRequest{
 		Partial:         psetBase64,
 		MillisatPerByte: 100,
+		UnblindedInputs: unblindedIns,
 	})
 	if err != nil {
 		log.Fatal(err)
