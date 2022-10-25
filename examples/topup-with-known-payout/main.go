@@ -19,6 +19,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/vulpemventures/go-elements/address"
 	"github.com/vulpemventures/go-elements/confidential"
+	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
 	"github.com/vulpemventures/go-elements/payment"
 	"github.com/vulpemventures/go-elements/psetv2"
@@ -147,8 +148,8 @@ func main() {
 			Index:         v.Index,
 			Asset:         v.Asset,
 			Amount:        v.Value,
-			AssetBlinder:  hex.EncodeToString(v.AssetBlinder),
-			AmountBlinder: hex.EncodeToString(v.ValueBlinder),
+			AssetBlinder:  hex.EncodeToString(elementsutil.ReverseBytes(v.AssetBlinder)),
+			AmountBlinder: hex.EncodeToString(elementsutil.ReverseBytes(v.ValueBlinder)),
 		})
 	}
 
@@ -333,9 +334,4 @@ func signTransactionP2WPKH(
 	}
 
 	return p, nil
-}
-
-func h2b(str string) []byte {
-	buf, _ := hex.DecodeString(str)
-	return buf
 }
