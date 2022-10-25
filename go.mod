@@ -17,6 +17,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.1.4
 	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.1
 	github.com/improbable-eng/grpc-web v0.14.0
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
