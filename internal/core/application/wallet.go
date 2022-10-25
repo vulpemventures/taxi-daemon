@@ -119,9 +119,9 @@ func (w *wallet) UpdatePartialWithFees(
 	unblindedInputs := make([]*pb.UnblindedInput, 0, len(userUnblindedInput))
 	for _, v := range userUnblindedInput {
 		unblindedInputs = append(unblindedInputs, &pb.UnblindedInput{
-			Index:         uint32(v.Index),
+			Index:         v.Index,
 			Asset:         v.Asset,
-			Amount:        uint64(v.Amount),
+			Amount:        v.Amount,
 			AssetBlinder:  v.AssetBlinder,
 			AmountBlinder: v.AmountBlinder,
 		})

@@ -88,9 +88,9 @@ func (h *taxiHandler) TopupWithKnownPayout(
 	userUnblindedInput := make([]application.UnblindedInput, 0, len(req.GetUnblindedInputs()))
 	for _, v := range req.GetUnblindedInputs() {
 		userUnblindedInput = append(userUnblindedInput, application.UnblindedInput{
-			Index:         int(v.GetIndex()),
+			Index:         v.GetIndex(),
 			Asset:         v.GetAsset(),
-			Amount:        int(v.GetAmount()),
+			Amount:        v.GetAmount(),
 			AssetBlinder:  v.GetAssetBlinder(),
 			AmountBlinder: v.GetAmountBlinder(),
 		})

@@ -7,9 +7,9 @@ import (
 )
 
 type UnblindedInput struct {
-	Index         int
+	Index         uint32
 	Asset         string
-	Amount        int
+	Amount        uint64
 	AssetBlinder  string
 	AmountBlinder string
 }
@@ -19,8 +19,8 @@ func (u *UnblindedInput) validate() error {
 		u,
 		validation.Field(&u.Asset, validation.By(validateAssetString)),
 		validation.Field(&u.Amount, validation.Required),
-		validation.Field(&u.AssetBlinder, validation.By(validateHex)),
-		validation.Field(&u.AmountBlinder, validation.By(validateHex)),
+		validation.Field(&u.AssetBlinder, validation.By(validateAssetString)),
+		validation.Field(&u.AmountBlinder, validation.By(validateAssetString)),
 	)
 }
 
@@ -34,17 +34,6 @@ func validateAssetString(asset interface{}) error {
 
 	if len(buf) != 32 {
 		return errors.New("asset length is invalid")
-	}
-
-	return nil
-}
-
-func validateHex(value interface{}) error {
-	valueString, _ := value.(string)
-
-	_, err := hex.DecodeString(valueString)
-	if err != nil {
-		return errors.New("value is not in hex format")
 	}
 
 	return nil
