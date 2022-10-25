@@ -159,5 +159,6 @@ type Input = UtxoKey
 type Output interface {
 	Asset() string
 	Value() uint64
-	Address() string
+	Script() string
+	BlindingKey() string
 }

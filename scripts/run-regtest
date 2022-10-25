@@ -98,6 +98,8 @@ if [ "$lbtcBalance" == "{}" ]; then
   $fragmenter \
   --rpcserver http://admin1:123@liquid:18884 \
   --y --outputs $outputs
+
+  nigiri rpc --liquid generatetoaddress 1 $(nigiri rpc --liquid getnewaddress) &> /dev/null
 fi
 
 echo "Setup complete."
