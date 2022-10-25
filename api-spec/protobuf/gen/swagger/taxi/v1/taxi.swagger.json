@@ -247,8 +247,11 @@
           "type": "string",
           "format": "uint64"
         },
-        "unblindedInput": {
-          "$ref": "#/definitions/v1UnblindedInput"
+        "unblindedInputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1UnblindedInput"
+          }
         }
       }
     },

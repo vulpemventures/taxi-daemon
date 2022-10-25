@@ -15,7 +15,7 @@ type mockWallet struct {
 
 func (m *mockWallet) UpdatePartialWithFees(
 	ctx context.Context, partial string, millisatPerByte uint64,
-	userUnblindedInput application.UnblindedInput,
+	userUnblindedInput []application.UnblindedInput,
 ) (string, uint64, error) {
 	args := m.Called(ctx, partial, millisatPerByte, userUnblindedInput)
 	var res string

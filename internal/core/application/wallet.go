@@ -25,7 +25,7 @@ const (
 type Wallet interface {
 	UpdatePartialWithFees(
 		ctx context.Context, partial string, millisatPerByte uint64,
-		userUnblindedInput UnblindedInput,
+		userUnblindedInput []UnblindedInput,
 	) (updatedPartial string, expirationDate uint64, err error)
 	CreatePartialWithFeesAndPayout(
 		ctx context.Context, price *domain.Price,
@@ -114,8 +114,19 @@ func NewWallet(oceanSvc ports.OceanWallet) (Wallet, error) {
 
 func (w *wallet) UpdatePartialWithFees(
 	ctx context.Context, psetBase64 string, millisatPerByte uint64,
-	userUnblindedInput UnblindedInput,
+	userUnblindedInput []UnblindedInput,
 ) (string, uint64, error) {
+	unblindedInputs := make([]*pb.UnblindedInput, 0, len(userUnblindedInput))
+	for _, v := range userUnblindedInput {
+		unblindedInputs = append(unblindedInputs, &pb.UnblindedInput{
+			Index:         uint32(v.Index),
+			Asset:         v.Asset,
+			Amount:        uint64(v.Amount),
+			AssetBlinder:  v.AssetBlinder,
+			AmountBlinder: v.AmountBlinder,
+		})
+	}
+
 	ptx, err := psetv2.NewPsetFromBase64(psetBase64)
 	if err != nil {
 		return "", 0, fmt.Errorf("invalid partial transaction: %s", err)
@@ -196,16 +207,6 @@ func (w *wallet) UpdatePartialWithFees(
 
 	// Tx needs to be blinded if it cointans LBTC change output.
 	if len(outsToAdd) > 1 {
-		unblindedInputs := []*pb.UnblindedInput{
-			{
-				Index:         uint32(userUnblindedInput.Index),
-				Asset:         userUnblindedInput.Asset,
-				Amount:        uint64(userUnblindedInput.Amount),
-				AssetBlinder:  userUnblindedInput.AssetBlinder,
-				AmountBlinder: userUnblindedInput.AmountBlinder,
-			},
-		}
-
 		updatedPset, err = w.oceanSvc.TransactionManager().BlindTransaction(
 			ctx, updatedPset, true, unblindedInputs)
 		if err != nil {

@@ -61,12 +61,14 @@ func TestTaxiService(t *testing.T) {
 
 	partialWithKnownPayout := randomPartial()
 	topupWithKnownPayout, err := taxiSvc.TopupWithKnownPayout(
-		ctx, partialWithKnownPayout, millisatPerByte, application.UnblindedInput{
-			Index:         0,
-			Asset:         network.Regtest.AssetID,
-			Amount:        1,
-			AssetBlinder:  hex.EncodeToString([]byte("asset blinder")),
-			AmountBlinder: hex.EncodeToString([]byte("amount blinder")),
+		ctx, partialWithKnownPayout, millisatPerByte, []application.UnblindedInput{
+			{
+				Index:         0,
+				Asset:         network.Regtest.AssetID,
+				Amount:        1,
+				AssetBlinder:  hex.EncodeToString([]byte("asset blinder")),
+				AmountBlinder: hex.EncodeToString([]byte("amount blinder")),
+			},
 		},
 	)
 	require.NoError(t, err)
