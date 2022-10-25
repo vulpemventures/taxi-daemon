@@ -364,7 +364,7 @@ func (w *wallet) getOutputAddress(script, blindingKey []byte) string {
 		addr, _ = address.ToBech32(&address.Bech32{
 			Prefix:  w.network.Bech32,
 			Version: script[0],
-			Program: script[1:],
+			Program: script[2:],
 		})
 	}
 
