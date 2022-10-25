@@ -328,12 +328,14 @@ func (w *wallet) getOutputAddress(script, blindingKey []byte) string {
 	switch scriptType {
 	case address.P2PkhScript, address.P2ShScript:
 		version := w.network.PubKeyHash
+		scriptHash := script[3 : len(script)-2]
 		if scriptType == address.P2Sh {
 			version = w.network.ScriptHash
+			scriptHash = script[2 : len(script)-1]
 		}
 		addr = address.ToBase58(&address.Base58{
 			Version: version,
-			Data:    script,
+			Data:    scriptHash,
 		})
 	default:
 		addr, _ = address.ToBech32(&address.Bech32{
