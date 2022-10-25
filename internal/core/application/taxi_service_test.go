@@ -66,8 +66,8 @@ func TestTaxiService(t *testing.T) {
 				Index:         0,
 				Asset:         network.Regtest.AssetID,
 				Amount:        1,
-				AssetBlinder:  hex.EncodeToString([]byte("asset blinder")),
-				AmountBlinder: hex.EncodeToString([]byte("amount blinder")),
+				AssetBlinder:  hex.EncodeToString(randomBytes(32)),
+				AmountBlinder: hex.EncodeToString(randomBytes(32)),
 			},
 		},
 	)

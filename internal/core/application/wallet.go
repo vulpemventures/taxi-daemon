@@ -205,8 +205,12 @@ func (w *wallet) UpdatePartialWithFees(
 		)
 	}
 
-	// Tx needs to be blinded if it cointans LBTC change output.
-	if len(outsToAdd) > 1 {
+	updatedPtx, err := psetv2.NewPsetFromBase64(updatedPset)
+	if err != nil {
+		return "", 0, fmt.Errorf("invalid partial transaction: %s", err)
+	}
+
+	if updatedPtx.NeedsBlinding() {
 		updatedPset, err = w.oceanSvc.TransactionManager().BlindTransaction(
 			ctx, updatedPset, true, unblindedInputs)
 		if err != nil {
