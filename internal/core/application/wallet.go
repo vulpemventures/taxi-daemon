@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	pb "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/go/ocean/v1"
 	"math"
+
+	pb "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/go/ocean/v1"
 
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/txscript"
@@ -21,7 +22,6 @@ import (
 const (
 	LBTCAccount   = "lbtc"
 	PayoutAccount = "payout"
-	dustLimit     = 300
 )
 
 type Wallet interface {
@@ -149,6 +149,14 @@ func (w *wallet) UpdatePartialWithFees(
 		outs = append(outs, output{out.Asset, out.Value, addr})
 	}
 
+	rawLBTCAsset, _ := elementsutil.AssetHashToBytes(w.lbtcAsset)
+	outsToAdd := make([]ports.Output, 0)
+	// Since our inputs are confidential, when the user tx is full unconf we add
+	// a dummy output to make sure at least one output is blinded
+	if !ptx.NeedsBlinding() {
+		outsToAdd = append(outsToAdd, output{asset: rawLBTCAsset})
+	}
+
 	dummyFeeAmount, err := w.oceanSvc.TransactionManager().EstimateFees(
 		ctx, ins, outs, millisatPerByte,
 	)
@@ -157,51 +165,13 @@ func (w *wallet) UpdatePartialWithFees(
 	}
 
 	dummyFeeAmount = roundUpFeeAmount(dummyFeeAmount)
-	rawLBTCAsset, _ := elementsutil.AssetHashToBytes(w.lbtcAsset)
-
 	insToAdd, change, expirationDate, err := w.selectLBTCUtxos(ctx, dummyFeeAmount)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to select %s utxos: %s", LBTCAccount, err)
 	}
-	outsToAdd := make([]ports.Output, 0)
-	if change > dustLimit {
-		addr, err := w.getLBTCChangeAddress(ctx)
-		if err != nil {
-			return "", 0, fmt.Errorf(
-				"failed to generate %s change address: %s", LBTCAccount, err,
-			)
-		}
-		outsToAdd = append(outsToAdd, output{
-			asset:   rawLBTCAsset,
-			value:   change,
-			address: addr,
-		})
-	}
-
-	ins = append(ins, utxos(insToAdd).keys()...)
-	outs = append(outs, outsToAdd...)
-	feeAmount, err := w.oceanSvc.TransactionManager().EstimateFees(
-		ctx, ins, outs, millisatPerByte,
-	)
-	if err != nil {
-		return "", 0, fmt.Errorf("failed to estimate fee amount for tx: %s", err)
-	}
-
-	delta := dummyFeeAmount - feeAmount
-	change += (delta)
-	if change > dustLimit {
-		if len(outsToAdd) > 0 {
-			out := outsToAdd[0].(output)
-			out.value += delta
-			outsToAdd[0] = out
-		}
-	} else {
-		feeAmount += change
-		outsToAdd = append(outsToAdd, output{asset: rawLBTCAsset})
-	}
 	outsToAdd = append(outsToAdd, output{
 		asset: rawLBTCAsset,
-		value: feeAmount,
+		value: dummyFeeAmount + change,
 	})
 
 	updatedPset, err := w.oceanSvc.TransactionManager().UpdateTransaction(
@@ -214,22 +184,15 @@ func (w *wallet) UpdatePartialWithFees(
 		)
 	}
 
-	updatedPtx, err := psetv2.NewPsetFromBase64(updatedPset)
+	blindedPset, err := w.oceanSvc.TransactionManager().BlindTransaction(
+		ctx, updatedPset, true, unblindedInputs)
 	if err != nil {
-		return "", 0, fmt.Errorf("invalid partial transaction: %s", err)
-	}
-
-	if updatedPtx.NeedsBlinding() {
-		updatedPset, err = w.oceanSvc.TransactionManager().BlindTransaction(
-			ctx, updatedPset, true, unblindedInputs)
-		if err != nil {
-			return "", 0, fmt.Errorf("failed to blind LBTC outs: %s", err)
-		}
+		return "", 0, fmt.Errorf("failed to blind partial transaction: %s", err)
 	}
 
 	sighash := uint32(txscript.SigHashAll)
 	signedPset, err := w.oceanSvc.TransactionManager().SignTransaction(
-		ctx, updatedPset, sighash,
+		ctx, blindedPset, sighash,
 	)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to sign partial transaction: %s", err)
@@ -399,16 +362,6 @@ func (w *wallet) selectLBTCUtxos(
 	)
 }
 
-func (w *wallet) getLBTCChangeAddress(ctx context.Context) (string, error) {
-	addr, err := w.oceanSvc.AccountManager().DeriveChangeAddressForAccount(
-		ctx, LBTCAccount, 1,
-	)
-	if err != nil {
-		return "", err
-	}
-	return addr[0], nil
-}
-
 func (w *wallet) getPayoutAddress(ctx context.Context) (string, string, error) {
 	addr, err := w.oceanSvc.AccountManager().DeriveAddressesForAccount(
 		ctx, PayoutAccount, 1,
@@ -421,11 +374,10 @@ func (w *wallet) getPayoutAddress(ctx context.Context) (string, string, error) {
 	return addr[0], ca.Address, nil
 }
 
-// roundUpFeeAmount adds the average weight of a an input and a confidential
-// output to the given fee amount and rounds up to the next hundred/thousand
+// roundUpFeeAmount rounds up the given amount to the next hundred/thousand.
 // based on its order of magnitude.
 func roundUpFeeAmount(amount uint64) uint64 {
-	roundedAmount := float64(amount + 134)
+	roundedAmount := float64(amount)
 	orderOfMagnitude := 0
 	for roundedAmount > 10 {
 		roundedAmount /= 10
