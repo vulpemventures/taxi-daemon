@@ -61,7 +61,7 @@ echo "Adding USDt asset: $USDT"
 $taxi add-asset --asset $USDT --price 25000 --basis-point 100
 
 # Add known payout address to whitelist
-whitelist=$($taxi whitelist list | jq -r .addresses)
+whitelist=$($taxi whitelist list | jq -r .scripts)
 if [ "$whitelist" == "[]" ]; then 
   echo ""
   echo "Whitelisting known payout address: $KNOWN_PAYOUT_ADDRESS"
@@ -98,6 +98,8 @@ if [ "$lbtcBalance" == "{}" ]; then
   $fragmenter \
   --rpcserver http://admin1:123@liquid:18884 \
   --y --outputs $outputs
+
+  nigiri rpc --liquid generatetoaddress 1 $(nigiri rpc --liquid getnewaddress) &> /dev/null
 fi
 
 echo "Setup complete."

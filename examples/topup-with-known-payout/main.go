@@ -17,6 +17,7 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/vulpemventures/go-elements/address"
 	"github.com/vulpemventures/go-elements/confidential"
 	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/network"
@@ -29,13 +30,12 @@ import (
 )
 
 var (
-	taxiAddr         = flag.String("taxi-addr", "localhost:8300", "<host>:<port> of Taxi daemon to interact with")
-	ctx              = context.Background()
-	regtest          = &network.Regtest
-	explorerURL      = "http://localhost:3001"
-	fundingAmount    = 10 * uint64(math.Pow10(8))
-	spendingAmount   = 1 * uint64(math.Pow10(8))
-	receivingAddress = "el1qqtcxcrfyf8cd68g2hd69gpx3gj7cgd7qa26ff9tfpsnw5mkzd32swt54sqdyfee8gw3vghwp5r7aspqkhnsh29f2yuyen9x37"
+	taxiAddr                = flag.String("taxi-addr", "localhost:8300", "<host>:<port> of Taxi daemon to interact with")
+	ctx                     = context.Background()
+	regtest                 = &network.Regtest
+	explorerURL             = "http://localhost:3001"
+	receivingAddress        = "el1qqtcxcrfyf8cd68g2hd69gpx3gj7cgd7qa26ff9tfpsnw5mkzd32swt54sqdyfee8gw3vghwp5r7aspqkhnsh29f2yuyen9x37"
+	receivingAddressInfo, _ = address.FromConfidential(receivingAddress)
 )
 
 func main() {
@@ -80,7 +80,7 @@ func main() {
 
 	fmt.Println("Funding ephemeral single key wallet with one of taxi's supported assets...")
 	asset := res.GetAssets()[0].GetAssetHash()
-	amount := float64(fundingAmount) / math.Pow10(8)
+	amount := float64(1)
 	if err := faucet(addr, asset, amount); err != nil {
 		log.Fatalf("failed to fund confidential address: %s", err)
 	}
@@ -91,147 +91,88 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to fetch ephemeral wallet funds: %s", err)
 	}
+	txHex, err := fetchTx(utxos[0]["txid"].(string))
+	if err != nil {
+		log.Fatalf("failed to fetch ephemeral wallet funds transaction: %s", err)
+	}
+	prevoutTx, _ := transaction.NewTxFromHex(txHex)
+	prevout := prevoutTx.Outputs[int(utxos[0]["vout"].(float64))]
 
 	fmt.Printf("Done.\n\n")
-	fmt.Println("Asking to taxi service for topup w/ asset...")
-	resp, err := client.TopupWithAsset(ctx, &pb.TopupWithAssetRequest{
-		AssetHash:       asset,
-		EstimatedTxSize: 3000,
+	fmt.Println("Crafting transaction w/ known payout...")
+	inputs := make([]psetv2.InputArgs, 0, len(utxos))
+	for _, u := range utxos {
+		inputs = append(inputs, psetv2.InputArgs{
+			Txid:    u["txid"].(string),
+			TxIndex: uint32(u["vout"].(float64)),
+		})
+	}
+
+	outputs := []psetv2.OutputArgs{
+		{
+			Asset:        asset,
+			Amount:       7 * uint64(math.Pow10(7)),
+			Script:       receivingAddressInfo.Script,
+			BlindingKey:  receivingAddressInfo.BlindingKey,
+			BlinderIndex: 0,
+		},
+		{
+			Asset:        asset,
+			Amount:       3 * uint64(math.Pow10(7)),
+			Script:       p2wpkh.WitnessScript,
+			BlindingKey:  p2wpkh.BlindingKey.SerializeCompressed(),
+			BlinderIndex: 0,
+		},
+	}
+
+	pset, _ := psetv2.New(inputs, outputs, nil)
+	updater, _ := psetv2.NewUpdater(pset)
+	updater.AddInWitnessUtxo(0, prevout)
+	updater.AddInUtxoRangeProof(0, prevout.RangeProof)
+	updater.AddInSighashType(0, txscript.SigHashAll)
+
+	fmt.Printf("Done.\n\n")
+	fmt.Println("Asking to taxi service for topup w/ known payout...")
+	blindGenerator := confidential.NewZKPGeneratorFromBlindingKeys([][]byte{
+		blindPrivkey.Serialize(),
+	}, nil)
+
+	unblindedInputs, err := blindGenerator.UnblindInputs(pset, nil)
+	if err != nil {
+		log.Fatalf("failed to unblind tx inputs: %s", err)
+	}
+
+	unblindedIns := make([]*pb.UnblindedInput, 0, len(unblindedInputs))
+	for _, v := range unblindedInputs {
+		unblindedIns = append(unblindedIns, &pb.UnblindedInput{
+			Index:         v.Index,
+			Asset:         v.Asset,
+			Amount:        v.Value,
+			AssetBlinder:  hex.EncodeToString(elementsutil.ReverseBytes(v.AssetBlinder)),
+			AmountBlinder: hex.EncodeToString(elementsutil.ReverseBytes(v.ValueBlinder)),
+		})
+	}
+
+	psetBase64, _ := pset.ToBase64()
+	resp, err := client.TopupWithKnownPayout(ctx, &pb.TopupWithKnownPayoutRequest{
+		Partial:         psetBase64,
 		MillisatPerByte: 100,
+		UnblindedInputs: unblindedIns,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Topup:", resp.GetTopup().GetTopupId())
+	fmt.Printf("Done.\n\n")
+	fmt.Printf("Topup: %s\n\n", resp.GetTopup().GetTopupId())
 	topup := resp.GetTopup()
-	inBlindingData := resp.GetInBlindingData()
 
-	fmt.Printf("\n\n")
-	fmt.Println("Adding ins and outs to topup transaction...")
-	ptx, err := psetv2.NewPsetFromBase64(topup.GetPartial())
-	if err != nil {
-		log.Fatalf("failed to parse topup transaction: %s", err)
-	}
-	originalInputCount := int(ptx.Global.InputCount)
-	updater, err := psetv2.NewUpdater(ptx)
-	if err != nil {
-		log.Fatalf("failed to init updater role: %s", err)
-	}
+	pset, _ = psetv2.NewPsetFromBase64(topup.GetPartial())
 
-	ins := make([]psetv2.InputArgs, 0, len(utxos))
-	for _, u := range utxos {
-		ins = append(ins, psetv2.InputArgs{
-			Txid:    u["txid"].(string),
-			TxIndex: uint32(u["vout"].(float64)),
-		})
-	}
-	if err := updater.AddInputs(ins); err != nil {
-		log.Fatalf("failed to add inputs to tx: %s", err)
-	}
-
-	ownedInputs := make(map[uint32]psetv2.OwnedInput)
-	for i, data := range inBlindingData {
-		ownedInputs[uint32(i)] = psetv2.OwnedInput{
-			Index:        uint32(i),
-			Value:        data.Value,
-			Asset:        data.Asset,
-			ValueBlinder: data.ValueBlinder,
-			AssetBlinder: data.AssetBlinder,
-		}
-	}
-	for i, in := range ins {
-		prevTxHex, err := fetchTx(in.Txid)
-		if err != nil {
-			log.Fatalf("failed to fetch raw tx for input %d: %s", i, err)
-		}
-
-		prevTx, _ := transaction.NewTxFromHex(prevTxHex)
-		assetCommitment := h2b(utxos[0]["assetcommitment"].(string))
-		valueCommitment := h2b(utxos[0]["valuecommitment"].(string))
-		witnessUtxo := &transaction.TxOutput{
-			Asset:           assetCommitment,
-			Value:           valueCommitment,
-			Script:          p2wpkh.WitnessScript,
-			Nonce:           prevTx.Outputs[in.TxIndex].Nonce,
-			RangeProof:      prevTx.Outputs[in.TxIndex].RangeProof,
-			SurjectionProof: prevTx.Outputs[in.TxIndex].SurjectionProof,
-		}
-		updater.AddInWitnessUtxo(originalInputCount+i, witnessUtxo)
-
-		revelead, err := confidential.UnblindOutputWithKey(witnessUtxo, blindPrivkey.Serialize())
-		if err != nil {
-			log.Fatalf("failed to unblind prevout of input %d: %s", originalInputCount+i, err)
-		}
-		ownedInputs[uint32(originalInputCount+i)] = psetv2.OwnedInput{
-			Index:        uint32(originalInputCount + i),
-			Value:        revelead.Value,
-			Asset:        hex.EncodeToString(elementsutil.ReverseBytes(revelead.Asset)),
-			ValueBlinder: revelead.ValueBlindingFactor,
-			AssetBlinder: revelead.AssetBlindingFactor,
-		}
-	}
-
-	changeAmount := fundingAmount - spendingAmount - resp.GetAssetAmount()
-	outs := []psetv2.OutputArgs{
-		{
-			Asset:        asset,
-			Amount:       spendingAmount,
-			Address:      receivingAddress,
-			BlinderIndex: 1,
-		},
-		{
-			Asset:        asset,
-			Amount:       changeAmount,
-			Address:      addr,
-			BlinderIndex: 1,
-		},
-	}
-	if err := updater.AddOutputs(outs); err != nil {
-		log.Fatalf("failed to add outputs to tx: %s", err)
-	}
-
-	fmt.Printf("Done.\n\n")
-	fmt.Println("Blinding transaction...")
-	blindValidator := confidential.NewZKPValidator()
-	blindGenerator, err := confidential.NewZKPGeneratorFromOwnedInputs(
-		ownedInputs, nil,
-	)
-	if err != nil {
-		log.Fatalf("failed to initialize blinder handler: %s", err)
-	}
-	ownedInputsSlice, err := blindGenerator.UnblindInputs(updater.Pset, nil)
-	if err != nil {
-		log.Fatalf("failed to unblind ephemeral wallet's inputs: %s", err)
-	}
-
-	outIndexesToBlind := []uint32{
-		uint32(updater.Pset.Global.OutputCount) - 2, // second last
-		uint32(updater.Pset.Global.OutputCount) - 1, // last
-	}
-	blindedOuts, err := blindGenerator.BlindOutputs(
-		updater.Pset, outIndexesToBlind, nil,
-	)
-	if err != nil {
-		log.Fatalf("failed to generate blinding commitments and proofs: %s", err)
-	}
-	blinder, err := psetv2.NewBlinder(
-		updater.Pset, ownedInputsSlice, blindValidator, blindGenerator,
-	)
-	if err != nil {
-		log.Fatalf("failed to init blinder role: %s", err)
-	}
-	if err := blinder.BlindLast(nil, blindedOuts); err != nil {
-		log.Fatalf("failed to blind transaction: %s", err)
-	}
-
-	fmt.Printf("Done.\n\n")
 	fmt.Println("Signing transaction...")
-	inIndexesToSign := []int{
-		int(blinder.Pset.Global.InputCount) - 1,
-	}
+	inIndexesToSign := []int{0}
 	signedPtx, err := signTransactionP2WPKH(
-		blinder.Pset, inIndexesToSign, privkey, p2wpkh.Script,
+		pset, inIndexesToSign, privkey, p2wpkh.Script,
 	)
 	if err != nil {
 		log.Fatalf("failed to sign transaction: %s", err)
@@ -393,9 +334,4 @@ func signTransactionP2WPKH(
 	}
 
 	return p, nil
-}
-
-func h2b(str string) []byte {
-	buf, _ := hex.DecodeString(str)
-	return buf
 }

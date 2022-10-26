@@ -246,6 +246,12 @@
         "millisatPerByte": {
           "type": "string",
           "format": "uint64"
+        },
+        "unblindedInputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1UnblindedInput"
+          }
         }
       }
     },
@@ -258,6 +264,28 @@
         "expiry": {
           "type": "string",
           "format": "int64"
+        }
+      }
+    },
+    "v1UnblindedInput": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "asset": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "assetBlinder": {
+          "type": "string"
+        },
+        "amountBlinder": {
+          "type": "string"
         }
       }
     }

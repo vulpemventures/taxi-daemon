@@ -2,6 +2,7 @@ package application_test
 
 import (
 	"context"
+	"github.com/vulpemventures/taxi-daemon/internal/core/application"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/vulpemventures/taxi-daemon/internal/core/domain"
@@ -14,8 +15,9 @@ type mockWallet struct {
 
 func (m *mockWallet) UpdatePartialWithFees(
 	ctx context.Context, partial string, millisatPerByte uint64,
+	userUnblindedInput []application.UnblindedInput,
 ) (string, uint64, error) {
-	args := m.Called(ctx, partial, millisatPerByte)
+	args := m.Called(ctx, partial, millisatPerByte, userUnblindedInput)
 	var res string
 	if a := args.Get(0); a != nil {
 		res = a.(string)

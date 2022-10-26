@@ -13,9 +13,11 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/go-openapi/runtime v0.24.1
+	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.1.4
 	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.1
 	github.com/improbable-eng/grpc-web v0.14.0
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
@@ -28,8 +30,7 @@ require (
 	github.com/stretchr/testify v1.7.2
 	github.com/timshannon/badgerhold/v4 v4.0.2
 	github.com/urfave/cli/v2 v2.3.0
-	github.com/vulpemventures/go-elements v0.4.0-rc.1
-	github.com/vulpemventures/taxi-protobuf v0.1.1
+	github.com/vulpemventures/go-elements v0.4.1
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
 	google.golang.org/grpc v1.43.0

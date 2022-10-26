@@ -7,17 +7,21 @@ import (
 	"google.golang.org/grpc"
 )
 
-func UnaryLogger(
-	ctx context.Context, req interface{},
-	info *grpc.UnaryServerInfo, handler grpc.UnaryHandler,
+func (i *interceptorChain) unaryLogger(
+	ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
 ) (interface{}, error) {
 	log.Debug(info.FullMethod)
 	return handler(ctx, req)
 }
 
-func StreamLogger(
-	srv interface{}, stream grpc.ServerStream,
-	info *grpc.StreamServerInfo, handler grpc.StreamHandler,
+func (i *interceptorChain) streamLogger(
+	srv interface{},
+	stream grpc.ServerStream,
+	info *grpc.StreamServerInfo,
+	handler grpc.StreamHandler,
 ) error {
 	log.Debug(info.FullMethod)
 	return handler(srv, stream)

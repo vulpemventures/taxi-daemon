@@ -68,10 +68,13 @@ func (s *service) Stop() {
 
 func newServer(opts ServiceOpts, tlsConfig *tls.Config) (*http.Server, error) {
 	// grpc server for admin service
-	serverOpts := []grpc.ServerOption{
-		grpc.UnaryInterceptor(interceptor.UnaryLogger),
-		grpc.StreamInterceptor(interceptor.StreamLogger),
+	interceptorSvc, err := interceptor.NewService()
+	if err != nil {
+		return nil, err
 	}
+
+	interceptorOpts := interceptorSvc.CreateServerOpts()
+	serverOpts := interceptorOpts
 	if tlsConfig != nil {
 		serverOpts = append(serverOpts, grpc.Creds(credentials.NewTLS(tlsConfig)))
 	}
