@@ -132,3 +132,12 @@ recreatetestdb: droptestdb createtestdb
 ## psql: connects to postgres terminal running inside docker container
 psql:
 	docker exec -it taxid-pg psql -U root -d taxid-db
+
+## migrate: creates pg migration file(eg. make FILE=init migrate)
+migrate:
+	migrate create -ext sql -dir ./internal/infrastructure/storage/postgres/migration/ $(FILE)
+
+## sqlc: gen sql
+sqlc:
+	@echo "gen sql..."
+	cd internal/infrastructure/storage/postgres; sqlc generate
