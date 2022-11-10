@@ -43,6 +43,18 @@ const (
 	// AdminSwaggerKey is used to specify the folder containing the json swagger
 	// file for admin interface.
 	AdminSwaggerKey = "ADMIN_SWAGGER_PATH"
+	// DbUserKey is user used to connect to db
+	DbUserKey = "DB_USER"
+	// DbPassKey is password used to connect to db
+	DbPassKey = "DB_PASS"
+	// DbHostKey is host where db is installed
+	DbHostKey = "DB_HOST"
+	// DbPortKey is port on which db is listening
+	DbPortKey = "DB_PORT"
+	// DbNameKey is name of database
+	DbNameKey = "DB_NAME"
+	// DbMigrationPath is the path to migration files
+	DbMigrationPath = "DB_MIGRATION_PATH"
 )
 
 var (
@@ -64,6 +76,12 @@ func init() {
 	vip.SetDefault(PortKey, 8000)
 	vip.SetDefault(LogLevelKey, log.InfoLevel)
 	vip.SetDefault(DatadirKey, btcutil.AppDataDir("taxid", false))
+	vip.SetDefault(DbUserKey, "root")
+	vip.SetDefault(DbPassKey, "secret")
+	vip.SetDefault(DbHostKey, "127.0.0.1")
+	vip.SetDefault(DbPortKey, 5432)
+	vip.SetDefault(DbNameKey, "taxid-db")
+	vip.SetDefault(DbMigrationPath, "file://internal/infrastructure/storage/postgres/migration")
 
 	if err := validate(); err != nil {
 		log.WithError(err).Fatal("invalid config")
