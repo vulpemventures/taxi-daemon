@@ -5,3 +5,8 @@ packages:
     engine: "postgresql"
     schema: "migration"
     queries: "sqlc/query.sql"
+overrides:
+  - column: "price.amount"
+    go_type: "float64"
+  - column: "topup.asset_price"
+    go_type: "float64"

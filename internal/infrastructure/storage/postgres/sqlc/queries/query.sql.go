@@ -6,16 +6,42 @@ package queries
 import (
 	"context"
 	"database/sql"
-	"time"
 )
 
-const deleteWhitelists = `-- name: DeleteWhitelists :exec
-DELETE FROM whitelist WHERE script IN ($1)
+const deleteWhitelist = `-- name: DeleteWhitelist :exec
+DELETE FROM whitelist WHERE output_script=$1
 `
 
-func (q *Queries) DeleteWhitelists(ctx context.Context, script string) error {
-	_, err := q.db.ExecContext(ctx, deleteWhitelists, script)
+func (q *Queries) DeleteWhitelist(ctx context.Context, outputScript string) error {
+	_, err := q.db.ExecContext(ctx, deleteWhitelist, outputScript)
 	return err
+}
+
+const getAllPrices = `-- name: GetAllPrices :many
+SELECT asset_hash, amount, basis_point FROM price
+`
+
+func (q *Queries) GetAllPrices(ctx context.Context) ([]Price, error) {
+	rows, err := q.db.QueryContext(ctx, getAllPrices)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Price
+	for rows.Next() {
+		var i Price
+		if err := rows.Scan(&i.AssetHash, &i.Amount, &i.BasisPoint); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getAllTopups = `-- name: GetAllTopups :many
@@ -94,7 +120,7 @@ func (q *Queries) GetTopup(ctx context.Context, id string) (Topup, error) {
 }
 
 const getWhitelists = `-- name: GetWhitelists :many
-SELECT script FROM whitelist
+SELECT output_script FROM whitelist
 `
 
 func (q *Queries) GetWhitelists(ctx context.Context) ([]string, error) {
@@ -105,11 +131,11 @@ func (q *Queries) GetWhitelists(ctx context.Context) ([]string, error) {
 	defer rows.Close()
 	var items []string
 	for rows.Next() {
-		var script string
-		if err := rows.Scan(&script); err != nil {
+		var output_script string
+		if err := rows.Scan(&output_script); err != nil {
 			return nil, err
 		}
-		items = append(items, script)
+		items = append(items, output_script)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -126,7 +152,7 @@ INSERT INTO price (asset_hash,amount,basis_point) VALUES ($1,$2,$3) RETURNING as
 
 type InsertPriceParams struct {
 	AssetHash  string
-	Amount     string
+	Amount     float64
 	BasisPoint int32
 }
 
@@ -149,9 +175,9 @@ type InsertTopupParams struct {
 	PartialTx    sql.NullString
 	AssetHash    string
 	AssetAmount  int32
-	AssetPrice   string
+	AssetPrice   float64
 	FeeAmount    int32
-	RequestedAt  time.Time
+	RequestedAt  sql.NullTime
 	CompletedAt  sql.NullTime
 	SettledAt    sql.NullTime
 	ExpireAt     sql.NullTime
@@ -193,15 +219,15 @@ func (q *Queries) InsertTopup(ctx context.Context, arg InsertTopupParams) (Topup
 }
 
 const insertWhitelist = `-- name: InsertWhitelist :one
-INSERT INTO whitelist (script) VALUES ($1) RETURNING script
+INSERT INTO whitelist (output_script) VALUES ($1) RETURNING output_script
 `
 
 // WHITELIST
-func (q *Queries) InsertWhitelist(ctx context.Context, script string) (string, error) {
-	row := q.db.QueryRowContext(ctx, insertWhitelist, script)
-	var script string
-	err := row.Scan(&script)
-	return script, err
+func (q *Queries) InsertWhitelist(ctx context.Context, outputScript string) (string, error) {
+	row := q.db.QueryRowContext(ctx, insertWhitelist, outputScript)
+	var output_script string
+	err := row.Scan(&output_script)
+	return output_script, err
 }
 
 const updatePrice = `-- name: UpdatePrice :exec
@@ -209,7 +235,7 @@ UPDATE price SET amount=$1,basis_point=$2 WHERE asset_hash=$3
 `
 
 type UpdatePriceParams struct {
-	Amount     string
+	Amount     float64
 	BasisPoint int32
 	AssetHash  string
 }
@@ -220,16 +246,18 @@ func (q *Queries) UpdatePrice(ctx context.Context, arg UpdatePriceParams) error 
 }
 
 const updateTopup = `-- name: UpdateTopup :exec
-UPDATE topup SET status=$1,partial_tx=$2,asset_amount=$3,asset_price=$4,fee_amount=$5,completed_at=$6,settled_at=$7,expire_at=$8,spread_amount=$9 WHERE id=$10
+UPDATE topup SET status=$1,partial_tx=$2,asset_hash=$3,asset_amount=$4,asset_price=$5,fee_amount=$6,completed_at=$7,requested_at=$8,settled_at=$9,expire_at=$10,spread_amount=$11 WHERE id=$12
 `
 
 type UpdateTopupParams struct {
 	Status       int32
 	PartialTx    sql.NullString
+	AssetHash    string
 	AssetAmount  int32
-	AssetPrice   string
+	AssetPrice   float64
 	FeeAmount    int32
 	CompletedAt  sql.NullTime
+	RequestedAt  sql.NullTime
 	SettledAt    sql.NullTime
 	ExpireAt     sql.NullTime
 	SpreadAmount int32
@@ -240,10 +268,12 @@ func (q *Queries) UpdateTopup(ctx context.Context, arg UpdateTopupParams) error 
 	_, err := q.db.ExecContext(ctx, updateTopup,
 		arg.Status,
 		arg.PartialTx,
+		arg.AssetHash,
 		arg.AssetAmount,
 		arg.AssetPrice,
 		arg.FeeAmount,
 		arg.CompletedAt,
+		arg.RequestedAt,
 		arg.SettledAt,
 		arg.ExpireAt,
 		arg.SpreadAmount,

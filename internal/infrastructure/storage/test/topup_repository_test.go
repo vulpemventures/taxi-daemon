@@ -3,6 +3,7 @@ package db_test
 import (
 	"encoding/base64"
 	"fmt"
+	postgresdb "github.com/vulpemventures/taxi-daemon/internal/infrastructure/storage/postgres"
 	"testing"
 	"time"
 
@@ -109,9 +110,22 @@ func newTopupRepositories() (map[string]domain.TopupRepository, error) {
 		return nil, err
 	}
 
+	pgRepoManager, err := postgresdb.NewRepoManager(postgresdb.DbConfig{
+		DbUser:             "root",
+		DbPassword:         "secret",
+		DbHost:             "127.0.0.1",
+		DbPort:             5432,
+		DbName:             "taxid-db-test",
+		MigrationSourceURL: "file://../postgres/migration",
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return map[string]domain.TopupRepository{
 		"inmemory": inmemoryRepoManager.TopupRepository(),
 		"badger":   badgerRepoManager.TopupRepository(),
+		"postgres": pgRepoManager.TopupRepository(),
 	}, nil
 }
 

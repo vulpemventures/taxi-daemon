@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"github.com/vulpemventures/taxi-daemon/internal/infrastructure/storage/postgres"
 	"math/big"
 	"testing"
 
@@ -95,10 +96,22 @@ func newPriceRepositories() (map[string]domain.PriceRepository, error) {
 	if err != nil {
 		return nil, err
 	}
+	pgRepoManager, err := postgresdb.NewRepoManager(postgresdb.DbConfig{
+		DbUser:             "root",
+		DbPassword:         "secret",
+		DbHost:             "127.0.0.1",
+		DbPort:             5432,
+		DbName:             "taxid-db-test",
+		MigrationSourceURL: "file://../postgres/migration",
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	return map[string]domain.PriceRepository{
 		"inmemory": inmemoryRepoManager.PriceRepository(),
 		"badger":   badgerRepoManager.PriceRepository(),
+		"postgres": pgRepoManager.PriceRepository(),
 	}, nil
 }
 

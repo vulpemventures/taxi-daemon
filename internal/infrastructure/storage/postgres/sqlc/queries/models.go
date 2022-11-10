@@ -4,12 +4,11 @@ package queries
 
 import (
 	"database/sql"
-	"time"
 )
 
 type Price struct {
 	AssetHash  string
-	Amount     string
+	Amount     float64
 	BasisPoint int32
 }
 
@@ -19,9 +18,9 @@ type Topup struct {
 	PartialTx    sql.NullString
 	AssetHash    string
 	AssetAmount  int32
-	AssetPrice   string
+	AssetPrice   float64
 	FeeAmount    int32
-	RequestedAt  time.Time
+	RequestedAt  sql.NullTime
 	CompletedAt  sql.NullTime
 	SettledAt    sql.NullTime
 	ExpireAt     sql.NullTime
@@ -29,5 +28,5 @@ type Topup struct {
 }
 
 type Whitelist struct {
-	Script string
+	OutputScript string
 }
