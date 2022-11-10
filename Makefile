@@ -129,6 +129,11 @@ recreatedb: dropdb createdb droptestdb createtestdb
 ## recreatetestdb: drop and create test db
 recreatetestdb: droptestdb createtestdb
 
+## pgcreatetestdb: starts docker container and creates test db, used in CI
+pgcreatetestdb:
+	chmod u+x ./script/create_testdb
+	./script/create_testdb
+
 ## psql: connects to postgres terminal running inside docker container
 psql:
 	docker exec -it taxid-pg psql -U root -d taxid-db
