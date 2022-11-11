@@ -138,15 +138,18 @@
       "type": "object",
       "properties": {
         "assetHash": {
-          "type": "string"
+          "type": "string",
+          "title": "the asset hash used as identifier on the network"
         },
         "basisPoint": {
           "type": "integer",
-          "format": "int64"
+          "format": "int64",
+          "title": "the taxi service fee expressed in basis points for the given asset"
         },
         "assetPrice": {
           "type": "number",
-          "format": "double"
+          "format": "double",
+          "title": "the price = the amount of assets to equal 1 BTC"
         }
       }
     },
@@ -177,7 +180,8 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/v1AssetDetails"
-          }
+          },
+          "title": "all the assets available for topups"
         }
       }
     },
@@ -185,10 +189,12 @@
       "type": "object",
       "properties": {
         "topupId": {
-          "type": "string"
+          "type": "string",
+          "title": "the unique id of the topup"
         },
         "partial": {
-          "type": "string"
+          "type": "string",
+          "title": "the partial tx with paid network fees"
         }
       }
     },
@@ -196,15 +202,18 @@
       "type": "object",
       "properties": {
         "assetHash": {
-          "type": "string"
+          "type": "string",
+          "title": "asset hash to be used for payout"
         },
         "estimatedTxSize": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "title": "the estimated tx size to cover network fees for"
         },
         "millisatPerByte": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "title": "how many millisatoshi per byte we want to spend. ie. 0.1 sat/byte = 100 mSats/byte"
         }
       }
     },
@@ -212,28 +221,34 @@
       "type": "object",
       "properties": {
         "topup": {
-          "$ref": "#/definitions/v1Topup"
+          "$ref": "#/definitions/v1Topup",
+          "title": "the Topup message"
         },
         "expiry": {
           "type": "string",
-          "format": "int64"
+          "format": "int64",
+          "title": "the unix timestamp of the topup expiration date. After that date, the taxi sends the locked utxos to itself to prevent being spent by others"
         },
         "assetHash": {
-          "type": "string"
+          "type": "string",
+          "title": "the asset hash used as payout for bitcoin fees"
         },
         "assetAmount": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "title": "the asset denominated amount expressed in satoshis to be used as payout. It includes also the spread as taxi service fee"
         },
         "assetSpread": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "title": "the spread amount expressed in asset denominated satoshis used to pay the taxi service fees"
         },
         "inBlindingData": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/v1BlindingData"
-          }
+          },
+          "title": "Taxi's inputs revealed data in case of confidential inputs"
         }
       }
     },
@@ -241,17 +256,20 @@
       "type": "object",
       "properties": {
         "partial": {
-          "type": "string"
+          "type": "string",
+          "title": "transaction in base64 format including the known payout"
         },
         "millisatPerByte": {
           "type": "string",
-          "format": "uint64"
+          "format": "uint64",
+          "title": "how many millisatoshi per byte we want to spend"
         },
         "unblindedInputs": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/v1UnblindedInput"
-          }
+          },
+          "title": "Users inputs revealed data in case of confidential inputs, used to blind users output"
         }
       }
     },
@@ -259,11 +277,13 @@
       "type": "object",
       "properties": {
         "topup": {
-          "$ref": "#/definitions/v1Topup"
+          "$ref": "#/definitions/v1Topup",
+          "title": "the Topup message"
         },
         "expiry": {
           "type": "string",
-          "format": "int64"
+          "format": "int64",
+          "title": "the unix timestamp after wich the locked LBTC input will be double-spent"
         }
       }
     },

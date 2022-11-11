@@ -2,6 +2,7 @@ package ports
 
 import (
 	"context"
+
 	pb "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/go/ocean/v1"
 )
 
@@ -155,7 +156,13 @@ type Utxo interface {
 	AccountName() string
 }
 
-type Input = UtxoKey
+type Input interface {
+	UtxoKey
+	Script() string
+	ScriptSigSize() int
+	WitnessSize() int
+}
+
 type Output interface {
 	Asset() string
 	Value() uint64

@@ -124,8 +124,11 @@ func toInputsProto(ins []ports.Input) []*pb.Input {
 	inputs := make([]*pb.Input, 0, len(ins))
 	for _, in := range ins {
 		inputs = append(inputs, &pb.Input{
-			Txid:  in.TxID(),
-			Index: in.Index(),
+			Txid:          in.TxID(),
+			Index:         in.Index(),
+			Script:        in.Script(),
+			ScriptsigSize: uint64(in.ScriptSigSize()),
+			WitnessSize:   uint64(in.WitnessSize()),
 		})
 	}
 	return inputs
