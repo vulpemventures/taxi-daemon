@@ -59,8 +59,10 @@ func main() {
 		MigrationSourceURL: migrationSourceURL,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("failed to open db: %s", err)
 	}
+
+	defer repoManager.Close()
 
 	adminSvc := application.NewAdminService(wallet, repoManager)
 	taxiSvc := application.NewTaxiService(wallet, repoManager)
