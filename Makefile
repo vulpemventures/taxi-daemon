@@ -131,8 +131,8 @@ recreatetestdb: droptestdb createtestdb
 
 ## pgcreatetestdb: starts docker container and creates test db, used in CI
 pgcreatetestdb:
-	chmod u+x ./script/create_testdb
-	./script/create_testdb
+	chmod u+x ./scripts/create_testdb
+	./scripts/create_testdb
 
 ## psql: connects to postgres terminal running inside docker container
 psql:
