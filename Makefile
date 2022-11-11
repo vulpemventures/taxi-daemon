@@ -96,3 +96,53 @@ infra-load:
 	@echo "Loading binary to remote host..."
 	@chmod u+x ./scripts/provision-docker
 	@bash ./scripts/provision-docker
+
+#### Postgres database ####
+## pg: starts postgres db inside docker container
+pg:
+	docker run --name taxid-pg -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres
+
+## droppg: stop and remove postgres container
+droppg:
+	docker stop taxid-pg
+	docker rm taxid-pg
+
+## createdb: create db inside docker container
+createdb:
+	docker exec taxid-pg createdb --username=root --owner=root taxid-db
+
+## dropdb: drops db inside docker container
+dropdb:
+	docker exec taxid-pg dropdb taxid-db
+
+## createtestdb: create test db inside docker container
+createtestdb:
+	docker exec taxid-pg createdb --username=root --owner=root taxid-db-test
+
+## droptestdb: drops test db inside docker container
+droptestdb:
+	docker exec taxid-pg dropdb taxid-db-test
+
+## recreatedb: drop and create main and test db
+recreatedb: dropdb createdb droptestdb createtestdb
+
+## recreatetestdb: drop and create test db
+recreatetestdb: droptestdb createtestdb
+
+## pgcreatetestdb: starts docker container and creates test db, used in CI
+pgcreatetestdb:
+	chmod u+x ./scripts/create_testdb
+	./scripts/create_testdb
+
+## psql: connects to postgres terminal running inside docker container
+psql:
+	docker exec -it taxid-pg psql -U root -d taxid-db
+
+## migrate: creates pg migration file(eg. make FILE=init migrate)
+migrate:
+	migrate create -ext sql -dir ./internal/infrastructure/storage/postgres/migration/ $(FILE)
+
+## sqlc: gen sql
+sqlc:
+	@echo "gen sql..."
+	cd internal/infrastructure/storage/postgres; sqlc generate

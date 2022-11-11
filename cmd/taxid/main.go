@@ -1,6 +1,7 @@
 package main
 
 import (
+	postgresdb "github.com/vulpemventures/taxi-daemon/internal/infrastructure/storage/postgres"
 	"os"
 	"os/signal"
 	"syscall"
@@ -9,7 +10,6 @@ import (
 	"github.com/vulpemventures/taxi-daemon/internal/config"
 	"github.com/vulpemventures/taxi-daemon/internal/core/application"
 	oceanwallet "github.com/vulpemventures/taxi-daemon/internal/infrastructure/ocean-wallet"
-	dbbadger "github.com/vulpemventures/taxi-daemon/internal/infrastructure/storage/badger"
 	"github.com/vulpemventures/taxi-daemon/internal/interfaces/grpc"
 )
 
@@ -18,14 +18,20 @@ var (
 	oceanWalletAddr = config.GetString(config.OceanWalletAddrKey)
 	logLevel        = config.GetInt(config.LogLevelKey)
 
-	port             = config.GetInt(config.PortKey)
-	tlsKeyPath       = config.GetString(config.TLSKeyPathKey)
-	tlsCertPath      = config.GetString(config.TLSCertPathKey)
-	email            = config.GetString(config.EmailKey)
-	domain           = config.GetString(config.DomainKey)
-	externalURL      = config.GetString(config.ExternalUrlKey)
-	adminSwaggerPath = config.GetString(config.AdminSwaggerKey)
-	taxiSwaggerPath  = config.GetString(config.TaxiSwaggerKey)
+	port               = config.GetInt(config.PortKey)
+	tlsKeyPath         = config.GetString(config.TLSKeyPathKey)
+	tlsCertPath        = config.GetString(config.TLSCertPathKey)
+	email              = config.GetString(config.EmailKey)
+	domain             = config.GetString(config.DomainKey)
+	externalURL        = config.GetString(config.ExternalUrlKey)
+	adminSwaggerPath   = config.GetString(config.AdminSwaggerKey)
+	taxiSwaggerPath    = config.GetString(config.TaxiSwaggerKey)
+	dbUser             = config.GetString(config.DbUserKey)
+	dbPassword         = config.GetString(config.DbPassKey)
+	dbHost             = config.GetString(config.DbHostKey)
+	dbPort             = config.GetInt(config.DbPortKey)
+	dbName             = config.GetString(config.DbNameKey)
+	migrationSourceURL = config.GetString(config.DbMigrationPath)
 )
 
 func main() {
@@ -44,10 +50,18 @@ func main() {
 		log.Fatal(err)
 	}
 
-	repoManager, err := dbbadger.NewRepoManager(datadir, log.New())
+	repoManager, err := postgresdb.NewRepoManager(postgresdb.DbConfig{
+		DbUser:             dbUser,
+		DbPassword:         dbPassword,
+		DbHost:             dbHost,
+		DbPort:             dbPort,
+		DbName:             dbName,
+		MigrationSourceURL: migrationSourceURL,
+	})
 	if err != nil {
 		log.Fatalf("failed to open db: %s", err)
 	}
+
 	defer repoManager.Close()
 
 	adminSvc := application.NewAdminService(wallet, repoManager)

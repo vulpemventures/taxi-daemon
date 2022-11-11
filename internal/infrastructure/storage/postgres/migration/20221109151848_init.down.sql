@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS price;
+
+DROP TABLE IF EXISTS topup;
+
+DROP TABLE IF EXISTS whitelist;

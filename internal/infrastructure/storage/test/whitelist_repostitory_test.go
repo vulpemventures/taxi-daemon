@@ -2,6 +2,7 @@ package db_test
 
 import (
 	"encoding/hex"
+	postgresdb "github.com/vulpemventures/taxi-daemon/internal/infrastructure/storage/postgres"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -61,9 +62,22 @@ func newWhitelistRepositories() (map[string]domain.WhitelistRepository, error) {
 		return nil, err
 	}
 
+	pgRepoManager, err := postgresdb.NewRepoManager(postgresdb.DbConfig{
+		DbUser:             "root",
+		DbPassword:         "secret",
+		DbHost:             "127.0.0.1",
+		DbPort:             5432,
+		DbName:             "taxid-db-test",
+		MigrationSourceURL: "file://../postgres/migration",
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return map[string]domain.WhitelistRepository{
 		"inmemory": inmemoryRepoManager.WhitelistRepository(),
 		"badger":   badgerRepoManager.WhitelistRepository(),
+		"postgres": pgRepoManager.WhitelistRepository(),
 	}, nil
 }
 

@@ -25,5 +25,8 @@ jobs:
       - name: Get dependencies
         run: go get -v -t -d ./...
 
+      - name: Setup Postgres test env
+        run: make pgcreatetestdb
+
       - name: Test
         run: make test
