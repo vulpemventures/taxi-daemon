@@ -140,7 +140,7 @@ func (w *wallet) UpdatePartialWithFees(
 
 	ins := make([]ports.Input, 0, ptx.Global.InputCount)
 	for _, in := range ptx.Inputs {
-		ins = append(ins, txInput{
+		ins = append(ins, input{
 			in.PreviousTxid, in.PreviousTxIndex, in.GetUtxo().Script,
 		})
 	}
@@ -404,29 +404,29 @@ func getPayoutAmount(price *domain.Price, feeAmount uint64) uint64 {
 	return payoutAmount
 }
 
-type txInput struct {
+type input struct {
 	txid   []byte
 	index  uint32
 	script []byte
 }
 
-func (i txInput) TxID() string {
+func (i input) TxID() string {
 	return elementsutil.TxIDFromBytes(i.txid)
 }
-func (i txInput) Index() uint32 {
+func (i input) Index() uint32 {
 	return i.index
 }
-func (i txInput) Script() string {
+func (i input) Script() string {
 	return hex.EncodeToString(i.script)
 }
 
 // TODO: compute correct size based on utxo script type
-func (i txInput) ScriptSigSize() int {
+func (i input) ScriptSigSize() int {
 	return 0
 }
 
 // TODO: compute correct size based on utxo script type
-func (i txInput) WitnessSize() int {
+func (i input) WitnessSize() int {
 	return 0
 }
 
@@ -480,31 +480,8 @@ type utxos []ports.Utxo
 func (u utxos) toInputs() []ports.Input {
 	ins := make([]ports.Input, 0, len(u))
 	for _, utxo := range u {
-		ins = append(ins, input{utxo})
+		txid, _ := elementsutil.TxIDToBytes(utxo.TxID())
+		ins = append(ins, input{txid, utxo.Index(), utxo.Script()})
 	}
 	return ins
-}
-
-type input struct {
-	ports.Utxo
-}
-
-func (i input) TxID() string {
-	return i.Utxo.TxID()
-}
-func (i input) Index() uint32 {
-	return i.Utxo.Index()
-}
-func (i input) Script() string {
-	return hex.EncodeToString(i.Utxo.Script())
-}
-
-// TODO: compute correct size based on utxo script type
-func (i input) ScriptSigSize() int {
-	return 0
-}
-
-// TODO: compute correct size based on utxo script type
-func (i input) WitnessSize() int {
-	return 0
 }
