@@ -16,6 +16,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/google/uuid v1.3.0
+	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.1
 	github.com/improbable-eng/grpc-web v0.14.0
@@ -25,14 +26,14 @@ require (
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.10.1
+	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.7.2
 	github.com/timshannon/badgerhold/v4 v4.0.2
 	github.com/urfave/cli/v2 v2.3.0
 	github.com/vulpemventures/go-elements v0.4.1
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
-	google.golang.org/genproto v0.0.0-20220314164441-57ef72a4c106
-	google.golang.org/grpc v1.45.0
+	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2
+	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd
+	google.golang.org/grpc v1.46.2
 	google.golang.org/protobuf v1.28.0
 	nhooyr.io/websocket v1.8.6 // indirect
 )
