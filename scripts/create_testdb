@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "Creating database container..."
 docker run --name taxid-pg -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres
 sleep 3
+echo "Creating test database..."
 docker exec taxid-pg createdb --username=root --owner=root taxid-db-test

@@ -339,7 +339,8 @@
           "title": "The amount expressed in satoshis as taxi service fee (part of asset_amount)"
         },
         "status": {
-          "$ref": "#/definitions/v1TopupDetailsStatus"
+          "$ref": "#/definitions/v1TopupDetailsStatus",
+          "title": "Topup status"
         },
         "feeAmount": {
           "type": "string",
@@ -347,7 +348,8 @@
           "title": "Amount in satoshis of bitcoin needed to cover the fees"
         },
         "times": {
-          "$ref": "#/definitions/v1Timestamps"
+          "$ref": "#/definitions/v1Timestamps",
+          "title": "The timestamps of each status change"
         },
         "txid": {
           "type": "string",

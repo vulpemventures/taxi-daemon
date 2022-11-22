@@ -56,9 +56,9 @@ proto-lint:
 ## proto: compiles proto stubs
 proto: proto-lint
 	@echo "Compiling stubs..."
-	@buf generate buf.build/vulpemventures/taxi; \
-	buf generate buf.build/vulpemventures/ocean; \
-	buf generate
+	@buf generate buf.build/vulpemventures/taxi
+	@buf generate buf.build/vulpemventures/ocean
+	@buf generate
 
 ## run: runs the service (for development)
 run: clean
@@ -69,10 +69,13 @@ run: clean
 	export TAXI_ADMIN_SWAGGER_PATH=api-spec/protobuf/gen/swagger/taxi-daemon/v1; \
 	go run ./cmd/taxid
 
-## test: runs short unit tests
-test: fmt 
-	@echo "Unit testing..."
+## unittest: runs unit tests
+unittest: fmt pgcreatetestdb
+	@echo "Running unit tests..."
 	@go test -v -race ./...
+
+# test: runs unit test and drops pg docker container
+test: unittest droppg
 
 ## create-cert: creates localhost TLS certficate and key
 create-cert:
@@ -100,28 +103,34 @@ infra-load:
 #### Postgres database ####
 ## pg: starts postgres db inside docker container
 pg:
-	docker run --name taxid-pg -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres
+	@echo "Creating database container..."
+	@docker run --name taxid-pg -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres
 
 ## droppg: stop and remove postgres container
 droppg:
-	docker stop taxid-pg
-	docker rm taxid-pg
+	@echo "Dropping database container..."
+	@docker stop taxid-pg
+	@docker rm taxid-pg
 
 ## createdb: create db inside docker container
 createdb:
-	docker exec taxid-pg createdb --username=root --owner=root taxid-db
+	@echo "Creating database..."
+	@docker exec taxid-pg createdb --username=root --owner=root taxid-db
 
 ## dropdb: drops db inside docker container
 dropdb:
-	docker exec taxid-pg dropdb taxid-db
+	@echo "Dropping database..."
+	@docker exec taxid-pg dropdb taxid-db
 
 ## createtestdb: create test db inside docker container
 createtestdb:
-	docker exec taxid-pg createdb --username=root --owner=root taxid-db-test
+	@echo "Creating test database..."
+	@docker exec taxid-pg createdb --username=root --owner=root taxid-db-test
 
 ## droptestdb: drops test db inside docker container
 droptestdb:
-	docker exec taxid-pg dropdb taxid-db-test
+	@echo "Dropping test database..."
+	@docker exec taxid-pg dropdb taxid-db-test
 
 ## recreatedb: drop and create main and test db
 recreatedb: dropdb createdb droptestdb createtestdb
@@ -131,18 +140,19 @@ recreatetestdb: droptestdb createtestdb
 
 ## pgcreatetestdb: starts docker container and creates test db, used in CI
 pgcreatetestdb:
-	chmod u+x ./scripts/create_testdb
-	./scripts/create_testdb
+	@./scripts/create_testdb
 
 ## psql: connects to postgres terminal running inside docker container
 psql:
-	docker exec -it taxid-pg psql -U root -d taxid-db
+	@echo "Connecting to pg terminal..."
+	@docker exec -it taxid-pg psql -U root -d taxid-db
 
 ## migrate: creates pg migration file(eg. make FILE=init migrate)
 migrate:
-	migrate create -ext sql -dir ./internal/infrastructure/storage/postgres/migration/ $(FILE)
+	@echo "Creating migration file..."
+	@migrate create -ext sql -dir ./internal/infrastructure/storage/postgres/migration/ $(FILE)
 
 ## sqlc: gen sql
 sqlc:
-	@echo "gen sql..."
-	cd internal/infrastructure/storage/postgres; sqlc generate
+	@echo "Generating sql..."
+	@cd internal/infrastructure/storage/postgres; sqlc generate

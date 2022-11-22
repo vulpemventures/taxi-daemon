@@ -140,7 +140,9 @@ func (w *wallet) UpdatePartialWithFees(
 
 	ins := make([]ports.Input, 0, ptx.Global.InputCount)
 	for _, in := range ptx.Inputs {
-		ins = append(ins, input{in.PreviousTxid, in.PreviousTxIndex})
+		ins = append(ins, input{
+			in.PreviousTxid, in.PreviousTxIndex, in.GetUtxo().Script,
+		})
 	}
 
 	outs := make([]ports.Output, 0, ptx.Global.OutputCount)
@@ -175,7 +177,7 @@ func (w *wallet) UpdatePartialWithFees(
 	})
 
 	updatedPset, err := w.oceanSvc.TransactionManager().UpdateTransaction(
-		ctx, psetBase64, utxos(insToAdd).keys(), outsToAdd,
+		ctx, psetBase64, utxos(insToAdd).toInputs(), outsToAdd,
 	)
 	if err != nil {
 		return "", 0, fmt.Errorf(
@@ -237,7 +239,7 @@ func (w *wallet) CreatePartialWithFeesAndPayout(
 	}
 
 	partial, err := w.oceanSvc.TransactionManager().CreateTransaction(
-		ctx, utxos(insToAdd).keys(), outsToAdd,
+		ctx, utxos(insToAdd).toInputs(), outsToAdd,
 	)
 	if err != nil {
 		return "", nil, 0, 0, 0, fmt.Errorf("failed to create partial transaction: %s", err)
@@ -403,8 +405,9 @@ func getPayoutAmount(price *domain.Price, feeAmount uint64) uint64 {
 }
 
 type input struct {
-	txid  []byte
-	index uint32
+	txid   []byte
+	index  uint32
+	script []byte
 }
 
 func (i input) TxID() string {
@@ -412,6 +415,19 @@ func (i input) TxID() string {
 }
 func (i input) Index() uint32 {
 	return i.index
+}
+func (i input) Script() string {
+	return hex.EncodeToString(i.script)
+}
+
+// TODO: compute correct size based on utxo script type
+func (i input) ScriptSigSize() int {
+	return 0
+}
+
+// TODO: compute correct size based on utxo script type
+func (i input) WitnessSize() int {
+	return 0
 }
 
 type output struct {
@@ -426,11 +442,9 @@ func (o output) Asset() string {
 	}
 	return hex.EncodeToString(elementsutil.ReverseBytes(o.asset))
 }
-
 func (o output) Value() uint64 {
 	return o.value
 }
-
 func (o output) Script() string {
 	if o.address != "" {
 		script, _ := address.ToOutputScript(o.address)
@@ -443,7 +457,6 @@ func (o output) Script() string {
 	// is dummy conf output, let's return OP_RETURN script
 	return hex.EncodeToString([]byte{txscript.OP_RETURN})
 }
-
 func (o output) BlindingKey() string {
 	if o.address != "" {
 		info, _ := address.FromConfidential(o.address)
@@ -464,10 +477,11 @@ func (o output) BlindingKey() string {
 
 type utxos []ports.Utxo
 
-func (u utxos) keys() []ports.UtxoKey {
-	keys := make([]ports.UtxoKey, 0, len(u))
+func (u utxos) toInputs() []ports.Input {
+	ins := make([]ports.Input, 0, len(u))
 	for _, utxo := range u {
-		keys = append(keys, utxo)
+		txid, _ := elementsutil.TxIDToBytes(utxo.TxID())
+		ins = append(ins, input{txid, utxo.Index(), utxo.Script()})
 	}
-	return keys
+	return ins
 }

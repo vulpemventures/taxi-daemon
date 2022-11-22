@@ -24,10 +24,16 @@ services:
     restart: unless-stopped
     depends_on:
       - oceand
+      - db
     environment:
       - TAXI_DOMAIN=${DOMAIN}
       - TAXI_EMAIL=${EMAIL}
       - TAXI_EXTERNAL_URL=${EXTERNAL_URL}
+      - TAXI_DB_USER=${DB_USER}
+      - TAXI_DB_PASSWORD=${DB_PASSWORD}
+      - TAXI_DB_NAME=${DB_NAME}
+      - TAXI_DB_HOST=taxid_db
+      - TAXI_DB_PORT=5432
       - TAXI_OCEAN_ADDRESS=oceand:18000
       - TAXI_LOG_LEVEL=5
     ports:
@@ -36,3 +42,12 @@ services:
       - ./taxid/data:/home/taxi/.taxid
       - ./taxid/cli:/home/taxi/.taxi-admin-cli
       - ./taxid/certs:/.certmagic
+  db:
+    container_name: taxid-db
+    image: postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "5432:5432"

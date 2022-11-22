@@ -48,6 +48,14 @@ else
 fi
 
 echo ""
+echo "Starting Taxi database"
+# Start Taxi db
+docker-compose -f $COMPOSE_PATH up -d db
+sleep 3
+docker exec taxid-regtest-db createdb --username=root --owner=root taxid-db
+
+
+echo ""
 echo "Starting Taxi daemon"
 # Start Taxi daemon
 docker-compose -f $COMPOSE_PATH up -d taxid
