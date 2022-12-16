@@ -69,7 +69,7 @@ type WalletAccount interface {
 	Index() uint32
 	Name() string
 	DerivationPath() string
-	Xpub() string
+	Xpubs() []string
 }
 
 type Network interface {

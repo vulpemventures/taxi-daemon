@@ -103,6 +103,6 @@ func (wa walletAccount) Name() string {
 func (wa walletAccount) DerivationPath() string {
 	return wa.GetDerivationPath()
 }
-func (wa walletAccount) Xpub() string {
-	return wa.GetXpub()
+func (wa walletAccount) Xpubs() []string {
+	return wa.GetXpubs()
 }
