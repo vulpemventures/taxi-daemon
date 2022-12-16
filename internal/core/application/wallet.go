@@ -141,7 +141,7 @@ func (w *wallet) UpdatePartialWithFees(
 	ins := make([]ports.Input, 0, ptx.Global.InputCount)
 	for _, in := range ptx.Inputs {
 		ins = append(ins, input{
-			in.PreviousTxid, in.PreviousTxIndex, in.GetUtxo().Script,
+			in.PreviousTxid, in.PreviousTxIndex, hex.EncodeToString(in.GetUtxo().Script),
 		})
 	}
 
@@ -407,7 +407,7 @@ func getPayoutAmount(price *domain.Price, feeAmount uint64) uint64 {
 type input struct {
 	txid   []byte
 	index  uint32
-	script []byte
+	script string
 }
 
 func (i input) TxID() string {
@@ -417,7 +417,7 @@ func (i input) Index() uint32 {
 	return i.index
 }
 func (i input) Script() string {
-	return hex.EncodeToString(i.script)
+	return i.script
 }
 
 // TODO: compute correct size based on utxo script type

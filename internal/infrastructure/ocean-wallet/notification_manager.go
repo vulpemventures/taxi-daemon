@@ -117,13 +117,13 @@ func (ui utxo) Asset() string {
 func (ui utxo) Value() uint64 {
 	return ui.GetValue()
 }
-func (ui utxo) Script() []byte {
+func (ui utxo) Script() string {
 	return ui.GetScript()
 }
-func (ui utxo) AssetBlinder() []byte {
+func (ui utxo) AssetBlinder() string {
 	return ui.GetAssetBlinder()
 }
-func (ui utxo) ValueBlinder() []byte {
+func (ui utxo) ValueBlinder() string {
 	return ui.GetValueBlinder()
 }
 func (ui utxo) AccountName() string {

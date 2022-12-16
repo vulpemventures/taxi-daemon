@@ -150,9 +150,9 @@ type Utxo interface {
 	Index() uint32
 	Asset() string
 	Value() uint64
-	Script() []byte
-	AssetBlinder() []byte
-	ValueBlinder() []byte
+	Script() string
+	AssetBlinder() string
+	ValueBlinder() string
 	AccountName() string
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/vulpemventures/go-elements/elementsutil"
 	"github.com/vulpemventures/go-elements/psetv2"
 	pb "github.com/vulpemventures/taxi-daemon/api-spec/protobuf/gen/go/taxi/v1"
 	"github.com/vulpemventures/taxi-daemon/internal/core/application"
@@ -58,11 +59,13 @@ func (h *taxiHandler) TopupWithAsset(
 
 	blindingData := make([]*pb.BlindingData, 0, len(selectedUtxos))
 	for _, u := range selectedUtxos {
+		assetBlinder, _ := elementsutil.TxIDToBytes(u.AssetBlinder())
+		valueBlinder, _ := elementsutil.TxIDToBytes(u.ValueBlinder())
 		blindingData = append(blindingData, &pb.BlindingData{
 			Asset:        u.Asset(),
 			Value:        u.Value(),
-			AssetBlinder: u.AssetBlinder(),
-			ValueBlinder: u.ValueBlinder(),
+			AssetBlinder: assetBlinder,
+			ValueBlinder: valueBlinder,
 		})
 	}
 
