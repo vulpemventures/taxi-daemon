@@ -62,9 +62,7 @@ func NewWallet(oceanSvc ports.OceanWallet) (Wallet, error) {
 		return nil, fmt.Errorf("failed to get ocean wallet status: %s", err)
 	}
 	if !status.IsInitialized() || !status.IsUnlocked() || !status.IsSynced() {
-		return nil, fmt.Errorf(
-			"ocean wallet must be initialized, unlocked and in sync, got %+v", status,
-		)
+		return nil, fmt.Errorf("ocean wallet must be initialized and unlocked")
 	}
 	info, err := oceanSvc.WalletManager().GetInfo(ctx)
 	if err != nil {
